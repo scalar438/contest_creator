@@ -1,4 +1,3 @@
-TEMPLATE = app
-TARGET = IL
-CONFIG = qt console
+DESTDIR = ../
+TARGET = pTL
 SOURCES = IL.cpp

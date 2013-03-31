@@ -1,5 +1,3 @@
-TEMPLATE = app
-CONFIG = console
-CONFIG -= qt
-SOURCES = \
-    RE1.cpp
+DESTDIR = ../
+TARGET = pRE1
+SOURCES = RE1.cpp

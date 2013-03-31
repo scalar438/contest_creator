@@ -1,3 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS = tests
+SUBDIRS = tests \
+		libraries

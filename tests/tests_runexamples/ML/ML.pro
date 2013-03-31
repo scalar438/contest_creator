@@ -1,3 +1,3 @@
-TEMPLATE = app
-CONFIG = console
+DESTDIR = ../
+TARGET = pML
 SOURCES = ML.cpp

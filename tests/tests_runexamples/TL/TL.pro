@@ -1,5 +1,3 @@
-TEMPLATE = app
-CONFIG = console
-CONFIG -= qt
-SOURCES = \
-    TL.cpp
+DESTDIR = ../
+TARGET = pTL
+SOURCES = TL.cpp
