@@ -1,3 +1,3 @@
-TEMPLATE = SUBDIRS
+TEMPLATE = subdirs
 
 SUBDIRS = tests

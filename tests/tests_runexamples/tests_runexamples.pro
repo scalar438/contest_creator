@@ -1,7 +1,7 @@
-TEMPLATE = SUBDIRS
+TEMPLATE = subdirs
 
-SUBDIRS = TL \
-		  IL \
+SUBDIRS =  TL \
+        IL \
 		  RE1 \
 		  RE2 \
 		  ML \

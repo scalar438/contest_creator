@@ -1,3 +1,4 @@
 TEMPLATE = app
 CONFIG = qt console
-SOURCES = main.cpp
+SOURCES = \
+    wait_1.5_sec.cpp

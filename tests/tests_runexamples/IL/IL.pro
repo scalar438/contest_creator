@@ -1,3 +1,4 @@
 TEMPLATE = app
+TARGET = IL
 CONFIG = qt console
-SOURCES = main.cpp
+SOURCES = IL.cpp

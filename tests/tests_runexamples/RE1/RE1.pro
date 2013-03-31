@@ -1,4 +1,5 @@
 TEMPLATE = app
 CONFIG = console
 CONFIG -= qt
-SOURCES = main.cpp
+SOURCES = \
+    RE1.cpp
