@@ -1,3 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS = tests_runexamples
+SUBDIRS = tests_runexamples  \
+	run_once_program
