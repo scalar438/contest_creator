@@ -15,9 +15,10 @@ struct Restrictions
 	size_t memory;
 };
 
+/// Тип завершения программы. etFailed - внутренняя ошибка тестирования
 enum ExitType
 {
-	etNormal, etTimeLimt, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated
+	etNormal, etTimeLimt, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
 };
 
 namespace details

@@ -13,3 +13,5 @@ SOURCES += ./details/restproc_linux.cpp
 }
 
 SOURCES = restproc.cpp
+
+QMAKE_CXXFLAGS += --std=c++0x
