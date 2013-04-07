@@ -61,8 +61,24 @@ public:
 	Restrictions getRestrictions() const;
 	void setRestrictions(const Restrictions &restrictions);
 
+	/// Перенаправить стандартный поток ввода в указанный файл.
+	/// Если stdin, то перенаправления не происходит.
+	/// Если stdout, то перенавравляется на вывод текущего приложения
+	void redirectStandardInput(const QString &fileName);
+
+	/// Перенаправить стандартный поток вывода в указанный файл.
+	/// Если stdout, то без перенаправления
+	/// Если stdin, то направляяется во ввод текущего процесса.
+	void redirectStandardOutput(const QString &fileName);
+
+	/// Перенаправить стандартный поток ошибок в указанный файл.
+	/// Если stderr, то перенаправления не происзодит
+	void redirectStandardError(const QString &fileName);
 
 signals:
+
+	/// Вызывается при завершении процесса
+	void finished();
 
 private:
 
