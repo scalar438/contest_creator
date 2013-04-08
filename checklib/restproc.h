@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-namespace testing
+namespace checklib
 {
 
 /// Ограничения
