@@ -1,7 +1,8 @@
 #pragma once
 #include <QtTest/QtTest>
-//#include "checklib/restproc.h"
+#include "checklib/restproc.h"
 
+// Класс, тестирующий работу библиотеки
 class TestRun: public QObject
 {
 	Q_OBJECT
@@ -10,5 +11,6 @@ private slots:
 
 	void testTL();
 	void testML();
-
+	void testRE1();
+	void testRE2();
 };

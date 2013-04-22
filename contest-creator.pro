@@ -1,4 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS = tests \
-		checklib
+SUBDIRS += libs \
+  tests

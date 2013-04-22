@@ -3,7 +3,6 @@
 
 int main()
 {
-	TestRun *a = new TestRun;
-	QTest::qExec(a);
-	delete a;
+	TestRun a;
+	QTest::qExec(&a);
 }
