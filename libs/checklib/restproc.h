@@ -2,6 +2,8 @@
 #include <memory>
 
 #include <QObject>
+#include <QString>
+#include <QStringList>
 
 namespace checklib
 {
@@ -11,14 +13,14 @@ struct Restrictions
 {
 	bool useTimeLimit;
 	bool useMemoryLimit;
-	int time;
-	size_t memory;
+	int timeLimit;
+	size_t memoryLimit;
 };
 
 /// Тип завершения программы. etFailed - внутренняя ошибка тестирования
 enum ExitType
 {
-	etNormal, etTimeLimt, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
+	etNormal, etRunning, etTimeLimt, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
 };
 
 namespace details
@@ -32,7 +34,9 @@ class RestrictedProcess : public QObject
 {
 	Q_OBJECT
 public:
-	RestrictedProcess(const QString &program);
+	/// @param - имя программы, возможно с абсолютным или относительным путем. Задается без расширения
+	RestrictedProcess(const QString &program, const QStringList &params = QStringList());
+	RestrictedProcess(QObject *parent, const QString &program, const QStringList &params = QStringList());
 	~RestrictedProcess();
 
 	bool isRunning() const;
@@ -45,6 +49,10 @@ public:
 
 	/// Ждать завершения процесса
 	void wait();
+
+	/// Ждать завершения процесса не более чем @param миллисекунд.
+	/// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+	bool wait(int milliseconds);
 
 	/// Код возврата.
 	int exitCode() const;
@@ -83,6 +91,17 @@ signals:
 private:
 
 	std::shared_ptr<details::platform_data> mPlatformData;
+
+	Restrictions mRestrinctions;
+
+	int mExitCode;
+	ExitType mExitType;
+
+	QString mStandardInput;
+	QString mStandardOutput;
+	QString mStandardError;
+
+	QString mProgram;
 };
 
 }
