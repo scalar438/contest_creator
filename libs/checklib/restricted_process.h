@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QTimer>
 
 namespace checklib
 {
@@ -18,15 +19,20 @@ struct Restrictions
 };
 
 /// Тип завершения программы. etFailed - внутренняя ошибка тестирования
-enum ExitType
+enum ProcessStatus
 {
-	etNormal, etRunning, etTimeLimt, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
+	etNormal, etRunning, etTimeLimit, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
 };
 
 namespace details
 {
 struct platform_data;
 }
+
+enum StandardStream
+{
+	ssStdin, ssStdout, ssStderr
+};
 
 /// @class RestrictedProcess
 /// Класс, запускающий процесс с ограничениями
@@ -58,7 +64,7 @@ public:
 	int exitCode() const;
 
 	/// Тип завершения программы
-	ExitType exitType() const;
+	ProcessStatus exitType() const;
 
 	/// Пиковое значение потребляемой памяти
 	size_t peakMemoryUsage() const;
@@ -70,18 +76,23 @@ public:
 	void setRestrictions(const Restrictions &restrictions);
 
 	/// Перенаправить стандартный поток ввода в указанный файл.
-	/// Если stdin, то перенаправления не происходит.
-	/// Если stdout, то перенавравляется на вывод текущего приложения
+	/// Если stdin, то перенаправления не происходит
 	void redirectStandardInput(const QString &fileName);
 
 	/// Перенаправить стандартный поток вывода в указанный файл.
-	/// Если stdout, то без перенаправления
-	/// Если stdin, то направляяется во ввод текущего процесса.
+	/// Если stdout, то перенаправления не происходит
 	void redirectStandardOutput(const QString &fileName);
 
 	/// Перенаправить стандартный поток ошибок в указанный файл.
-	/// Если stderr, то перенаправления не происзодит
+	/// Если stderr, то перенаправления не происходит
 	void redirectStandardError(const QString &fileName);
+
+	/// Перенаправление указанного стандартного потока.
+	void redirectStandardStream(StandardStream stream, const QString &fileName);
+
+	/// Отправить буфер в указанный стандартный поток.
+	/// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
+	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
 
 signals:
 
@@ -92,16 +103,26 @@ private:
 
 	std::shared_ptr<details::platform_data> mPlatformData;
 
-	Restrictions mRestrinctions;
+	Restrictions mRestrictions;
 
 	int mExitCode;
-	ExitType mExitType;
+	ProcessStatus mProcessStatus;
+
+	long long int mPeakMemory;
 
 	QString mStandardInput;
 	QString mStandardOutput;
 	QString mStandardError;
 
 	QString mProgram;
+	QStringList mParams;
+
+	QTimer mCheckTimer;
+
+private slots:
+
+	/// Проверяет соответствие запущенной программы огранияениям
+	void checkOnce();
 };
 
 }

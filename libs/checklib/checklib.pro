@@ -1,6 +1,8 @@
 TEMPLATE = lib
 CONFIG += staticlib
-HEADERS += restproc.h
+HEADERS += \
+    checklib_exception.h \
+    restricted_process.h
 
 win32 {
 message("Building for windows")
