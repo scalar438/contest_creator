@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 
 #include <QStringList>
+#include <QDebug>
 
 #include "checklib_exception.h"
 #include "restricted_process.h"
@@ -17,7 +18,6 @@
 struct checklib::details::platform_data
 {
 	pid_t pid;
-
 };
 
 checklib::RestrictedProcess::RestrictedProcess(const QString &program, const QStringList &params)
@@ -83,7 +83,18 @@ void checklib::RestrictedProcess::start()
 			setrlimit(RLIMIT_CPU, &limit);
 		}
 
-		execl(mProgram.toAscii().data(), 0);
+		char **args = new char*[mParams.size()];
+		for(int i = 0; i < mParams.size(); i++)
+		{
+			args[i] = new char[mParams[i].length() + 1];
+			strcpy(args[i], mParams[i].toLocal8Bit().data());
+		}
+
+		qDebug() << mProgram;
+
+		execl(mProgram.toLocal8Bit().data(), mProgram.toLocal8Bit().data());
+
+		exit(-1);
 	}
 	else
 	{
@@ -157,8 +168,7 @@ void checklib::RestrictedProcess::redirectStandardInput(const QString &fileName)
 }
 
 /// Перенаправить стандартный поток вывода в указанный файл.
-/// Если stdout, то без перенаправления
-/// Если stdin, то направляяется во ввод текущего процесса.
+/// Если stdout, то перенаправления не происходит.
 void checklib::RestrictedProcess::redirectStandardOutput(const QString &fileName)
 {
 	if(isRunning()) return;
@@ -166,7 +176,7 @@ void checklib::RestrictedProcess::redirectStandardOutput(const QString &fileName
 }
 
 /// Перенаправить стандартный поток ошибок в указанный файл.
-/// Если stderr, то перенаправления не происзодит
+/// Если stderr, то перенаправления не происходит.
 void checklib::RestrictedProcess::redirectStandardError(const QString &fileName)
 {
 	if(isRunning()) return;
@@ -203,7 +213,7 @@ void checklib::RestrictedProcess::checkOnce()
 	name << mPlatformData->pid;
 	ifstream is("/proc/" + name.str() + "/stat");
 
-	// Получение времени работы процесса
+	// Получение времени работы процесса. Интересуют нас только последние два числа
 	string pid, comm, state, ppid, pgrp, session, tty_nr;
 	string tpgid, flags, minflt, cminflt, majflt, cmajflt;
 	long long int utime, stime;
@@ -258,9 +268,11 @@ void checklib::RestrictedProcess::checkOnce()
 	if(WIFEXITED(status))
 	{
 		if(mProcessStatus == etRunning) mProcessStatus = etRuntimeError;
+		mCheckTimer.stop();
 	}
 	if(WIFSIGNALED(status))
 	{
 		if(mProcessStatus == etRunning) mProcessStatus = etRuntimeError;
+		mCheckTimer.stop();
 	}
 }

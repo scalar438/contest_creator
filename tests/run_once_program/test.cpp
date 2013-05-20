@@ -7,7 +7,7 @@ void TestRun::testTL()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::etTimeLimt);
+	QVERIFY(runner.exitType() == checklib::etTimeLimit);
 }
 
 void TestRun::testML()
