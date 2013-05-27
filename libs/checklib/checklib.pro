@@ -7,11 +7,13 @@ HEADERS += \
 win32 {
 message("Building for windows")
 SOURCES += ./details/restproc_win.cpp
+TARGET = ../checklib
 }
 
 unix {
 message("Building for linux")
 SOURCES += ./details/restproc_linux.cpp
+TARGET = checklib
 }
 
 QMAKE_CXXFLAGS += --std=c++0x
