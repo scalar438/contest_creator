@@ -1,7 +1,7 @@
 ﻿#include <windows.h>
 #include "checklib_exception.h"
 #include "restricted_process.h"
-
+#include "psapi.h"
 
 struct checklib::details::platform_data
 {
@@ -43,6 +43,9 @@ void checklib::RestrictedProcess::start()
 {
 	if(isRunning()) return;
 
+	STARTUPINFOA si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	CreateProcessA(NULL, "szCommandLine", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 }
 
 /// Завершает процесс вручную. Тип завершения становится etTerminated
@@ -61,7 +64,7 @@ void checklib::RestrictedProcess::wait()
 /// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 bool checklib::RestrictedProcess::wait(int milliseconds)
 {
-	int status;
+	return 0;
 }
 
 /// Код возврата.
@@ -146,4 +149,17 @@ void checklib::RestrictedProcess::sendBufferToStandardStream(checklib::StandardS
 void checklib::RestrictedProcess::checkOnce()
 {
 	if(!isRunning()) return;
+	FILETIME creationTime, exitTime, kernelTime, userTime;
+	GetProcessTimes(mPlatformData->process, &creationTime, &exitTime, &kernelTime, &userTime);
+
+	kernelTime.dwHighDateTime += userTime.dwHighDateTime;
+	kernelTime.dwLowDateTime += userTime.dwLowDateTime;
+
+	if(((kernelTime.dwHighDateTime << 32) + kernelTime.dwLowDateTime) / 10000000 > mRestrictions.timeLimit)
+	{
+		// time limit
+	}
+
+	PROCESS_MEMORY_COUNTERS counters;
+	GetProcessMemoryInfo(mPlatformData->process, &counters, sizeof counters);
 }

@@ -4,9 +4,12 @@ HEADERS += \
     checklib_exception.h \
     restricted_process.h
 
+
+
 win32 {
 message("Building for windows")
 SOURCES += ./details/restproc_win.cpp
+LIBS += -lpsapi
 TARGET = ../checklib
 }
 
