@@ -2,7 +2,8 @@ TEMPLATE = lib
 CONFIG += staticlib
 HEADERS += \
     checklib_exception.h \
-    restricted_process.h
+    restricted_process.h \
+    details/check_thread.h
 
 
 
@@ -20,3 +21,6 @@ TARGET = checklib
 }
 
 QMAKE_CXXFLAGS += --std=c++0x
+
+SOURCES += \
+    details/check_thread.cpp
