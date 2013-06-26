@@ -3,7 +3,8 @@
 
 void TestRun::testTL()
 {
-	checklib::RestrictedProcess runner("../TL");
+	checklib::RestrictedProcess runner;
+	runner.setProgram("../TL");
 	runner.start();
 	runner.wait();
 
@@ -12,7 +13,8 @@ void TestRun::testTL()
 
 void TestRun::testML()
 {
-	checklib::RestrictedProcess runner("../ML");
+	checklib::RestrictedProcess runner;
+	runner.setProgram("../ML");
 	runner.start();
 	runner.wait();
 
@@ -21,7 +23,8 @@ void TestRun::testML()
 
 void TestRun::testRE1()
 {
-	checklib::RestrictedProcess runner("../RE1");
+	checklib::RestrictedProcess runner;
+	runner.setProgram("../RE1");
 	runner.start();
 	runner.wait();
 
@@ -30,7 +33,8 @@ void TestRun::testRE1()
 
 void TestRun::testRE2()
 {
-	checklib::RestrictedProcess runner("../RE2");
+	checklib::RestrictedProcess runner;
+	runner.setProgram("../RE2");
 	runner.start();
 	runner.wait();
 

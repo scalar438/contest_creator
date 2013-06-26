@@ -6,33 +6,15 @@
 #include <QStringList>
 #include <QTimer>
 
+#include "restricted_process_types.h"
+
 namespace checklib
 {
 
-/// Ограничения
-struct Restrictions
-{
-	bool useTimeLimit;
-	bool useMemoryLimit;
-	int timeLimit;
-	size_t memoryLimit;
-};
-
-/// Тип завершения программы. etFailed - внутренняя ошибка тестирования
-enum ProcessStatus
-{
-	etNormal, etRunning, etTimeLimit, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
-};
-
 namespace details
 {
-struct platform_data;
+class RestrictedProcessImpl;
 }
-
-enum StandardStream
-{
-	ssStdin, ssStdout, ssStderr
-};
 
 /// @class RestrictedProcess
 /// Класс, запускающий процесс с ограничениями
@@ -41,9 +23,14 @@ class RestrictedProcess : public QObject
 	Q_OBJECT
 public:
 	/// @param - имя программы, возможно с абсолютным или относительным путем. Задается без расширения
-	RestrictedProcess(const QString &program, const QStringList &params = QStringList());
-	RestrictedProcess(QObject *parent, const QString &program, const QStringList &params = QStringList());
+	RestrictedProcess(QObject *parent = nullptr);
 	~RestrictedProcess();
+
+	QString getProgram() const;
+	void setProgram(const QString &program);
+
+	QStringList getParams() const;
+	void setParams(const QStringList &params);
 
 	bool isRunning() const;
 
@@ -67,7 +54,7 @@ public:
 	ProcessStatus exitType() const;
 
 	/// Пиковое значение потребляемой памяти
-	size_t peakMemoryUsage() const;
+	int peakMemoryUsage() const;
 
 	/// Сколько процессорного времени израсходовал процесс
 	int CPUTime() const;
@@ -87,9 +74,6 @@ public:
 	/// Если stderr, то перенаправления не происходит
 	void redirectStandardError(const QString &fileName);
 
-	/// Перенаправление указанного стандартного потока.
-	void redirectStandardStream(StandardStream stream, const QString &fileName);
-
 	/// Отправить буфер в указанный стандартный поток.
 	/// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
 	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
@@ -101,28 +85,8 @@ signals:
 
 private:
 
-	std::shared_ptr<details::platform_data> mPlatformData;
+	std::shared_ptr<details::RestrictedProcessImpl> pimpl;
 
-	Restrictions mRestrictions;
-
-	int mExitCode;
-	ProcessStatus mProcessStatus;
-
-	long long int mPeakMemory;
-
-	QString mStandardInput;
-	QString mStandardOutput;
-	QString mStandardError;
-
-	QString mProgram;
-	QStringList mParams;
-
-	QTimer mCheckTimer;
-
-private slots:
-
-	/// Проверяет соответствие запущенной программы огранияениям
-	void checkOnce();
 };
 
 }

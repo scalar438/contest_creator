@@ -1,15 +1,14 @@
 TEMPLATE = lib
 CONFIG += staticlib
+
 HEADERS += \
     checklib_exception.h \
     restricted_process.h \
-    details/check_thread.h
-
-
+	restricted_process_types.h
 
 win32 {
 message("Building for windows")
-SOURCES += ./details/restproc_win.cpp
+HEADERS += details/rp_win.h
 LIBS += -lpsapi
 TARGET = ../checklib
 }
@@ -23,4 +22,4 @@ TARGET = checklib
 QMAKE_CXXFLAGS += --std=c++0x
 
 SOURCES += \
-    details/check_thread.cpp
+    restricted_process.cpp

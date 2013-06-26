@@ -3,12 +3,12 @@
 
 namespace checlib
 {
-	class exception : public std::exception
+	class exception_base : public std::exception
 	{
 	public:
-		exception()
+		exception(const char * const s)
+			: std::exception(s)
 		{
-
 		}
 	};
 };
