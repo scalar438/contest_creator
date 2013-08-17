@@ -1,4 +1,4 @@
-#include <QtTest/QtTest>
+﻿#include <QtTest/QtTest>
 #include "test.h"
 
 void TestRun::testTL()
@@ -8,7 +8,7 @@ void TestRun::testTL()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::etTimeLimit);
+	QVERIFY(runner.exitType() == checklib::psTimeLimit);
 }
 
 void TestRun::testML()
@@ -18,7 +18,7 @@ void TestRun::testML()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::etMemoryLimit);
+	QVERIFY(runner.exitType() == checklib::psMemoryLimit);
 }
 
 void TestRun::testRE1()
@@ -28,7 +28,7 @@ void TestRun::testRE1()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::etRuntimeError);
+	QVERIFY(runner.exitType() == checklib::psRuntimeError);
 }
 
 void TestRun::testRE2()
@@ -38,5 +38,5 @@ void TestRun::testRE2()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::etRuntimeError);
+	QVERIFY(runner.exitType() == checklib::psRuntimeError);
 }

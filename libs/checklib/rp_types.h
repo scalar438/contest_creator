@@ -3,14 +3,16 @@
 namespace checklib
 {
 
+class RestrictedProcess;
+
 /// Ограничения
-struct Restrictions
+struct Limits
 {
 	bool useTimeLimit;
 	bool useMemoryLimit;
 	int timeLimit;
 	int memoryLimit;
-	Restrictions()
+	Limits()
 	{
 		useTimeLimit = false;
 		useMemoryLimit = false;
@@ -18,10 +20,10 @@ struct Restrictions
 	}
 };
 
-/// Тип завершения программы. etFailed - внутренняя ошибка тестирования
+/// Тип завершения программы. psFailed - внутренняя ошибка тестирования
 enum ProcessStatus
 {
-	etNormal, etRunning, etTimeLimit, etMemoryLimit, etIdlenessLimit, etRuntimeError, etTerminated, etFailed
+	psNotRunning, psRunning, psExited, psTimeLimit, psMemoryLimit, psIdlenessLimit, psRuntimeError, psTerminated, psFailed
 };
 
 enum StandardStream

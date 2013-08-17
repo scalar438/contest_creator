@@ -1,14 +1,25 @@
-#pragma once
+﻿#pragma once
 #include <exception>
+#include <QString>
 
 namespace checlib
 {
-	class exception_base : public std::exception
+	class ExceptionBase : public std::exception
 	{
 	public:
-		exception(const char * const s)
-			: std::exception(s)
+		ExceptionBase(const QString &str)
+			: std::exception(str.toLocal8Bit().data())
 		{
 		}
 	};
-};
+
+	class exception_cannot_open_file : public ExceptionBase
+	{
+	public:
+		exception_cannot_open_file(const QString &fileName)
+			: ExceptionBase(fileName)
+		{
+
+		}
+	};
+}

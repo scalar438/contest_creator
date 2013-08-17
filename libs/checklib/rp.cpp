@@ -1,4 +1,4 @@
-﻿#include "restricted_process.h"
+﻿#include "rp.h"
 #ifdef Q_OS_WIN
 #include "details/rp_win.h"
 #endif
@@ -6,7 +6,7 @@
 checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	: QObject(parent)
 {
-	pimpl = std::make_shared<details::RestrictedProcessImpl>(this);
+	pimpl = std::move(std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl(this)));
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()
@@ -20,6 +20,7 @@ QString checklib::RestrictedProcess::getProgram() const
 
 void checklib::RestrictedProcess::setProgram(const QString &program)
 {
+	if(!pimpl) qDebug() << "WTF";
 	pimpl->setProgram(program);
 }
 
@@ -53,7 +54,8 @@ void checklib::RestrictedProcess::terminate()
 /// Ждать завершения процесса
 void checklib::RestrictedProcess::wait()
 {
-	pimpl->wait();
+	pimpl->run();
+//	pimpl->wait();
 }
 
 /// Ждать завершения процесса не более чем @param миллисекунд.
@@ -72,7 +74,7 @@ int checklib::RestrictedProcess::exitCode() const
 /// Тип завершения программы
 checklib::ProcessStatus checklib::RestrictedProcess::exitType() const
 {
-	return pimpl->exitType();
+	return pimpl->processStatus();
 }
 
 /// Пиковое значение потребляемой памяти
@@ -87,14 +89,14 @@ int checklib::RestrictedProcess::CPUTime() const
 	return pimpl->CPUTime();
 }
 
-checklib::Restrictions checklib::RestrictedProcess::getRestrictions() const
+checklib::Limits checklib::RestrictedProcess::getLimits() const
 {
-	return pimpl->getRestrictions();
+	return pimpl->getLimits();
 }
 
-void checklib::RestrictedProcess::setRestrictions(const Restrictions &restrictions)
+void checklib::RestrictedProcess::setLimits(const Limits &restrictions)
 {
-	pimpl->setRestrictions(restrictions);
+	pimpl->setLimits(restrictions);
 }
 
 /// Перенаправить стандартный поток ввода в указанный файл.

@@ -1,20 +1,23 @@
+QT += core
+
 TEMPLATE = lib
 CONFIG += staticlib
 
 HEADERS += \
     checklib_exception.h \
-    restricted_process.h \
-	restricted_process_types.h
+    interactive_processes.h \
+    rp_types.h \
+    rp.h \
+    details/rp_win.h
 
 win32 {
-message("Building for windows")
-HEADERS += details/rp_win.h
+HEADERS += $$(BOOST_INCLUDE_DIR)
+SOURCES +=
 LIBS += -lpsapi
 TARGET = ../checklib
 }
 
 unix {
-message("Building for linux")
 SOURCES += ./details/restproc_linux.cpp
 TARGET = checklib
 }
@@ -22,4 +25,6 @@ TARGET = checklib
 QMAKE_CXXFLAGS += --std=c++0x
 
 SOURCES += \
-    restricted_process.cpp
+    interactive_processes.cpp \
+    rp.cpp \
+    details/rp_win.cpp

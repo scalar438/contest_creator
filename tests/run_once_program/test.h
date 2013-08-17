@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <QtTest/QtTest>
-#include "checklib/restricted_process.h"
+#include "checklib/rp.h"
 
 // Класс, тестирующий работу библиотеки
 class TestRun: public QObject

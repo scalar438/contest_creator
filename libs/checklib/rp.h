@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include "rp_types.h"
+
 #include <memory>
 
 #include <QObject>
@@ -6,7 +8,6 @@
 #include <QStringList>
 #include <QTimer>
 
-#include "restricted_process_types.h"
 
 namespace checklib
 {
@@ -22,7 +23,6 @@ class RestrictedProcess : public QObject
 {
 	Q_OBJECT
 public:
-	/// @param - имя программы, возможно с абсолютным или относительным путем. Задается без расширения
 	RestrictedProcess(QObject *parent = nullptr);
 	~RestrictedProcess();
 
@@ -44,7 +44,7 @@ public:
 	void wait();
 
 	/// Ждать завершения процесса не более чем @param миллисекунд.
-	/// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+	/// true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 	bool wait(int milliseconds);
 
 	/// Код возврата.
@@ -54,13 +54,15 @@ public:
 	ProcessStatus exitType() const;
 
 	/// Пиковое значение потребляемой памяти
+	/// Если процесс не запущен, возвращает -1
 	int peakMemoryUsage() const;
 
 	/// Сколько процессорного времени израсходовал процесс
+	/// Если процесс не запущен, возвращает -1
 	int CPUTime() const;
 
-	Restrictions getRestrictions() const;
-	void setRestrictions(const Restrictions &restrictions);
+	Limits getLimits() const;
+	void setLimits(const Limits &restrictions);
 
 	/// Перенаправить стандартный поток ввода в указанный файл.
 	/// Если stdin, то перенаправления не происходит
@@ -85,7 +87,7 @@ signals:
 
 private:
 
-	std::shared_ptr<details::RestrictedProcessImpl> pimpl;
+	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
 
 };
 
