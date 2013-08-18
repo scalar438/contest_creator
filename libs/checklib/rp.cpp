@@ -20,7 +20,6 @@ QString checklib::RestrictedProcess::getProgram() const
 
 void checklib::RestrictedProcess::setProgram(const QString &program)
 {
-	if(!pimpl) qDebug() << "WTF";
 	pimpl->setProgram(program);
 }
 

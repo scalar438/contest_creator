@@ -25,6 +25,8 @@ private:
 	HANDLE handle;
 };
 
+typedef std::unique_ptr<HandleCloser> Closer;
+
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 	: QObject(parent)
 {
@@ -62,7 +64,7 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
-	return false;
+	return processStatus() == psRunning;
 }
 
 void checklib::details::RestrictedProcessImpl::start()
@@ -78,7 +80,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	sa.bInheritHandle = TRUE;
 	sa.lpSecurityDescriptor = NULL;
 	sa.nLength = sizeof sa;
-	std::vector<HandleCloser> handles;
+	std::vector<Closer> handles;
 
 	// TODO: Сделать бросание исключения в случае ошибки
 	if(mStandardInput == "stdin") si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -94,7 +96,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			return;
 		}
 		si.hStdInput = f;
-		handles.push_back(f);
+		handles.push_back(Closer(new HandleCloser(f)));
 	}
 
 	if(mStandardOutput == "stdout") si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -109,7 +111,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			return;
 		}
 		si.hStdOutput = f;
-		handles.push_back(f);
+		handles.push_back(Closer(new HandleCloser(f)));
 	}
 
 	if(mStandardError == "stderr") si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
@@ -124,7 +126,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			return;
 		}
 		si.hStdError = f;
-		handles.push_back(f);
+		handles.push_back(Closer(new HandleCloser(f)));
 	}
 
 	PROCESS_INFORMATION pi;

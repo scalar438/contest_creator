@@ -13,8 +13,6 @@
 #include <QThread>
 #include <QTimer>
 
-//#include <boost/asio.hpp>
-
 namespace checklib
 {
 namespace details
