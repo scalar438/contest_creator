@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "rp_types.h"
+#include "../rp_types.h"
 
 #include <windows.h>
 #include <psapi.h>
@@ -12,18 +12,19 @@
 #include <QDebug>
 #include <QThread>
 #include <QTimer>
+#include <QRunnable>
 
 namespace checklib
 {
 namespace details
 {
 
-class ReadThread : public QThread
+class TimerThread : public QThread
 {
 
 };
 
-class RestrictedProcessImpl : public QObject
+class RestrictedProcessImpl : public QObject, private QRunnable
 {
 	Q_OBJECT
 public:
@@ -44,16 +45,16 @@ public:
 	void wait();
 	bool wait(int milliseconds);
 
-	/// Код возврата.
+	// Код возврата.
 	int exitCode() const;
 
-	/// Тип завершения программы
+	// Тип завершения программы
 	ProcessStatus processStatus() const;
 
-	/// Пиковое значение потребляемой памяти
+	// Пиковое значение потребляемой памяти
 	int peakMemoryUsage() const;
 
-	/// Сколько процессорного времени израсходовал процесс
+	// Сколько процессорного времени израсходовал процесс
 	int CPUTime() const;
 
 	Limits getLimits() const;
@@ -64,7 +65,7 @@ public:
 	void redirectStandardError(const QString &fileName);
 
 	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
-public:
+private:
 
 	void run();
 
@@ -84,9 +85,15 @@ private:
 
 	PROCESS_INFORMATION mCurrentInformation;
 
-	QTimer mCheckTimer;
+	QTimer *mCheckTimer;
+
+	static TimerThread sTimerThread;
+
+	mutable int mOldCPUTime, mOldPeakMemoryUsage;
 
 	void doCheck();
+
+	void doFinalize();
 
 private slots:
 

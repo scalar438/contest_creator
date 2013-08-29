@@ -2,6 +2,7 @@
 
 #include <strsafe.h>
 #include <Windows.h>
+#include <QThreadPool>
 
 class HandleCloser
 {
@@ -25,6 +26,8 @@ private:
 	HANDLE handle;
 };
 
+//TimerThread checklib::details::RestrictedProcessImpl::sTimerThread;
+
 typedef std::unique_ptr<HandleCloser> Closer;
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
@@ -34,12 +37,19 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
 
-	connect(&mCheckTimer, SIGNAL(timeout()), SLOT(checkTimerTimeout()));
+
+	mCheckTimer = new QTimer();
+	mCheckTimer->setInterval(100);
+	mCheckTimer->moveToThread(&sTimerThread);
+	connect(mCheckTimer, SIGNAL(timeout()), SLOT(checkTimerTimeout()));
+
+	mOldCPUTime = mOldPeakMemoryUsage = 0;
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-
+	mCheckTimer->deleteLater();
+	if(isRunning()) terminate();
 }
 
 QString checklib::details::RestrictedProcessImpl::getProgram() const
@@ -59,6 +69,8 @@ QStringList checklib::details::RestrictedProcessImpl::getParams() const
 
 void checklib::details::RestrictedProcessImpl::setParams(const QStringList &params)
 {
+	QThreadPool pool;
+	pool.start(this);
 	mParams = params;
 }
 
@@ -147,6 +159,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	mProcessStatus = psRunning;
 	mCurrentInformation = pi;
 	mStartTime = QDateTime::currentDateTime();
+	mCheckTimer->start();
 	qDebug() << "Process created";
 }
 
@@ -170,34 +183,42 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	return WaitForSingleObject(mCurrentInformation.hProcess, milliseconds) != WAIT_TIMEOUT;
 }
 
-/// Код возврата.
+// Код возврата.
 int checklib::details::RestrictedProcessImpl::exitCode() const
 {
 	return mExitCode;
 }
 
-/// Тип завершения программы
+// Тип завершения программы
 checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus() const
 {
 	return mProcessStatus;
 }
 
-/// Пиковое значение потребляемой памяти
+// Пиковое значение потребляемой памяти
 int checklib::details::RestrictedProcessImpl::peakMemoryUsage() const
 {
-	if(!isRunning()) return -1;
-	return 42;
+	if(!isRunning())
+	{
+		return mOldPeakMemoryUsage;
+	}
+	PROCESS_MEMORY_COUNTERS data;
+	GetProcessMemoryInfo(mCurrentInformation.hProcess, &data, sizeof data);
+	return mOldPeakMemoryUsage = int(data.PeakWorkingSetSize);
 }
 
-/// Сколько процессорного времени израсходовал процесс
+// Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::CPUTime() const
 {
-	if(!isRunning()) return -1;
+	if(!isRunning())
+	{
+		return mOldCPUTime;
+	}
 	FILETIME creationTime, exitTime, kernelTime, userTime;
 	GetProcessTimes(mCurrentInformation.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
 	             ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
-	return int(ticks / 1000 / 10);
+	return mOldCPUTime = int(ticks / 1000 / 10);
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -232,11 +253,11 @@ void checklib::details::RestrictedProcessImpl::sendBufferToStandardStream(Standa
 
 void checklib::details::RestrictedProcessImpl::run()
 {
-	while(WaitForSingleObject(mCurrentInformation.hProcess, 100) == WAIT_TIMEOUT)
+/*	while(WaitForSingleObject(mCurrentInformation.hProcess, 100) == WAIT_TIMEOUT)
 	{
 		doCheck();
 	}
-	if(isRunning())
+	if(mProcessStatus == psRunning)
 	{
 		mProcessStatus = psExited;
 		doCheck();
@@ -246,7 +267,7 @@ void checklib::details::RestrictedProcessImpl::run()
 		qDebug() << "Cannot get exit code process";
 	}
 	CloseHandle(mCurrentInformation.hProcess);
-	CloseHandle(mCurrentInformation.hThread);
+	CloseHandle(mCurrentInformation.hThread);*/
 }
 
 void checklib::details::RestrictedProcessImpl::doCheck()
@@ -288,5 +309,25 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 
 void checklib::details::RestrictedProcessImpl::checkTimerTimeout()
 {
+	doCheck();
+	if(WaitForSingleObject(mCurrentInformation.hProcess, 1) == WAIT_OBJECT_0) 
+	{
+		mCheckTimer->stop();
+		doFinalize();
+	}
+}
 
+void checklib::details::RestrictedProcessImpl::doFinalize()
+{
+	if(mProcessStatus == psRunning)
+	{
+		mProcessStatus = psExited;
+		doCheck();
+	}
+	if(!GetExitCodeProcess(mCurrentInformation.hProcess, (LPDWORD)&mExitCode))
+	{
+		qDebug() << "Cannot get exit code process";
+	}
+	CloseHandle(mCurrentInformation.hProcess);
+	CloseHandle(mCurrentInformation.hThread);
 }

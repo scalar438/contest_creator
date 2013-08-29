@@ -5,14 +5,12 @@ CONFIG += staticlib
 
 HEADERS += \
     checklib_exception.h \
-    interactive_processes.h \
     rp_types.h \
-    rp.h \
-    details/rp_win.h
+    rp.h 
 
 win32 {
-HEADERS += $$(BOOST_INCLUDE_DIR)
-SOURCES +=
+HEADERS += details/rp_win.h
+SOURCES += details/rp_win.cpp
 LIBS += -lpsapi
 TARGET = ../checklib
 }
@@ -25,6 +23,4 @@ TARGET = checklib
 QMAKE_CXXFLAGS += --std=c++0x
 
 SOURCES += \
-    interactive_processes.cpp \
-    rp.cpp \
-    details/rp_win.cpp
+    rp.cpp

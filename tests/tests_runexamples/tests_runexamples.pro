@@ -7,4 +7,5 @@ SUBDIRS =  TL \
 		   RE1 \
 		   RE2 \
 		   ML \
-		   wait_long
+		   wait_long \
+		   sum

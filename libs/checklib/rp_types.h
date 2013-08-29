@@ -5,7 +5,7 @@ namespace checklib
 
 class RestrictedProcess;
 
-/// Ограничения
+// Ограничения
 struct Limits
 {
 	bool useTimeLimit;
@@ -20,7 +20,7 @@ struct Limits
 	}
 };
 
-/// Тип завершения программы. psFailed - внутренняя ошибка тестирования
+// Тип завершения программы. psFailed - внутренняя ошибка тестирования
 enum ProcessStatus
 {
 	psNotRunning, psRunning, psExited, psTimeLimit, psMemoryLimit, psIdlenessLimit, psRuntimeError, psTerminated, psFailed

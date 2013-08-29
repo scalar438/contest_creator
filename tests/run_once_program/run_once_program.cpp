@@ -5,13 +5,6 @@
 
 int main()
 {
-	checklib::RestrictedProcess rp;
-	rp.setProgram("D:/Develop/contest-creator/q.exe");
-	rp.redirectStandardInput("D:/Develop/contest-creator/q.txt");
-	rp.redirectStandardOutput("D:/Develop/contest-creator/q2.txt");
-	qDebug() << "Before start";
-	rp.start();
-	rp.wait();
-//	TestRun a;
-//	QTest::qExec(&a);
+	TestRun a;
+	QTest::qExec(&a);
 }

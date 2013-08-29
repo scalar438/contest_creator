@@ -53,8 +53,7 @@ void checklib::RestrictedProcess::terminate()
 /// Ждать завершения процесса
 void checklib::RestrictedProcess::wait()
 {
-	pimpl->run();
-//	pimpl->wait();
+	pimpl->wait();
 }
 
 /// Ждать завершения процесса не более чем @param миллисекунд.
