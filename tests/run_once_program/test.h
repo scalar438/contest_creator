@@ -11,8 +11,7 @@ private slots:
 
 	void testTL();
 	void testML();
-	void testRE1();
-	void testRE2();
+	void testRE();
 	void testNormal();
 	void testIL();
 };

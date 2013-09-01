@@ -33,20 +33,10 @@ void TestRun::testML()
 	QVERIFY(runner.exitType() == checklib::psMemoryLimit);
 }
 
-void TestRun::testRE1()
+void TestRun::testRE()
 {
 /*	checklib::RestrictedProcess runner;
 	runner.setProgram("../RE1");
-	runner.start();
-	runner.wait();
-
-	QVERIFY(runner.exitType() == checklib::psRuntimeError);*/
-}
-
-void TestRun::testRE2()
-{
-/*	checklib::RestrictedProcess runner;
-	runner.setProgram("../RE2");
 	runner.start();
 	runner.wait();
 

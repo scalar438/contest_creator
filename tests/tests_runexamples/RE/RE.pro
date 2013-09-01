@@ -1,0 +1,3 @@
+DESTDIR = ../
+TARGET = pRE
+SOURCES = RE.cpp

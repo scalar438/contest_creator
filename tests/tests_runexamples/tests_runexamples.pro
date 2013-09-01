@@ -4,7 +4,6 @@ DESTDIR = ../
 
 SUBDIRS =  TL \
 		   IL \
-		   RE1 \
-		   RE2 \
+		   RE \
 		   ML \
 		   sum
