@@ -2,6 +2,8 @@
 
 #include "../rp_types.h"
 
+#include <boost/asio.hpp>
+
 #include <windows.h>
 #include <psapi.h>
 
@@ -19,16 +21,9 @@ namespace checklib
 namespace details
 {
 
-class TimerThread : public QThread
+class RestrictedProcessImpl : public QObject
 {
-
-};
-
-class RestrictedProcessImpl : public QObject, private QRunnable
-{
-	Q_OBJECT
 public:
-
 	RestrictedProcessImpl(QObject *parent = nullptr);
 	~RestrictedProcessImpl();
 
@@ -65,9 +60,6 @@ public:
 	void redirectStandardError(const QString &fileName);
 
 	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
-private:
-
-	void run();
 
 private:
 	HANDLE mProcess;
@@ -85,9 +77,7 @@ private:
 
 	PROCESS_INFORMATION mCurrentInformation;
 
-	QTimer *mCheckTimer;
-
-	static TimerThread sTimerThread;
+	boost::asio::deadline_timer mTimer;
 
 	mutable int mOldCPUTime, mOldPeakMemoryUsage;
 
@@ -95,10 +85,7 @@ private:
 
 	void doFinalize();
 
-private slots:
-
-	void checkTimerTimeout();
-
+	void timerHandler(const boost::system::error_code &err);
 };
 
 }

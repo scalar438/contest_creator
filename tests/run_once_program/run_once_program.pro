@@ -12,8 +12,10 @@ INCLUDEPATH += ../../libs
 
 LIBS += -L"../../libs/checklib" -lchecklib
 
-win32: LIBS += -lpsapi
+win32: LIBS += -lpsapi -L$$(BOOST_LIB_DIR)
 
 PRE_TARGETDEPS += ../../libs/checklib
 
 QMAKE_CXXFLAGS += --std=c++0x
+
+DESTDIR = ../

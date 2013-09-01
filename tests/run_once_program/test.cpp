@@ -4,7 +4,11 @@
 void TestRun::testTL()
 {
 	checklib::RestrictedProcess runner;
-	runner.setProgram("../pTL.exe");
+	checklib::Limits limits;
+	limits.useTimeLimit = true;
+	limits.timeLimit = 2000;
+	runner.setLimits(limits);
+	runner.setProgram("tests_runexamples/pTL.exe");
 	runner.start();
 	runner.wait();
 

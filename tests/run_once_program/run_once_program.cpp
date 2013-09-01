@@ -2,6 +2,7 @@
 #include "test.h"
 #include <iostream>
 #include <Windows.h>
+#include <QCoreApplication>
 
 int main()
 {

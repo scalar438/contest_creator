@@ -1,8 +1,13 @@
 ﻿#include "rp_win.h"
 
+#include <functional>
 #include <strsafe.h>
-#include <Windows.h>
 #include <QThreadPool>
+
+#include <boost/thread.hpp>
+#include <boost/lambda/lambda.hpp>
+
+#include <Windows.h>
 
 class HandleCloser
 {
@@ -26,29 +31,47 @@ private:
 	HANDLE handle;
 };
 
-//TimerThread checklib::details::RestrictedProcessImpl::sTimerThread;
-
 typedef std::unique_ptr<HandleCloser> Closer;
 
+class ServiceInstance
+{
+public:
+	ServiceInstance()
+		: mWork(mService)
+	{
+		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
+	}
+	~ServiceInstance()
+	{
+		qDebug() << "Deleting";
+	}
+
+	boost::asio::io_service &io_service()
+	{
+		return mService;
+	}
+
+private:
+	boost::asio::io_service mService;
+	boost::asio::io_service::work mWork;
+	boost::thread mThread;
+};
+
+ServiceInstance instance;
+
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
-	: QObject(parent)
+	: QObject(parent),
+	  mTimer(instance.io_service())
 {
 	mStandardInput = "stdin";
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
-
-
-	mCheckTimer = new QTimer();
-	mCheckTimer->setInterval(100);
-	mCheckTimer->moveToThread(&sTimerThread);
-	connect(mCheckTimer, SIGNAL(timeout()), SLOT(checkTimerTimeout()));
 
 	mOldCPUTime = mOldPeakMemoryUsage = 0;
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-	mCheckTimer->deleteLater();
 	if(isRunning()) terminate();
 }
 
@@ -69,8 +92,6 @@ QStringList checklib::details::RestrictedProcessImpl::getParams() const
 
 void checklib::details::RestrictedProcessImpl::setParams(const QStringList &params)
 {
-	QThreadPool pool;
-	pool.start(this);
 	mParams = params;
 }
 
@@ -159,7 +180,9 @@ void checklib::details::RestrictedProcessImpl::start()
 	mProcessStatus = psRunning;
 	mCurrentInformation = pi;
 	mStartTime = QDateTime::currentDateTime();
-	mCheckTimer->start();
+	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
+	                              boost::lambda::_1));
 	qDebug() << "Process created";
 }
 
@@ -251,25 +274,6 @@ void checklib::details::RestrictedProcessImpl::sendBufferToStandardStream(Standa
 
 }
 
-void checklib::details::RestrictedProcessImpl::run()
-{
-/*	while(WaitForSingleObject(mCurrentInformation.hProcess, 100) == WAIT_TIMEOUT)
-	{
-		doCheck();
-	}
-	if(mProcessStatus == psRunning)
-	{
-		mProcessStatus = psExited;
-		doCheck();
-	}
-	if(!GetExitCodeProcess(mCurrentInformation.hProcess, (LPDWORD)&mExitCode))
-	{
-		qDebug() << "Cannot get exit code process";
-	}
-	CloseHandle(mCurrentInformation.hProcess);
-	CloseHandle(mCurrentInformation.hThread);*/
-}
-
 void checklib::details::RestrictedProcessImpl::doCheck()
 {
 	int time = CPUTime();
@@ -285,7 +289,6 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 		}
 	}
 	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
-	qDebug() << fullTime;
 	if(fullTime > 2000 && time * 8 < fullTime)
 	{
 		mProcessStatus = psIdlenessLimit;
@@ -307,16 +310,6 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	}
 }
 
-void checklib::details::RestrictedProcessImpl::checkTimerTimeout()
-{
-	doCheck();
-	if(WaitForSingleObject(mCurrentInformation.hProcess, 1) == WAIT_OBJECT_0) 
-	{
-		mCheckTimer->stop();
-		doFinalize();
-	}
-}
-
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
 	if(mProcessStatus == psRunning)
@@ -330,4 +323,19 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	}
 	CloseHandle(mCurrentInformation.hProcess);
 	CloseHandle(mCurrentInformation.hThread);
+}
+
+void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
+{
+	doCheck();
+	if(WaitForSingleObject(mCurrentInformation.hProcess, 1) != WAIT_TIMEOUT)
+	{
+		doFinalize();
+	}
+	else
+	{
+		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
+		                              boost::lambda::_1));
+	}
 }

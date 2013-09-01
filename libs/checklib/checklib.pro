@@ -13,6 +13,8 @@ HEADERS += details/rp_win.h
 SOURCES += details/rp_win.cpp
 LIBS += -lpsapi
 TARGET = ../checklib
+INCLUDEPATH += $$(BOOST_INCLUDE_DIR)
+LIBS += -L$$(BOOST_LIB_DIR)
 }
 
 unix {

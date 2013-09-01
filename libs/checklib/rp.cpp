@@ -38,50 +38,50 @@ bool checklib::RestrictedProcess::isRunning() const
 	return pimpl->isRunning();
 }
 
-/// Запуск процесса
+// Запуск процесса
 void checklib::RestrictedProcess::start()
 {
 	pimpl->start();
 }
 
-/// Завершает процесс вручную. Тип завершения становится etTerminated
+// Завершает процесс вручную. Тип завершения становится etTerminated
 void checklib::RestrictedProcess::terminate()
 {
 	pimpl->terminate();
 }
 
-/// Ждать завершения процесса
+// Ждать завершения процесса
 void checklib::RestrictedProcess::wait()
 {
 	pimpl->wait();
 }
 
-/// Ждать завершения процесса не более чем @param миллисекунд.
-/// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+// Ждать завершения процесса не более чем @param миллисекунд.
+// return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 bool checklib::RestrictedProcess::wait(int milliseconds)
 {
 	return pimpl->wait(milliseconds);
 }
 
-/// Код возврата.
+// Код возврата.
 int checklib::RestrictedProcess::exitCode() const
 {
 	return pimpl->exitCode();
 }
 
-/// Тип завершения программы
+// Тип завершения программы
 checklib::ProcessStatus checklib::RestrictedProcess::exitType() const
 {
 	return pimpl->processStatus();
 }
 
-/// Пиковое значение потребляемой памяти
+// Пиковое значение потребляемой памяти
 int checklib::RestrictedProcess::peakMemoryUsage() const
 {
 	return pimpl->peakMemoryUsage();
 }
 
-/// Сколько процессорного времени израсходовал процесс
+// Сколько процессорного времени израсходовал процесс
 int checklib::RestrictedProcess::CPUTime() const
 {
 	return pimpl->CPUTime();
@@ -97,22 +97,22 @@ void checklib::RestrictedProcess::setLimits(const Limits &restrictions)
 	pimpl->setLimits(restrictions);
 }
 
-/// Перенаправить стандартный поток ввода в указанный файл.
-/// Если stdin, то перенаправления не происходит
+// Перенаправить стандартный поток ввода в указанный файл.
+// Если stdin, то перенаправления не происходит
 void checklib::RestrictedProcess::redirectStandardInput(const QString &fileName)
 {
 	pimpl->redirectStandardInput(fileName);
 }
 
-/// Перенаправить стандартный поток вывода в указанный файл.
-/// Если stdout, то перенаправления не происходит
+// Перенаправить стандартный поток вывода в указанный файл.
+// Если stdout, то перенаправления не происходит
 void checklib::RestrictedProcess::redirectStandardOutput(const QString &fileName)
 {
 	pimpl->redirectStandardOutput(fileName);
 }
 
-/// Перенаправить стандартный поток ошибок в указанный файл.
-/// Если stderr, то перенаправления не происходит
+// Перенаправить стандартный поток ошибок в указанный файл.
+// Если stderr, то перенаправления не происходит
 void checklib::RestrictedProcess::redirectStandardError(const QString &fileName)
 {
 	pimpl->redirectStandardError(fileName);
@@ -124,4 +124,3 @@ void checklib::RestrictedProcess::sendBufferToStandardStream(StandardStream stre
 {
 	pimpl->sendBufferToStandardStream(stream, data);
 }
-
