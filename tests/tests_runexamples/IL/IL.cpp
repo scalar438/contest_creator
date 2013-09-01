@@ -1,4 +1,4 @@
-#include <QThread>
+﻿#include <QThread>
 
 class Sleeper : QThread
 {
@@ -11,6 +11,6 @@ public:
 
 int main()
 {
-	Sleeper::sleep(1000000);
+	Sleeper::sleep(10);
 	return 0;
 }

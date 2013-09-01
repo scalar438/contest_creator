@@ -9,6 +9,7 @@ SOURCES += run_once_program.cpp \
 HEADERS += test.h
 
 INCLUDEPATH += ../../libs
+win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)
 
 LIBS += -L"../../libs/checklib" -lchecklib
 

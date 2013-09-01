@@ -9,9 +9,12 @@ class TestRun: public QObject
 
 private slots:
 
+	void initTestCase();
+	void cleanupTestCase();
+
 	void testTL();
 	void testML();
-	void testRE();
-	void testNormal();
+//	void testRE();
+	void testSumStandard();
 	void testIL();
 };

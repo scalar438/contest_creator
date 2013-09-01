@@ -1,5 +1,21 @@
-﻿#include <QtTest/QtTest>
-#include "test.h"
+﻿#include "test.h"
+
+#include <QtTest/QtTest>
+#include <fstream>
+
+#include <boost/filesystem.hpp>
+#include <QDebug>
+
+void TestRun::initTestCase()
+{
+
+}
+
+void TestRun::cleanupTestCase()
+{
+	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/input.txt"));
+	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output.txt"));
+}
 
 void TestRun::testTL()
 {
@@ -32,20 +48,49 @@ void TestRun::testML()
 
 	QVERIFY(runner.exitType() == checklib::psMemoryLimit);
 }
-
+/*
 void TestRun::testRE()
 {
-/*	checklib::RestrictedProcess runner;
-	runner.setProgram("../RE1");
-	runner.start();
+
+}*/
+
+void TestRun::testSumStandard()
+{
+	int cc = 0;
+	qDebug() << cc++;
+	checklib::RestrictedProcess runner;
+
+	checklib::Limits limits;
+	limits.useMemoryLimit = true;
+	limits.memoryLimit = 65536;
+	limits.useTimeLimit = true;
+	limits.timeLimit = 2000;
+	runner.setLimits(limits);
+
+	runner.setProgram("./tests_runexamples/pSum.exe");
+
+	const int a = 11;
+	const int b = 23;
+
+	std::ofstream os(boost::filesystem::path("./tests_runexamples/input.txt").native());
+	os << a << " " << b;
+	os.close();
+
+	qDebug() << cc++;
+
+	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/input.txt").native()));
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output.txt").native()));
+
+//	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::psRuntimeError);*/
-}
+	std::ifstream is(boost::filesystem::path("./tests_runexamples/output.txt").native());
 
-void TestRun::testNormal()
-{
+	int val = a + b + 1;
 
+	QVERIFY(is.good());
+	QVERIFY(is >> val);
+	QVERIFY(val == a + b);
 }
 
 void TestRun::testIL()

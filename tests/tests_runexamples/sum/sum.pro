@@ -1,5 +1,4 @@
-#CONFIG -= qt
 DESTDIR = ../
-TARGET = "psum"
+TARGET = "pSum"
 SOURCES = \
     sum.cpp
