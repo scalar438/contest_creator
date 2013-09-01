@@ -65,15 +65,15 @@ public:
 
 	// Перенаправить стандартный поток ввода в указанный файл.
 	// Если stdin, то перенаправления не происходит
-	void redirectStandardInput(const QString &fileName);
+	void setStandardInput(const QString &fileName);
 
 	// Перенаправить стандартный поток вывода в указанный файл.
 	// Если stdout, то перенаправления не происходит
-	void redirectStandardOutput(const QString &fileName);
+	void setStandardOutput(const QString &fileName);
 
 	// Перенаправить стандартный поток ошибок в указанный файл.
 	// Если stderr, то перенаправления не происходит
-	void redirectStandardError(const QString &fileName);
+	void setStandardError(const QString &fileName);
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет

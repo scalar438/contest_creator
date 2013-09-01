@@ -99,21 +99,21 @@ void checklib::RestrictedProcess::setLimits(const Limits &restrictions)
 
 // Перенаправить стандартный поток ввода в указанный файл.
 // Если stdin, то перенаправления не происходит
-void checklib::RestrictedProcess::redirectStandardInput(const QString &fileName)
+void checklib::RestrictedProcess::setStandardInput(const QString &fileName)
 {
 	pimpl->redirectStandardInput(fileName);
 }
 
 // Перенаправить стандартный поток вывода в указанный файл.
 // Если stdout, то перенаправления не происходит
-void checklib::RestrictedProcess::redirectStandardOutput(const QString &fileName)
+void checklib::RestrictedProcess::setStandardOutput(const QString &fileName)
 {
 	pimpl->redirectStandardOutput(fileName);
 }
 
 // Перенаправить стандартный поток ошибок в указанный файл.
 // Если stderr, то перенаправления не происходит
-void checklib::RestrictedProcess::redirectStandardError(const QString &fileName)
+void checklib::RestrictedProcess::setStandardError(const QString &fileName)
 {
 	pimpl->redirectStandardError(fileName);
 }
