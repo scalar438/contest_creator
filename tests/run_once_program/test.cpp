@@ -4,10 +4,12 @@
 void TestRun::testTL()
 {
 	checklib::RestrictedProcess runner;
+
 	checklib::Limits limits;
 	limits.useTimeLimit = true;
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
+
 	runner.setProgram("tests_runexamples/pTL.exe");
 	runner.start();
 	runner.wait();
@@ -17,12 +19,18 @@ void TestRun::testTL()
 
 void TestRun::testML()
 {
-/*	checklib::RestrictedProcess runner;
-	runner.setProgram("../ML");
+	checklib::RestrictedProcess runner;
+
+	checklib::Limits limits;
+	limits.useMemoryLimit = true;
+	limits.memoryLimit = 65536;
+	runner.setLimits(limits);
+
+	runner.setProgram("tests_runexamples/pML.exe");
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::psMemoryLimit);*/
+	QVERIFY(runner.exitType() == checklib::psMemoryLimit);
 }
 
 void TestRun::testRE1()
@@ -43,4 +51,20 @@ void TestRun::testRE2()
 	runner.wait();
 
 	QVERIFY(runner.exitType() == checklib::psRuntimeError);*/
+}
+
+void TestRun::testNormal()
+{
+
+}
+
+void TestRun::testIL()
+{
+	checklib::RestrictedProcess runner;
+
+	runner.setProgram("tests_runexamples/pIL.exe");
+	runner.start();
+	runner.wait();
+
+	QVERIFY(runner.exitType() == checklib::psIdlenessLimit);
 }

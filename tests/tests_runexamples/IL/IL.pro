@@ -1,3 +1,3 @@
 DESTDIR = ../
-TARGET = pTL
+TARGET = pIL
 SOURCES = IL.cpp

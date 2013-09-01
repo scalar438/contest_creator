@@ -43,7 +43,7 @@ public:
 	}
 	~ServiceInstance()
 	{
-		qDebug() << "Deleting";
+		mService.stop();
 	}
 
 	boost::asio::io_service &io_service()
@@ -183,7 +183,6 @@ void checklib::details::RestrictedProcessImpl::start()
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
 	                              boost::lambda::_1));
-	qDebug() << "Process created";
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()

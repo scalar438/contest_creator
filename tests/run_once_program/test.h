@@ -13,14 +13,6 @@ private slots:
 	void testML();
 	void testRE1();
 	void testRE2();
-};
-
-class BackgroundThread : public QThread
-{
-	Q_OBJECT
-protected:
-	void run() override
-	{
-		exec();
-	}
+	void testNormal();
+	void testIL();
 };
