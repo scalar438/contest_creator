@@ -268,9 +268,9 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::sendBufferToStandardStream(StandardStream stream, const QByteArray &data)
+void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
 {
-
+// Пока не реализовано
 }
 
 void checklib::details::RestrictedProcessImpl::doCheck()

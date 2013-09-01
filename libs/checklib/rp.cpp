@@ -118,9 +118,9 @@ void checklib::RestrictedProcess::setStandardError(const QString &fileName)
 	pimpl->redirectStandardError(fileName);
 }
 
-/// Отправить буфер в указанный стандартный поток.
-/// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-void checklib::RestrictedProcess::sendBufferToStandardStream(StandardStream stream, const QByteArray &data)
+// Отправить буфер в указанный стандартный поток.
+// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
+void checklib::RestrictedProcess::sendBufferToStandardInput(const QByteArray &data)
 {
-	pimpl->sendBufferToStandardStream(stream, data);
+	pimpl->sendBufferToStandardInput(data);
 }

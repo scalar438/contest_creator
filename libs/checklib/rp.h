@@ -77,7 +77,10 @@ public:
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
+	void sendBufferToStandardInput(const QByteArray &data);
+
+	// Получить буфер из стандартного потока вывода
+	void getBufferFromStandardOutput(const QByteArray &data);
 
 signals:
 

@@ -59,7 +59,7 @@ public:
 	void redirectStandardOutput(const QString &fileName);
 	void redirectStandardError(const QString &fileName);
 
-	void sendBufferToStandardStream(StandardStream stream, const QByteArray &data);
+	void sendBufferToStandardInput(const QByteArray &data);
 
 private:
 	HANDLE mProcess;
