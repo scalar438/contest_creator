@@ -1,5 +1,7 @@
-#include <cstdlib>
+﻿#include <cstdlib>
 #include <iostream>
+#include <cstring>
+using namespace std;
 
 int f(int a)
 {
@@ -12,20 +14,25 @@ int main(int argc, char *argv[])
 	int val = 0;
 	if(argc >= 2)
 	{
-		val = itoa(argv[1]);
+		val = atoi(argv[1]);
 		val = min(val, max(val, 0));
 	}
 
 	switch(val)
 	{
 	case 0:
-
-		int a = rand() % 100;
-		a = a + a / 10 + a % 10;
-		a /= (a % 9);
-		std::cout << a;
+		{
+			int a = rand() % 100;
+			a = a + a / 10 + a % 10;
+			a /= (a % 9);
+			std::cout << a;
+		}
 		break;
+
 	case 1:
-		cout << f(1000);
+		{
+			cout << f(1000);
+		}
 		break;
 	}
+}
