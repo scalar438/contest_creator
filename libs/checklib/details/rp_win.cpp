@@ -59,15 +59,13 @@ private:
 
 ServiceInstance instance;
 
+// TODO: Сделать бросание исключения в случае ошибки
+
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 	: QObject(parent),
 	  mTimer(instance.io_service())
 {
-	mStandardInput = "stdin";
-	mStandardOutput = "stdout";
-	mStandardError = "stderr";
-
-	mOldCPUTime = mOldPeakMemoryUsage = 0;
+	reset();
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
@@ -105,7 +103,7 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
-	return processStatus() == psRunning;
+	return mIsRunnig;
 }
 
 void checklib::details::RestrictedProcessImpl::start()
@@ -123,14 +121,13 @@ void checklib::details::RestrictedProcessImpl::start()
 	sa.nLength = sizeof sa;
 	std::vector<Closer> handles;
 
-	// TODO: Сделать бросание исключения в случае ошибки
 	if(mStandardInput == "stdin") si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 	else
 	{
 		std::vector<wchar_t> str(mStandardInput.length() + 1, 0);
 		mStandardInput.toWCharArray(&str[0]);
 		HANDLE f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
-							  &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		                      &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if(f == INVALID_HANDLE_VALUE)
 		{
 			qDebug() << "Cannot open file" << mStandardInput;
@@ -191,7 +188,8 @@ void checklib::details::RestrictedProcessImpl::start()
 	boost::lock_guard<boost::mutex> guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-								  boost::lambda::_1));
+	                              boost::lambda::_1));
+	mIsRunnig = true;
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()
@@ -211,7 +209,18 @@ void checklib::details::RestrictedProcessImpl::wait()
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
 	if(!isRunning()) return false;
-	return WaitForSingleObject(mCurrentInformation.hProcess, milliseconds) != WAIT_TIMEOUT;
+	auto res = WaitForSingleObject(mCurrentInformation.hProcess, milliseconds);
+	if(res == WAIT_TIMEOUT)
+	{
+		return false;
+	}
+	if(res == WAIT_OBJECT_0)
+	{
+		// FIXME: Тут нужна синхронизация
+		doCheck();
+		doFinalize();
+		return true;
+	}
 }
 
 // Код возврата.
@@ -248,8 +257,20 @@ int checklib::details::RestrictedProcessImpl::CPUTime() const
 	FILETIME creationTime, exitTime, kernelTime, userTime;
 	GetProcessTimes(mCurrentInformation.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
-				 ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
+	             ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
 	return mOldCPUTime = int(ticks / 1000 / 10);
+}
+
+void checklib::details::RestrictedProcessImpl::reset()
+{
+	mStandardInput = "stdin";
+	mStandardOutput = "stdout";
+	mStandardError = "stderr";
+
+	mOldCPUTime = mOldPeakMemoryUsage = 0;
+	mProcessStatus = psNotRunning;
+	mLimits = Limits();
+	mIsRunnig = false;
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -331,6 +352,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	}
 	CloseHandle(mCurrentInformation.hProcess);
 	CloseHandle(mCurrentInformation.hThread);
+	mIsRunnig = false;
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
@@ -346,6 +368,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		boost::lock_guard<boost::mutex> guard(mTimerMutex);
 		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-									  boost::lambda::_1));
+		                              boost::lambda::_1));
 	}
 }

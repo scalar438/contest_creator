@@ -23,6 +23,7 @@ namespace checklib
 namespace details
 {
 
+// WARNING: Возможны проблемы при использовании из нескольких потоков, включая стандартное использование (из таймера и напрямую)
 class RestrictedProcessImpl : public QObject
 {
 public:
@@ -54,6 +55,8 @@ public:
 	// Сколько процессорного времени израсходовал процесс
 	int CPUTime() const;
 
+	void reset();
+
 	Limits getLimits() const;
 	void setLimits(const Limits &restrictions);
 
@@ -81,6 +84,7 @@ private:
 	boost::asio::deadline_timer mTimer;
 
 	mutable int mOldCPUTime, mOldPeakMemoryUsage;
+	bool mIsRunnig;
 
 	void doCheck();
 

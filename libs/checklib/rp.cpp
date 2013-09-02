@@ -97,6 +97,11 @@ void checklib::RestrictedProcess::setLimits(const Limits &restrictions)
 	pimpl->setLimits(restrictions);
 }
 
+void checklib::RestrictedProcess::reset()
+{
+	pimpl->reset();
+}
+
 // Перенаправить стандартный поток ввода в указанный файл.
 // Если stdin, то перенаправления не происходит
 void checklib::RestrictedProcess::setStandardInput(const QString &fileName)

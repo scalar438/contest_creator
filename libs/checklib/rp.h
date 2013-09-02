@@ -63,6 +63,10 @@ public:
 	Limits getLimits() const;
 	void setLimits(const Limits &restrictions);
 
+	// Возвращает объект в исходное состояние
+	// Если процесс запущен, то ничего не происходит
+	void reset();
+
 	// Перенаправить стандартный поток ввода в указанный файл.
 	// Если stdin, то перенаправления не происходит
 	void setStandardInput(const QString &fileName);
