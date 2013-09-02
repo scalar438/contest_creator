@@ -2,7 +2,9 @@
 
 #include "../rp_types.h"
 
+#include <memory>
 #include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include <windows.h>
 #include <psapi.h>
@@ -62,8 +64,6 @@ public:
 	void sendBufferToStandardInput(const QByteArray &data);
 
 private:
-	HANDLE mProcess;
-
 	QString mProgram;
 	QStringList mParams;
 	QDateTime mStartTime, mEndTime;
@@ -77,6 +77,7 @@ private:
 
 	PROCESS_INFORMATION mCurrentInformation;
 
+	boost::mutex mTimerMutex;
 	boost::asio::deadline_timer mTimer;
 
 	mutable int mOldCPUTime, mOldPeakMemoryUsage;

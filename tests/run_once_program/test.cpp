@@ -1,4 +1,5 @@
 ﻿#include "test.h"
+#include "checklib/rp.h"
 
 #include <QtTest/QtTest>
 #include <fstream>
@@ -56,8 +57,6 @@ void TestRun::testRE()
 
 void TestRun::testSumStandard()
 {
-	int cc = 0;
-	qDebug() << cc++;
 	checklib::RestrictedProcess runner;
 
 	checklib::Limits limits;
@@ -69,19 +68,17 @@ void TestRun::testSumStandard()
 
 	runner.setProgram("./tests_runexamples/pSum.exe");
 
-	const int a = 11;
-	const int b = 23;
+	const int a = 24;
+	const int b = 18;
 
 	std::ofstream os(boost::filesystem::path("./tests_runexamples/input.txt").native());
 	os << a << " " << b;
 	os.close();
 
-	qDebug() << cc++;
-
 	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/input.txt").native()));
 	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output.txt").native()));
 
-//	runner.start();
+	runner.start();
 	runner.wait();
 
 	std::ifstream is(boost::filesystem::path("./tests_runexamples/output.txt").native());

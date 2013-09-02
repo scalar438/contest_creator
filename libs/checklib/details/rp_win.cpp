@@ -72,7 +72,15 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-	if(isRunning()) terminate();
+	if(isRunning())
+	{
+		terminate();
+		wait();
+
+		boost::lock_guard<boost::mutex> guard(mTimerMutex);
+		mTimer.cancel();
+		mTimer.wait();
+	}
 }
 
 QString checklib::details::RestrictedProcessImpl::getProgram() const
@@ -122,7 +130,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		std::vector<wchar_t> str(mStandardInput.length() + 1, 0);
 		mStandardInput.toWCharArray(&str[0]);
 		HANDLE f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
-		                      &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+							  &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if(f == INVALID_HANDLE_VALUE)
 		{
 			qDebug() << "Cannot open file" << mStandardInput;
@@ -180,9 +188,10 @@ void checklib::details::RestrictedProcessImpl::start()
 	mProcessStatus = psRunning;
 	mCurrentInformation = pi;
 	mStartTime = QDateTime::currentDateTime();
+	boost::lock_guard<boost::mutex> guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-	                              boost::lambda::_1));
+								  boost::lambda::_1));
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()
@@ -239,7 +248,7 @@ int checklib::details::RestrictedProcessImpl::CPUTime() const
 	FILETIME creationTime, exitTime, kernelTime, userTime;
 	GetProcessTimes(mCurrentInformation.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
-	             ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
+				 ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
 	return mOldCPUTime = int(ticks / 1000 / 10);
 }
 
@@ -326,15 +335,17 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
+	if(err) return;
 	doCheck();
-	if(WaitForSingleObject(mCurrentInformation.hProcess, 1) != WAIT_TIMEOUT)
+	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_OBJECT_0)
 	{
 		doFinalize();
 	}
 	else
 	{
+		boost::lock_guard<boost::mutex> guard(mTimerMutex);
 		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-		                              boost::lambda::_1));
+									  boost::lambda::_1));
 	}
 }
