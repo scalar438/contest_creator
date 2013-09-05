@@ -5,6 +5,7 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/atomic.hpp>
 
 #include <windows.h>
 #include <psapi.h>
@@ -74,7 +75,7 @@ private:
 	QString mStandardInput, mStandardOutput, mStandardError;
 
 	ProcessStatus mProcessStatus;
-	int mExitCode;
+	boost::atomic<int> mExitCode;
 
 	Limits mLimits;
 
@@ -83,7 +84,7 @@ private:
 	boost::mutex mTimerMutex;
 	boost::asio::deadline_timer mTimer;
 
-	mutable int mOldCPUTime, mOldPeakMemoryUsage;
+	mutable boost::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
 	bool mIsRunnig;
 
 	void doCheck();

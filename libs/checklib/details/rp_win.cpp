@@ -226,7 +226,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 // Код возврата.
 int checklib::details::RestrictedProcessImpl::exitCode() const
 {
-	return mExitCode;
+	return mExitCode.load();
 }
 
 // Тип завершения программы
@@ -240,11 +240,12 @@ int checklib::details::RestrictedProcessImpl::peakMemoryUsage() const
 {
 	if(!isRunning())
 	{
-		return mOldPeakMemoryUsage;
+		return mOldPeakMemoryUsage.load();
 	}
 	PROCESS_MEMORY_COUNTERS data;
 	GetProcessMemoryInfo(mCurrentInformation.hProcess, &data, sizeof data);
-	return mOldPeakMemoryUsage = int(data.PeakWorkingSetSize);
+	mOldPeakMemoryUsage.store(static_cast<int>(data.PeakWorkingSetSize));
+	return static_cast<int>(data.PeakWorkingSetSize);
 }
 
 // Сколько процессорного времени израсходовал процесс
@@ -252,13 +253,15 @@ int checklib::details::RestrictedProcessImpl::CPUTime() const
 {
 	if(!isRunning())
 	{
-		return mOldCPUTime;
+		return mOldCPUTime.load();
 	}
 	FILETIME creationTime, exitTime, kernelTime, userTime;
 	GetProcessTimes(mCurrentInformation.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
 	             ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
-	return mOldCPUTime = int(ticks / 1000 / 10);
+	ticks = ticks / 1000 / 10;
+	mOldCPUTime.store(static_cast<int>(ticks));
+	return static_cast<int>(ticks);
 }
 
 void checklib::details::RestrictedProcessImpl::reset()
@@ -267,7 +270,8 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
 
-	mOldCPUTime = mOldPeakMemoryUsage = 0;
+	mOldCPUTime.store(0);
+	mOldPeakMemoryUsage.store(0);
 	mProcessStatus = psNotRunning;
 	mLimits = Limits();
 	mIsRunnig = false;
@@ -280,6 +284,7 @@ checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
 
 void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 {
+	if(isRunning()) return;
 	mLimits = limits;
 }
 
@@ -346,10 +351,12 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		mProcessStatus = psExited;
 		doCheck();
 	}
-	if(!GetExitCodeProcess(mCurrentInformation.hProcess, (LPDWORD)&mExitCode))
+	DWORD tmpExitCode;
+	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
 		qDebug() << "Cannot get exit code process";
 	}
+	mExitCode.store(tmpExitCode);
 	CloseHandle(mCurrentInformation.hProcess);
 	CloseHandle(mCurrentInformation.hThread);
 	mIsRunnig = false;

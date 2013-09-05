@@ -18,11 +18,11 @@ LIBS += -L$$(BOOST_LIB_DIR)
 }
 
 unix {
-SOURCES += ./details/restproc_linux.cpp
+HEADERS += details/rp_linux.h
+SOURCES += details/rp_linux.cpp
 TARGET = checklib
-}
-
 QMAKE_CXXFLAGS += --std=c++0x
+}
 
 SOURCES += \
     rp.cpp
