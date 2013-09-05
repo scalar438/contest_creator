@@ -59,7 +59,7 @@ private:
 
 ServiceInstance instance;
 
-// TODO: Сделать бросание исключения в случае ошибки
+// TODO: Сделать бросание исключения в случае ошибок
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 	: QObject(parent),
@@ -103,7 +103,7 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
-	return mIsRunnig;
+	return mIsRunnig.load();
 }
 
 void checklib::details::RestrictedProcessImpl::start()
@@ -182,21 +182,21 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 	handles.clear();
 	ResumeThread(pi.hThread);
-	mProcessStatus = psRunning;
+	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
 	mStartTime = QDateTime::currentDateTime();
 	boost::lock_guard<boost::mutex> guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
 	                              boost::lambda::_1));
-	mIsRunnig = true;
+	mIsRunnig.store(true);
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
 	if(isRunning())
 	{
-		mProcessStatus = psTerminated;
+		mProcessStatus.store(psTerminated);
 		TerminateProcess(mCurrentInformation.hProcess, -1);
 	}
 }
@@ -232,7 +232,7 @@ int checklib::details::RestrictedProcessImpl::exitCode() const
 // Тип завершения программы
 checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus() const
 {
-	return mProcessStatus;
+	return mProcessStatus.load();
 }
 
 // Пиковое значение потребляемой памяти
@@ -272,9 +272,9 @@ void checklib::details::RestrictedProcessImpl::reset()
 
 	mOldCPUTime.store(0);
 	mOldPeakMemoryUsage.store(0);
-	mProcessStatus = psNotRunning;
+	mProcessStatus.store(psNotRunning);
 	mLimits = Limits();
-	mIsRunnig = false;
+	mIsRunnig.store(false);
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -315,7 +315,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	{
 		if(time > mLimits.timeLimit)
 		{
-			mProcessStatus = psTimeLimit;
+			mProcessStatus.store(psTimeLimit);
 			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 			{
 				qDebug() << "TerminateProcess failed";
@@ -325,7 +325,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
 	if(fullTime > 2000 && time * 8 < fullTime)
 	{
-		mProcessStatus = psIdlenessLimit;
+		mProcessStatus.store(psIdlenessLimit);
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
 			qDebug() << "TerminateProcess failed";
@@ -335,7 +335,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	{
 		if(peakMemoryUsage() > mLimits.memoryLimit)
 		{
-			mProcessStatus = psMemoryLimit;
+			mProcessStatus.store(psMemoryLimit);
 			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 			{
 				qDebug() << "TerminateProcess failed";
@@ -346,9 +346,9 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
-	if(mProcessStatus == psRunning)
+	if(mProcessStatus.load() == psRunning)
 	{
-		mProcessStatus = psExited;
+		mProcessStatus.exchange(psExited);
 		doCheck();
 	}
 	DWORD tmpExitCode;
@@ -359,7 +359,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	mExitCode.store(tmpExitCode);
 	CloseHandle(mCurrentInformation.hProcess);
 	CloseHandle(mCurrentInformation.hThread);
-	mIsRunnig = false;
+	mIsRunnig.store(false);
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)

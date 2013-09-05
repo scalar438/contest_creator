@@ -74,7 +74,7 @@ private:
 
 	QString mStandardInput, mStandardOutput, mStandardError;
 
-	ProcessStatus mProcessStatus;
+	boost::atomic<ProcessStatus> mProcessStatus;
 	boost::atomic<int> mExitCode;
 
 	Limits mLimits;
@@ -85,7 +85,7 @@ private:
 	boost::asio::deadline_timer mTimer;
 
 	mutable boost::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
-	bool mIsRunnig;
+	boost::atomic<bool> mIsRunnig;
 
 	void doCheck();
 
