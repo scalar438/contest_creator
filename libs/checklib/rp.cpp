@@ -6,7 +6,7 @@
 checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	: QObject(parent)
 {
-	pimpl = std::move(std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl(this)));
+	pimpl = std::shared_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()
@@ -70,7 +70,7 @@ int checklib::RestrictedProcess::exitCode() const
 }
 
 // Тип завершения программы
-checklib::ProcessStatus checklib::RestrictedProcess::exitType() const
+checklib::ProcessStatus checklib::RestrictedProcess::processStatus() const
 {
 	return pimpl->processStatus();
 }

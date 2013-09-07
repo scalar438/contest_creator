@@ -44,6 +44,7 @@ public:
 	~ServiceInstance()
 	{
 		mService.stop();
+		mThread.join();
 	}
 
 	boost::asio::io_service &io_service()
@@ -188,7 +189,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	boost::lock_guard<boost::mutex> guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-	                              boost::lambda::_1));
+	                              boost::lambda::_1, shared_from_this()));
 	mIsRunnig.store(true);
 }
 
@@ -196,8 +197,15 @@ void checklib::details::RestrictedProcessImpl::terminate()
 {
 	if(isRunning())
 	{
-		mProcessStatus.store(psTerminated);
-		TerminateProcess(mCurrentInformation.hProcess, -1);
+		qDebug() << "Terminating";
+		if(TerminateProcess(mCurrentInformation.hProcess, -1))
+		{
+			mProcessStatus.store(psTerminated);
+		}
+		else
+		{
+			qDebug() << "TerminateProcess failed 4";
+		}
 	}
 }
 
@@ -216,11 +224,12 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	}
 	if(res == WAIT_OBJECT_0)
 	{
-		// FIXME: Тут нужна синхронизация
 		doCheck();
 		doFinalize();
 		return true;
 	}
+	// Тут надо бросить исключение
+	return false;
 }
 
 // Код возврата.
@@ -316,9 +325,10 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 		if(time > mLimits.timeLimit)
 		{
 			mProcessStatus.store(psTimeLimit);
+			Sleep(1000);
 			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 			{
-				qDebug() << "TerminateProcess failed";
+				qDebug() << "TerminateProcess failed 1";
 			}
 		}
 	}
@@ -328,7 +338,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 		mProcessStatus.store(psIdlenessLimit);
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
-			qDebug() << "TerminateProcess failed";
+			qDebug() << "TerminateProcess failed 2";
 		}
 	}
 	if(mLimits.useMemoryLimit)
@@ -338,7 +348,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 			mProcessStatus.store(psMemoryLimit);
 			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 			{
-				qDebug() << "TerminateProcess failed";
+				qDebug() << "TerminateProcess failed 3";
 			}
 		}
 	}
@@ -346,6 +356,8 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
+	boost::lock_guard<boost::mutex> lock(mFinalizeMutex);
+	if(!mIsRunnig.load()) return;
 	if(mProcessStatus.load() == psRunning)
 	{
 		mProcessStatus.exchange(psExited);
@@ -357,24 +369,32 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		qDebug() << "Cannot get exit code process";
 	}
 	mExitCode.store(tmpExitCode);
+
 	CloseHandle(mCurrentInformation.hProcess);
 	CloseHandle(mCurrentInformation.hThread);
 	mIsRunnig.store(false);
 }
 
-void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
+void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err,
+        std::shared_ptr<RestrictedProcessImpl> ptr)
 {
 	if(err) return;
 	doCheck();
-	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_OBJECT_0)
+	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
 	{
+	case WAIT_OBJECT_0:
 		doFinalize();
-	}
-	else
-	{
-		boost::lock_guard<boost::mutex> guard(mTimerMutex);
-		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
-		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-		                              boost::lambda::_1));
+		break;
+	case WAIT_TIMEOUT:
+		{
+			boost::lock_guard<boost::mutex> guard(mTimerMutex);
+			mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+			mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
+			                              boost::lambda::_1, ptr));
+		}
+		break;
+	case WAIT_FAILED:
+		qDebug() << "Wait failed";
+		break;
 	}
 }

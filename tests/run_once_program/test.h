@@ -14,7 +14,7 @@ private slots:
 
 	void testTL();
 	void testML();
-//	void testRE();
+	void testRE();
 	void testSumStandard();
 	void testIL();
 };

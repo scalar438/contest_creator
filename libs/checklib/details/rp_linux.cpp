@@ -1,4 +1,4 @@
-#include <exception>
+﻿#include <exception>
 #include <sstream>
 #include <fstream>
 #include <string>
@@ -12,8 +12,6 @@
 
 #include "checklib_exception.h"
 #include "restricted_process.h"
-
-// TODO: заменить return в случае неправильного вызова на исключения
 
 struct checklib::details::platform_data
 {

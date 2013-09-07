@@ -27,11 +27,13 @@ void TestRun::testTL()
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
 
-	runner.setProgram("tests_runexamples/pTL.exe");
+	runner.setProgram("tests_runexamples/pTL");
 	runner.start();
+	QVERIFY(!runner.wait(1000));
+	QVERIFY(runner.processStatus() == checklib::psRunning);
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::psTimeLimit);
+	QVERIFY(runner.processStatus() == checklib::psTimeLimit);
 }
 
 void TestRun::testML()
@@ -43,17 +45,22 @@ void TestRun::testML()
 	limits.memoryLimit = 256 * 1000 * 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("tests_runexamples/pML.exe");
+	runner.setProgram("tests_runexamples/pML");
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::psMemoryLimit);
+	QVERIFY(runner.processStatus() == checklib::psMemoryLimit);
 }
-/*
+
 void TestRun::testRE()
 {
+	checklib::RestrictedProcess runner;
+	runner.setProgram("tests_runexamples/pRE");
+	runner.start();
+	runner.wait();
 
-}*/
+	QVERIFY(runner.processStatus() == checklib::psExited);
+}
 
 void TestRun::testSumStandard()
 {
@@ -61,12 +68,12 @@ void TestRun::testSumStandard()
 
 	checklib::Limits limits;
 	limits.useMemoryLimit = true;
-	limits.memoryLimit = 65536;
+	limits.memoryLimit = 65536 * 1024;
 	limits.useTimeLimit = true;
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
 
-	runner.setProgram("./tests_runexamples/pSum.exe");
+	runner.setProgram("./tests_runexamples/pSum");
 
 	const int a = 24;
 	const int b = 18;
@@ -80,6 +87,7 @@ void TestRun::testSumStandard()
 
 	runner.start();
 	runner.wait();
+	QVERIFY(runner.processStatus() == checklib::psExited);
 
 	std::ifstream is(boost::filesystem::path("./tests_runexamples/output.txt").native());
 
@@ -94,9 +102,9 @@ void TestRun::testIL()
 {
 	checklib::RestrictedProcess runner;
 
-	runner.setProgram("tests_runexamples/pIL.exe");
+	runner.setProgram("tests_runexamples/pIL");
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.exitType() == checklib::psIdlenessLimit);
+	QVERIFY(runner.processStatus() == checklib::psIdlenessLimit);
 }

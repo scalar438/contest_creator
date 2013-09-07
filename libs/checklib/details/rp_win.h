@@ -24,8 +24,7 @@ namespace checklib
 namespace details
 {
 
-// WARNING: Возможны проблемы при использовании из нескольких потоков, включая стандартное использование (из таймера и напрямую)
-class RestrictedProcessImpl : public QObject
+class RestrictedProcessImpl : public QObject, public std::enable_shared_from_this<RestrictedProcessImpl>
 {
 public:
 	RestrictedProcessImpl(QObject *parent = nullptr);
@@ -82,6 +81,7 @@ private:
 	PROCESS_INFORMATION mCurrentInformation;
 
 	boost::mutex mTimerMutex;
+	boost::mutex mFinalizeMutex;
 	boost::asio::deadline_timer mTimer;
 
 	mutable boost::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
@@ -91,7 +91,7 @@ private:
 
 	void doFinalize();
 
-	void timerHandler(const boost::system::error_code &err);
+	void timerHandler(const boost::system::error_code &err, std::shared_ptr<RestrictedProcessImpl> ptr);
 };
 
 }

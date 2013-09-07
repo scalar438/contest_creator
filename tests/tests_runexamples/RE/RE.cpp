@@ -34,5 +34,10 @@ int main(int argc, char *argv[])
 			cout << f(1000);
 		}
 		break;
+	case 2:
+		{
+			cout << "Normal exit\n";
+		}
+		break;
 	}
 }

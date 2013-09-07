@@ -50,7 +50,7 @@ public:
 	int exitCode() const;
 
 	// Тип завершения программы
-	ProcessStatus exitType() const;
+	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
 	// Если процесс не запущен, возвращает значение для последнего запуска
@@ -93,7 +93,7 @@ signals:
 
 private:
 
-	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
+	std::shared_ptr<details::RestrictedProcessImpl> pimpl;
 };
 
 }
