@@ -6,7 +6,7 @@
 checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	: QObject(parent)
 {
-	pimpl = std::shared_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
+	pimpl = std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()

@@ -39,7 +39,7 @@ public:
 	// Завершает процесс вручную. Тип завершения становится etTerminated
 	void terminate();
 
-	// Ждать завершения процесса
+	// Ждать завершения процесса.
 	void wait();
 
 	// Ждать завершения процесса не более чем @param миллисекунд.
@@ -93,7 +93,7 @@ signals:
 
 private:
 
-	std::shared_ptr<details::RestrictedProcessImpl> pimpl;
+	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
 };
 
 }
