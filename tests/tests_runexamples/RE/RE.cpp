@@ -23,15 +23,15 @@ int main(int argc, char *argv[])
 	case 0:
 		{
 			int a = rand() % 100;
-			a = a + a / 10 + a % 10;
+			a = a - a / 10 - a % 10;
 			a /= (a % 9);
-			std::cout << a;
+			cout << a << endl;
 		}
 		break;
 
 	case 1:
 		{
-			cout << f(1000);
+			cout << f(1000) << endl;
 		}
 		break;
 	case 2:

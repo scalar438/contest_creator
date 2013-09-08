@@ -4,7 +4,7 @@
 #endif
 
 checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
-	: QObject(parent)
+//	: QObject(parent)
 {
 	pimpl = std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
 }

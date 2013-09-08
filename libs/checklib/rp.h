@@ -18,9 +18,9 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess : public QObject
+class RestrictedProcess //: public QObject
 {
-	Q_OBJECT
+//	Q_OBJECT
 public:
 	RestrictedProcess(QObject *parent = nullptr);
 	~RestrictedProcess();
@@ -89,7 +89,7 @@ public:
 signals:
 
 	// Вызывается при завершении процесса
-	void finished();
+//	void finished();
 
 private:
 

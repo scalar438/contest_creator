@@ -364,7 +364,6 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
-	qDebug() << "Tick timer";
 	doCheck();
 	if(!isRunning()) 
 	{
