@@ -16,6 +16,7 @@ void TestRun::cleanupTestCase()
 {
 	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/input.txt"));
 	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output.txt"));
+	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output_re.txt"));
 }
 
 void TestRun::testTL()
@@ -56,10 +57,21 @@ void TestRun::testRE()
 {
 	checklib::RestrictedProcess runner;
 	runner.setProgram("tests_runexamples/pRE");
+	runner.setParams(QStringList() << "2");
+
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
+
 	runner.start();
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
+
+	std::ifstream is(boost::filesystem::path("./tests_runexamples/output_re.txt").native());
+	std::string str;
+	QVERIFY(is.good());
+	QVERIFY(is >> str);
+	QVERIFY(str == "Normal_exit");
+
 }
 
 void TestRun::testSumStandard()

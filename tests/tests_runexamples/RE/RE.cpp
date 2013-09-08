@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 		break;
 	case 2:
 		{
-			cout << "Normal exit\n";
+			cout << "Normal_exit\n";
 		}
 		break;
 	}

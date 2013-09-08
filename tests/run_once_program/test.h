@@ -13,7 +13,10 @@ private slots:
 	void cleanupTestCase();
 
 	void testTL();
+
+
 	void testML();
+private:
 	void testRE();
 	void testSumStandard();
 	void testIL();
