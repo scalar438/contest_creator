@@ -6,6 +6,6 @@
 
 int main()
 {
-	TestRun a;
-	QTest::qExec(&a);
+	TestRun *a = new TestRun();
+	QTest::qExec(a);
 }

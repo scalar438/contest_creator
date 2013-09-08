@@ -1,13 +1,11 @@
 ﻿#include "rp_win.h"
 
-#include <functional>
-#include <strsafe.h>
-#include <QThreadPool>
-
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
 
 #include <Windows.h>
+
+#include <QDebug>
 
 class HandleCloser
 {
@@ -63,23 +61,15 @@ ServiceInstance instance;
 // TODO: Сделать бросание исключения в случае ошибок
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
-	: QObject(parent),
-	  mTimer(instance.io_service())
+	: mTimer(instance.io_service())
 {
 	reset();
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-	if(isRunning())
-	{
-		terminate();
-		wait();
-
-		boost::lock_guard<boost::mutex> guard(mTimerMutex);
-		mTimer.cancel();
-		mTimer.wait();
-	}
+	doFinalize();
+	while(mIsRunning.load()) boost::this_thread::yield();
 }
 
 QString checklib::details::RestrictedProcessImpl::getProgram() const
@@ -104,7 +94,7 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
-	return mIsRunnig.load();
+	return mIsRunning.load();
 }
 
 void checklib::details::RestrictedProcessImpl::start()
@@ -186,26 +176,20 @@ void checklib::details::RestrictedProcessImpl::start()
 	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
 	mStartTime = QDateTime::currentDateTime();
-	boost::lock_guard<boost::mutex> guard(mTimerMutex);
+	mutex_locker guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-	                              boost::lambda::_1, shared_from_this()));
-	mIsRunnig.store(true);
+	                              boost::lambda::_1));
+	mIsRunning.store(true);
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
 	if(isRunning())
 	{
-		qDebug() << "Terminating";
-		if(TerminateProcess(mCurrentInformation.hProcess, -1))
-		{
-			mProcessStatus.store(psTerminated);
-		}
-		else
-		{
-			qDebug() << "TerminateProcess failed 4";
-		}
+		mProcessStatus.store(psTerminated);
+		mutex_locker lock(mHandlesMutex);
+		if(isRunning()) TerminateProcess(mCurrentInformation.hProcess, -1);
 	}
 }
 
@@ -224,7 +208,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	}
 	if(res == WAIT_OBJECT_0)
 	{
-		doCheck();
+		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
 		return true;
 	}
@@ -245,25 +229,31 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 }
 
 // Пиковое значение потребляемой памяти
-int checklib::details::RestrictedProcessImpl::peakMemoryUsage() const
+int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
-	if(!isRunning())
-	{
-		return mOldPeakMemoryUsage.load();
-	}
-	PROCESS_MEMORY_COUNTERS data;
-	GetProcessMemoryInfo(mCurrentInformation.hProcess, &data, sizeof data);
-	mOldPeakMemoryUsage.store(static_cast<int>(data.PeakWorkingSetSize));
-	return static_cast<int>(data.PeakWorkingSetSize);
+	mutex_locker lock(mHandlesMutex);
+	if(isRunning()) return peakMemoryUsageS();
+	return mOldPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
-int checklib::details::RestrictedProcessImpl::CPUTime() const
+int checklib::details::RestrictedProcessImpl::CPUTime()
 {
-	if(!isRunning())
-	{
-		return mOldCPUTime.load();
-	}
+	mutex_locker lock(mHandlesMutex);
+	if(isRunning()) return CPUTimeS();
+	return mOldCPUTime.load();
+}
+
+int checklib::details::RestrictedProcessImpl::peakMemoryUsageS() const
+{
+	PROCESS_MEMORY_COUNTERS data;
+	GetProcessMemoryInfo(mCurrentInformation.hProcess, &data, sizeof data);
+	mOldCPUTime.store(static_cast<int>(data.PeakWorkingSetSize));
+	return static_cast<int>(data.PeakWorkingSetSize);
+}
+
+int checklib::details::RestrictedProcessImpl::CPUTimeS() const
+{
 	FILETIME creationTime, exitTime, kernelTime, userTime;
 	GetProcessTimes(mCurrentInformation.hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
@@ -283,7 +273,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mOldPeakMemoryUsage.store(0);
 	mProcessStatus.store(psNotRunning);
 	mLimits = Limits();
-	mIsRunnig.store(false);
+	mIsRunning.store(false);
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -326,75 +316,87 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 		{
 			mProcessStatus.store(psTimeLimit);
 			Sleep(1000);
-			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
-			{
-				qDebug() << "TerminateProcess failed 1";
-			}
+			doFinalize();
 		}
 	}
 	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
 	if(fullTime > 2000 && time * 8 < fullTime)
 	{
 		mProcessStatus.store(psIdlenessLimit);
-		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
-		{
-			qDebug() << "TerminateProcess failed 2";
-		}
+		doFinalize();
 	}
 	if(mLimits.useMemoryLimit)
 	{
 		if(peakMemoryUsage() > mLimits.memoryLimit)
 		{
 			mProcessStatus.store(psMemoryLimit);
-			if(!TerminateProcess(mCurrentInformation.hProcess, -1))
-			{
-				qDebug() << "TerminateProcess failed 3";
-			}
+			doFinalize();
 		}
 	}
 }
 
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
-	boost::lock_guard<boost::mutex> lock(mFinalizeMutex);
-	if(!mIsRunnig.load()) return;
-	if(mProcessStatus.load() == psRunning)
+	mutex_locker lock1(mHandlesMutex);
+	if(!isRunning()) return;
+	
+	// Сохранить параметры перед закрытием 
+	CPUTimeS();
+	peakMemoryUsageS();
+
+	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_TIMEOUT)
 	{
-		mProcessStatus.exchange(psExited);
-		doCheck();
+		if(mProcessStatus.load() == psRunning) 
+		{
+			qDebug() << "Logic error";
+		}
+		TerminateProcess(mCurrentInformation.hProcess, -1);
 	}
+
 	DWORD tmpExitCode;
 	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
 		qDebug() << "Cannot get exit code process";
 	}
 	mExitCode.store(tmpExitCode);
-
-	CloseHandle(mCurrentInformation.hProcess);
-	CloseHandle(mCurrentInformation.hThread);
-	mIsRunnig.store(false);
 }
 
-void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err,
-        std::shared_ptr<RestrictedProcessImpl> ptr)
+void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
+	qDebug() << "Tick timer";
 	doCheck();
+	if(!isRunning()) 
+	{
+		return;
+	}
+
 	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
 	{
 	case WAIT_OBJECT_0:
+		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
+		destroyHandles();
 		break;
 	case WAIT_TIMEOUT:
 		{
-			boost::lock_guard<boost::mutex> guard(mTimerMutex);
+			mutex_locker lock(mTimerMutex);
 			mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 			mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-			                              boost::lambda::_1, ptr));
+			                              boost::lambda::_1));
 		}
 		break;
 	case WAIT_FAILED:
 		qDebug() << "Wait failed";
 		break;
 	}
+}
+
+void checklib::details::RestrictedProcessImpl::destroyHandles()
+{
+	mutex_locker lock(mHandlesMutex);
+	if(!isRunning()) return;
+	CloseHandle(mCurrentInformation.hProcess);
+	CloseHandle(mCurrentInformation.hThread);
+	mIsRunning.store(false);
 }

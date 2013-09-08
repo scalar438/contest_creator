@@ -5,26 +5,22 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/atomic.hpp>
 
 #include <windows.h>
 #include <psapi.h>
 
-#include <QObject>
 #include <QDateTime>
 #include <QString>
 #include <QStringList>
-#include <QDebug>
-#include <QThread>
-#include <QTimer>
-#include <QRunnable>
 
 namespace checklib
 {
 namespace details
 {
 
-class RestrictedProcessImpl : public QObject, public std::enable_shared_from_this<RestrictedProcessImpl>
+class RestrictedProcessImpl
 {
 public:
 	RestrictedProcessImpl(QObject *parent = nullptr);
@@ -50,10 +46,10 @@ public:
 	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	int peakMemoryUsage() const;
+	int peakMemoryUsage();
 
 	// Сколько процессорного времени израсходовал процесс
-	int CPUTime() const;
+	int CPUTime();
 
 	void reset();
 
@@ -80,18 +76,26 @@ private:
 
 	PROCESS_INFORMATION mCurrentInformation;
 
+	typedef boost::lock_guard<boost::mutex> mutex_locker;
+
 	boost::mutex mTimerMutex;
-	boost::mutex mFinalizeMutex;
+	boost::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
 	mutable boost::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
-	boost::atomic<bool> mIsRunnig;
+	boost::atomic<bool> mIsRunning;
 
 	void doCheck();
 
 	void doFinalize();
 
-	void timerHandler(const boost::system::error_code &err, std::shared_ptr<RestrictedProcessImpl> ptr);
+	void destroyHandles();
+
+	void timerHandler(const boost::system::error_code &err);
+
+	int peakMemoryUsageS() const;
+
+	int CPUTimeS() const;
 };
 
 }
