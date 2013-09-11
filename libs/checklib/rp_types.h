@@ -3,8 +3,6 @@
 namespace checklib
 {
 
-class RestrictedProcess;
-
 // Ограничения
 struct Limits
 {

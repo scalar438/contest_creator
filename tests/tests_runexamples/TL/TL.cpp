@@ -1,5 +1,10 @@
-﻿int main()
+﻿#include <ctime>
+
+int main()
 {
-	while(true);
+	while(true)
+	{
+		 time(NULL);
+	}
 	return 0;
 }

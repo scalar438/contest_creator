@@ -1,29 +1,27 @@
 ﻿#pragma once
-#include "rp_types.h"
+
+#include "../rp_types.h"
 
 #include <memory>
+#include <atomic>
+#include <boost/asio.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
-#include <QObject>
+#include <QDateTime>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
-
 
 namespace checklib
 {
-
 namespace details
 {
-class RestrictedProcessImpl;
-}
 
-// Класс, запускающий процесс с ограничениями
-class RestrictedProcess : public QObject
+class RestrictedProcessImpl
 {
-	Q_OBJECT
 public:
-	RestrictedProcess(QObject *parent = nullptr);
-	~RestrictedProcess();
+	RestrictedProcessImpl();
+	~RestrictedProcessImpl();
 
 	QString getProgram() const;
 	void setProgram(const QString &program);
@@ -33,67 +31,69 @@ public:
 
 	bool isRunning() const;
 
-	// Запуск процесса
 	void start();
-
-	// Завершает процесс вручную. Тип завершения становится etTerminated
 	void terminate();
-
-	// Ждать завершения процесса
 	void wait();
-
-	// Ждать завершения процесса не более чем @param миллисекунд.
-	// true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 	bool wait(int milliseconds);
 
 	// Код возврата.
 	int exitCode() const;
 
 	// Тип завершения программы
-	ProcessStatus exitType() const;
+	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	// Если процесс не запущен, возвращает значение для последнего запуска
-	int peakMemoryUsage() const;
+	int peakMemoryUsage();
 
 	// Сколько процессорного времени израсходовал процесс
-	// Если процесс не запущен, возвращает значение для последнего запуска
-	int CPUTime() const;
+	int CPUTime();
 
-	Limits getLimits() const;
-	void setLimits(const Limits &restrictions);
-
-	// Возвращает объект в исходное состояние
-	// Если процесс запущен, то ничего не происходит
 	void reset();
 
-	// Перенаправить стандартный поток ввода в указанный файл.
-	// Если stdin, то перенаправления не происходит
-	void setStandardInput(const QString &fileName);
+	Limits getLimits() const;
+	void setLimits(const Limits &limits);
 
-	// Перенаправить стандартный поток вывода в указанный файл.
-	// Если stdout, то перенаправления не происходит
-	void setStandardOutput(const QString &fileName);
+	void redirectStandardInput(const QString &fileName);
+	void redirectStandardOutput(const QString &fileName);
+	void redirectStandardError(const QString &fileName);
 
-	// Перенаправить стандартный поток ошибок в указанный файл.
-	// Если stderr, то перенаправления не происходит
-	void setStandardError(const QString &fileName);
-
-	// Отправить буфер в указанный стандартный поток.
-	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
 	void sendBufferToStandardInput(const QByteArray &data);
 
-	// Получить буфер из стандартного потока вывода
-	void getBufferFromStandardOutput(const QByteArray &data);
-
-signals:
-
-	// Вызывается при завершении процесса
-	void finished();
-
 private:
+	QString mProgram;
+	QStringList mParams;
+	QDateTime mStartTime, mEndTime;
 
-	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
+	QString mStandardInput, mStandardOutput, mStandardError;
+
+	std::atomic<ProcessStatus> mProcessStatus;
+	std::atomic<int> mExitCode;
+
+	Limits mLimits;
+
+	pid_t mChildPid;
+
+	typedef boost::lock_guard<boost::mutex> mutex_locker;
+
+	boost::mutex mTimerMutex;
+	boost::mutex mHandlesMutex;
+	boost::asio::deadline_timer mTimer;
+
+	mutable std::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
+	std::atomic<bool> mIsRunning;
+
+	void doCheck();
+
+	void doFinalize();
+
+	void destroyHandles();
+
+	void timerHandler(const boost::system::error_code &err);
+
+	int peakMemoryUsageS() const;
+
+	int CPUTimeS() const;
 };
 
+}
 }

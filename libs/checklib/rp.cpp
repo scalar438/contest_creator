@@ -2,9 +2,11 @@
 #ifdef Q_OS_WIN
 #include "details/rp_win.h"
 #endif
+#ifdef Q_OS_LINUX
+#include "details/rp_linux.h"
+#endif
 
-checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
-//	: QObject(parent)
+checklib::RestrictedProcess::RestrictedProcess()
 {
 	pimpl = std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
 }

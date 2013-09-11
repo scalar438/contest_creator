@@ -7,8 +7,7 @@ namespace checlib
 	class ExceptionBase : public std::exception
 	{
 	public:
-		ExceptionBase(const QString &str)
-			: std::exception(str.toLocal8Bit().data())
+		ExceptionBase(const QString &)
 		{
 		}
 	};

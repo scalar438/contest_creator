@@ -60,7 +60,7 @@ ServiceInstance instance;
 
 // TODO: Сделать бросание исключения в случае ошибок
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
 	reset();

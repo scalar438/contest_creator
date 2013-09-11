@@ -1,7 +1,6 @@
-﻿#include <QtTest>
-#include "test.h"
+﻿#include "test.h"
+#include <QtTest>
 #include <iostream>
-#include <Windows.h>
 #include <QCoreApplication>
 
 int main()

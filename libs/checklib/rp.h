@@ -20,9 +20,8 @@ class RestrictedProcessImpl;
 // Класс, запускающий процесс с ограничениями
 class RestrictedProcess //: public QObject
 {
-//	Q_OBJECT
 public:
-	RestrictedProcess(QObject *parent = nullptr);
+	RestrictedProcess();
 	~RestrictedProcess();
 
 	QString getProgram() const;
@@ -85,11 +84,6 @@ public:
 
 	// Получить буфер из стандартного потока вывода
 	void getBufferFromStandardOutput(const QByteArray &data);
-
-signals:
-
-	// Вызывается при завершении процесса
-//	void finished();
 
 private:
 

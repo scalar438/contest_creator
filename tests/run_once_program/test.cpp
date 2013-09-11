@@ -59,7 +59,7 @@ void TestRun::testRE()
 	runner.setProgram("tests_runexamples/pRE");
 	runner.setParams(QStringList() << "2");
 
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native().c_str()));
 
 	runner.start();
 	runner.wait();
@@ -94,8 +94,8 @@ void TestRun::testSumStandard()
 	os << a << " " << b;
 	os.close();
 
-	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/input.txt").native()));
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output.txt").native()));
+	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/input.txt").native().c_str()));
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output.txt").native().c_str()));
 
 	runner.start();
 	runner.wait();

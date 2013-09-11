@@ -1,4 +1,8 @@
-﻿#include <exception>
+﻿#include "rp_linux.h"
+
+#include "checklib_exception.h"
+
+#include <exception>
 #include <sstream>
 #include <fstream>
 #include <string>
@@ -6,59 +10,62 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+ #include <sys/resource.h>
 
 #include <QStringList>
 #include <QDebug>
+#include <boost/lambda/lambda.hpp>
 
-#include "checklib_exception.h"
-#include "restricted_process.h"
+boost::asio::io_service io;
 
-struct checklib::details::platform_data
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
+	: mTimer(io)
 {
-	pid_t pid;
-};
-
-checklib::RestrictedProcess::RestrictedProcess(const QString &program, const QStringList &params)
-	: RestrictedProcess(nullptr, program, params)
-{
-	// Implementation in other constructor
 }
 
-checklib::RestrictedProcess::RestrictedProcess(QObject *parent, const QString &program, const QStringList &params)
-	: QObject(parent), mPlatformData(new checklib::details::platform_data),
-	  mExitCode(0),
-	  mProcessStatus(etNormal),
-	  mStandardInput("stdin"),
-	  mStandardOutput("stdout"),
-	  mStandardError("stderr"),
-	  mProgram(program),
-	  mParams(params)
-{
-	mCheckTimer.setInterval(100);
-	connect(&mCheckTimer, SIGNAL(timeout()), SLOT(checkOnce()));
-}
-
-checklib::RestrictedProcess::~RestrictedProcess()
+checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
 
 }
 
-bool checklib::RestrictedProcess::isRunning() const
+QString checklib::details::RestrictedProcessImpl::getProgram() const
 {
-	return exitType() == etRunning;
+	return mProgram;
 }
 
-/// Запуск процесса
-void checklib::RestrictedProcess::start()
+void checklib::details::RestrictedProcessImpl::setProgram(const QString &program)
+{
+	mProgram = program;
+}
+
+QStringList checklib::details::RestrictedProcessImpl::getParams() const
+{
+	return mParams;
+}
+
+void checklib::details::RestrictedProcessImpl::setParams(const QStringList &params)
+{
+	mParams = params;
+}
+
+bool checklib::details::RestrictedProcessImpl::isRunning() const
+{
+	return mIsRunning.load();
+}
+
+
+// Запуск процесса
+void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
-	mPlatformData->pid = fork();
-	if(mPlatformData->pid == -1)
+	mChildPid = fork();
+	if(mChildPid == -1)
 	{
-		mProcessStatus = etFailed;
+		mProcessStatus = psFailed;
 		return;
 	}
-	if(mPlatformData->pid == 0)
+	if(mChildPid == 0)
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
@@ -66,18 +73,18 @@ void checklib::RestrictedProcess::start()
 		if(mStandardOutput != "stdout") freopen(mStandardOutput.toLocal8Bit().data(), "wt", stdout);
 		if(mStandardError != "stderr")  freopen(mStandardError.toLocal8Bit().data(), "wt", stdout);
 
-		if(mRestrictions.useMemoryLimit)
+		if(mLimits.useMemoryLimit)
 		{
 			rlimit limit;
-			limit.rlim_max = limit.rlim_cur = mRestrictions.memoryLimit + 1024 * 1024;
+			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
 
 			setrlimit(RLIMIT_AS, &limit);
 		}
-		if(mRestrictions.useTimeLimit)
+		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
 			// 100 - c потолка, возможно, что неверно
-			limit.rlim_cur = limit.rlim_max = 100 * mRestrictions.timeLimit;
+			limit.rlim_cur = limit.rlim_max = 100 * mLimits.timeLimit;
 			setrlimit(RLIMIT_CPU, &limit);
 		}
 
@@ -97,118 +104,106 @@ void checklib::RestrictedProcess::start()
 	else
 	{
 		// Родительский процесс, задаем параметры, необходимые для слежения за дочерним
-		mCheckTimer.start();
-		mProcessStatus = etRunning;
+		mProcessStatus = psRunning;
+		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+									  boost::ref(*this), boost::lambda::_1));
 	}
 }
 
-/// Завершает процесс вручную. Тип завершения становится etTerminated
-void checklib::RestrictedProcess::terminate()
+// Завершает процесс вручную. Тип завершения становится etTerminated
+void checklib::details::RestrictedProcessImpl::terminate()
 {
-
+	kill(mChildPid, SIGTERM);
 }
 
-/// Ждать завершения процесса
-void checklib::RestrictedProcess::wait()
+// Ждать завершения процесса
+void checklib::details::RestrictedProcessImpl::wait()
 {
-
+	wait(INT_MAX);
 }
 
-/// Ждать завершения процесса не более чем @param миллисекунд.
-/// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
-bool checklib::RestrictedProcess::wait(int milliseconds)
+// Ждать завершения процесса не более чем @param миллисекунд.
+// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
 	int status;
-	waitpid(mPlatformData->pid, &status, WNOHANG);
+	waitpid(mChildPid, &status, WNOHANG);
 }
 
-/// Код возврата.
-int checklib::RestrictedProcess::exitCode() const
+// Код возврата.
+int checklib::details::RestrictedProcessImpl::exitCode() const
 {
 	return mExitCode;
 }
 
-/// Тип завершения программы
-checklib::ProcessStatus checklib::RestrictedProcess::exitType() const
+// Тип завершения программы
+checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus() const
 {
 	return mProcessStatus;
 }
 
-/// Пиковое значение потребляемой памяти
-size_t checklib::RestrictedProcess::peakMemoryUsage() const
+// Пиковое значение потребляемой памяти
+int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
 	return 0;
 }
 
-/// Сколько процессорного времени израсходовал процесс
-int checklib::RestrictedProcess::CPUTime() const
+// Сколько процессорного времени израсходовал процесс
+int checklib::details::RestrictedProcessImpl::CPUTime()
 {
 	return 0;
 }
 
-checklib::Restrictions checklib::RestrictedProcess::getRestrictions() const
+checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
 {
-	return mRestrictions;
+	return mLimits;
 }
 
-void checklib::RestrictedProcess::setRestrictions(const Restrictions &restrictions)
+void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 {
-	mRestrictions = restrictions;
+	mLimits = limits;
 }
 
-/// Перенаправить стандартный поток ввода в указанный файл.
-/// Если stdin, то перенаправления не происходит.
-/// Если stdout, то перенавравляется на вывод текущего приложения
-void checklib::RestrictedProcess::redirectStandardInput(const QString &fileName)
+// Перенаправить стандартный поток ввода в указанный файл.
+// Если stdin, то перенаправления не происходит.
+void checklib::details::RestrictedProcessImpl::redirectStandardInput(const QString &fileName)
 {
-	if(isRunning()) return;
 	mStandardInput = fileName;
 }
 
-/// Перенаправить стандартный поток вывода в указанный файл.
-/// Если stdout, то перенаправления не происходит.
-void checklib::RestrictedProcess::redirectStandardOutput(const QString &fileName)
+// Перенаправить стандартный поток вывода в указанный файл.
+// Если stdout, то перенаправления не происходит.
+void checklib::details::RestrictedProcessImpl::redirectStandardOutput(const QString &fileName)
 {
-	if(isRunning()) return;
 	mStandardOutput = fileName;
 }
 
-/// Перенаправить стандартный поток ошибок в указанный файл.
-/// Если stderr, то перенаправления не происходит.
-void checklib::RestrictedProcess::redirectStandardError(const QString &fileName)
+// Перенаправить стандартный поток ошибок в указанный файл.
+// Если stderr, то перенаправления не происходит.
+void checklib::details::RestrictedProcessImpl::redirectStandardError(const QString &fileName)
 {
-	if(isRunning()) return;
 	mStandardError = fileName;
 }
 
-void checklib::RestrictedProcess::redirectStandardStream(checklib::StandardStream stream, const QString &fileName)
+void checklib::details::RestrictedProcessImpl::reset()
 {
-	switch(stream)
-	{
-	case ssStdin:
-		redirectStandardInput(fileName);
-		break;
-	case ssStdout:
-		redirectStandardOutput(fileName);
-		break;
-	case ssStderr:
-		redirectStandardError(fileName);
-		break;
-	}
+
 }
 
-void checklib::RestrictedProcess::sendBufferToStandardStream(checklib::StandardStream stream, const QByteArray &data)
+void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
 {
+
 }
 
-void checklib::RestrictedProcess::checkOnce()
+void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(isRunning()) return;
 
 	using namespace std;
 
 	ostringstream name;
-	name << mPlatformData->pid;
+	name << mChildPid;
 	ifstream is("/proc/" + name.str() + "/stat");
 
 	// Получение времени работы процесса. Интересуют нас только последние два числа
@@ -219,10 +214,10 @@ void checklib::RestrictedProcess::checkOnce()
 	   >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
 	   >> utime >> stime;
 
-	if(mRestrictions.timeLimit < utime + stime)
+	if(mLimits.timeLimit < utime + stime)
 	{
-		mProcessStatus = etTimeLimit;
-		kill(mPlatformData->pid, SIGUSR1);
+		mProcessStatus = psTimeLimit;
+		kill(mChildPid, SIGUSR1);
 	}
 
 	is.close();
@@ -240,9 +235,8 @@ void checklib::RestrictedProcess::checkOnce()
 			iis >> tmp;
 			long long int rr;
 			iis >> rr;
-			mPeakMemory = rr;
+			mOldPeakMemoryUsage.store(static_cast<int>(rr * 1024));
 			found = true;
-			mPeakMemory = mPeakMemory * 1024;
 			break;
 		}
 	}
@@ -253,24 +247,26 @@ void checklib::RestrictedProcess::checkOnce()
 		is.open("/proc/" + name.str() + "/statm");
 		long long int cur;
 		is >> cur;
-		mPeakMemory = max(cur, mPeakMemory);
+		int tmp = mOldPeakMemoryUsage.load();
+		mOldPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
 	}
-	if(mPeakMemory > mRestrictions.memoryLimit)
+	if(mOldPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
-		mProcessStatus = etMemoryLimit;
-		kill(mPlatformData->pid, SIGUSR1);
+		mProcessStatus = psMemoryLimit;
+		kill(mChildPid, SIGUSR1);
 	}
 
 	int status;
-	waitpid(mPlatformData->pid, &status, WNOHANG);
+	waitpid(mChildPid, &status, WNOHANG);
 	if(WIFEXITED(status))
 	{
-		if(mProcessStatus == etRunning) mProcessStatus = etRuntimeError;
-		mCheckTimer.stop();
+		mProcessStatus.store(psExited);
+		return;
 	}
 	if(WIFSIGNALED(status))
 	{
-		if(mProcessStatus == etRunning) mProcessStatus = etRuntimeError;
-		mCheckTimer.stop();
+		 mProcessStatus.store(psRuntimeError);
+		 return;
 	}
+
 }

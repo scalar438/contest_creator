@@ -54,7 +54,7 @@ public:
 	void reset();
 
 	Limits getLimits() const;
-	void setLimits(const Limits &restrictions);
+	void setLimits(const Limits &limits);
 
 	void redirectStandardInput(const QString &fileName);
 	void redirectStandardOutput(const QString &fileName);
