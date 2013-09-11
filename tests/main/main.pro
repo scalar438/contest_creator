@@ -3,8 +3,9 @@ CONFIG += qt
 QT -= gui
 QT += testlib
 
-SOURCES += run_once_program.cpp \
-   test.cpp
+SOURCES += \
+   test.cpp \
+    main.cpp
 
 HEADERS += test.h
 

@@ -59,8 +59,11 @@ void TestRun::testRE()
 	runner.setProgram("tests_runexamples/pRE");
 	runner.setParams(QStringList() << "2");
 
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native().c_str()));
-
+#ifdef Q_OS_WIN
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
+#else
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
+#endif
 	runner.start();
 	runner.wait();
 
@@ -94,9 +97,13 @@ void TestRun::testSumStandard()
 	os << a << " " << b;
 	os.close();
 
+#ifdef Q_OS_WIN
+	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/input.txt").native()));
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output.txt").native()));
+#else
 	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/input.txt").native().c_str()));
 	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output.txt").native().c_str()));
-
+#endif
 	runner.start();
 	runner.wait();
 	QVERIFY(runner.processStatus() == checklib::psExited);

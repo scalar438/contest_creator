@@ -23,7 +23,7 @@ namespace details
 class RestrictedProcessImpl
 {
 public:
-	RestrictedProcessImpl(QObject *parent = nullptr);
+	RestrictedProcessImpl();
 	~RestrictedProcessImpl();
 
 	QString getProgram() const;
