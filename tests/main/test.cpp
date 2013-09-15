@@ -19,6 +19,24 @@ void TestRun::cleanupTestCase()
 	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output_re.txt"));
 }
 
+void TestRun::isRunningChecking()
+{
+	checklib::RestrictedProcess runner;
+
+	checklib::Limits limits;
+	limits.useTimeLimit = true;
+	limits.timeLimit = 1000;
+	runner.setLimits(limits);
+
+	runner.setProgram("./examples/pTL");
+	runner.start();
+	QVERIFY(!runner.wait(500));
+	QVERIFY(runner.isRunning());
+	QVERIFY(runner.processStatus() == checklib::psRunning);
+	runner.wait();
+	QVERIFY(!runner.isRunning());
+}
+
 void TestRun::testTL()
 {
 	checklib::RestrictedProcess runner;
@@ -28,10 +46,9 @@ void TestRun::testTL()
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
 
-	runner.setProgram("tests_runexamples/pTL");
+	runner.setProgram("./examples/pTL");
 	runner.start();
-	QVERIFY(!runner.wait(1000));
-	QVERIFY(runner.processStatus() == checklib::psRunning);
+
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psTimeLimit);
@@ -39,6 +56,7 @@ void TestRun::testTL()
 
 void TestRun::testML()
 {
+	qDebug() << "Start ML";
 	checklib::RestrictedProcess runner;
 
 	checklib::Limits limits;
@@ -46,7 +64,7 @@ void TestRun::testML()
 	limits.memoryLimit = 256 * 1000 * 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("tests_runexamples/pML");
+	runner.setProgram("./examples/pML");
 	runner.start();
 	runner.wait();
 
@@ -62,7 +80,7 @@ void TestRun::testRE()
 #ifdef Q_OS_WIN
 	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
 #else
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native().c_str()));
 #endif
 	runner.start();
 	runner.wait();

@@ -12,7 +12,10 @@ private slots:
 	void initTestCase();
 	void cleanupTestCase();
 
+	void isRunningChecking();
+
 	void testTL();
+
 
 	void testML();
 

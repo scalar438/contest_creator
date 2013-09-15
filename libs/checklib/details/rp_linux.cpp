@@ -11,22 +11,48 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/time.h>
- #include <sys/resource.h>
+#include <sys/resource.h>
 
 #include <QStringList>
 #include <QDebug>
 #include <boost/lambda/lambda.hpp>
 
-boost::asio::io_service io;
+// TODO: перенести это в отдельный header и в реализации под windows тоже использовать его
+class ServiceInstance
+{
+public:
+	ServiceInstance()
+		: mWork(mService)
+	{
+		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
+	}
+	~ServiceInstance()
+	{
+		mService.stop();
+		mThread.join();
+	}
+
+	boost::asio::io_service &io_service()
+	{
+		return mService;
+	}
+
+private:
+	boost::asio::io_service mService;
+	boost::asio::io_service::work mWork;
+	boost::thread mThread;
+};
+
+ServiceInstance instance;
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(io)
+	: mTimer(instance.io_service())
 {
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-
+	qDebug() << "destructor";
 }
 
 QString checklib::details::RestrictedProcessImpl::getProgram() const
@@ -54,7 +80,6 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 	return mIsRunning.load();
 }
 
-
 // Запуск процесса
 void checklib::details::RestrictedProcessImpl::start()
 {
@@ -62,7 +87,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	mChildPid = fork();
 	if(mChildPid == -1)
 	{
-		mProcessStatus = psFailed;
+		mProcessStatus.store(psFailed);
 		return;
 	}
 	if(mChildPid == 0)
@@ -73,7 +98,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardOutput != "stdout") freopen(mStandardOutput.toLocal8Bit().data(), "wt", stdout);
 		if(mStandardError != "stderr")  freopen(mStandardError.toLocal8Bit().data(), "wt", stdout);
 
-		if(mLimits.useMemoryLimit)
+	/*	if(mLimits.useMemoryLimit)
 		{
 			rlimit limit;
 			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
@@ -86,28 +111,31 @@ void checklib::details::RestrictedProcessImpl::start()
 			// 100 - c потолка, возможно, что неверно
 			limit.rlim_cur = limit.rlim_max = 100 * mLimits.timeLimit;
 			setrlimit(RLIMIT_CPU, &limit);
-		}
+		}*/
 
-		char **args = new char*[mParams.size()];
+		char **args = new char*[mParams.size() + 2];
+		args[0] = new char[mProgram.size() + 1];
+		strcpy(args[0], mProgram.toLocal8Bit().data());
+
 		for(int i = 0; i < mParams.size(); i++)
 		{
-			args[i] = new char[mParams[i].length() + 1];
-			strcpy(args[i], mParams[i].toLocal8Bit().data());
+			args[i + 1] = new char[mParams[i].length() + 1];
+			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
 		}
+		args[mProgram.size() + 1] = 0;
 
-		qDebug() << mProgram;
-
-		execl(mProgram.toLocal8Bit().data(), mProgram.toLocal8Bit().data());
+		execv(mProgram.toLocal8Bit().data(), args);
 
 		exit(-1);
 	}
 	else
 	{
 		// Родительский процесс, задаем параметры, необходимые для слежения за дочерним
-		mProcessStatus = psRunning;
+		mProcessStatus.store(psRunning);
 		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-									  boost::ref(*this), boost::lambda::_1));
+		                              boost::ref(*this), boost::lambda::_1));
+		mIsRunning.store(true);
 	}
 }
 
@@ -127,8 +155,16 @@ void checklib::details::RestrictedProcessImpl::wait()
 // @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
-	int status;
-	waitpid(mChildPid, &status, WNOHANG);
+	const int resolution = 10;
+	int cur = 0;
+	while(cur < milliseconds)
+	{
+		int status;
+		boost::this_thread::sleep(boost::posix_time::milliseconds(resolution));
+		if(!isRunning()) return true;
+		cur += resolution;
+	}
+	return false;
 }
 
 // Код возврата.
@@ -140,7 +176,7 @@ int checklib::details::RestrictedProcessImpl::exitCode() const
 // Тип завершения программы
 checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus() const
 {
-	return mProcessStatus;
+	return mProcessStatus.load();
 }
 
 // Пиковое значение потребляемой памяти
@@ -198,7 +234,9 @@ void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const Q
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
-	if(isRunning()) return;
+	if(err) return;
+//	qDebug() << "Timer";
+	if(!isRunning()) return;
 
 	using namespace std;
 
@@ -214,10 +252,11 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	   >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
 	   >> utime >> stime;
 
-	if(mLimits.timeLimit < utime + stime)
+	if(mLimits.useTimeLimit && mLimits.timeLimit < utime + stime)
 	{
-		mProcessStatus = psTimeLimit;
+		mProcessStatus.store(psTimeLimit);
 		kill(mChildPid, SIGUSR1);
+		qDebug() << "Time limit";
 	}
 
 	is.close();
@@ -250,23 +289,43 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		int tmp = mOldPeakMemoryUsage.load();
 		mOldPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
 	}
-	if(mOldPeakMemoryUsage.load() > mLimits.memoryLimit)
+	if(mLimits.useMemoryLimit && mOldPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
-		mProcessStatus = psMemoryLimit;
+		mProcessStatus.store(psMemoryLimit);
 		kill(mChildPid, SIGUSR1);
 	}
 
-	int status;
-	waitpid(mChildPid, &status, WNOHANG);
-	if(WIFEXITED(status))
-	{
-		mProcessStatus.store(psExited);
-		return;
-	}
-	if(WIFSIGNALED(status))
-	{
-		 mProcessStatus.store(psRuntimeError);
-		 return;
-	}
+//	qDebug() << "Before checking exit status";
 
+	int status;
+	int r = waitpid(mChildPid, &status, WNOHANG);
+	if(r < 0)
+	{
+//		qDebug() << "waitpid error";
+	}
+	else if(r == 0)
+	{
+//		qDebug() << "timer.Still_running";
+	}
+	else
+	{
+		if(WIFEXITED(status))
+		{
+//			qDebug() << "Timer.WIFEXITED";
+			mProcessStatus.store(psExited);
+			mIsRunning.store(false);
+			return;
+		}
+		if(WIFSIGNALED(status))
+		{
+//			qDebug() << "Timer.WIFSIGNALED";
+			mProcessStatus.store(psRuntimeError);
+			mIsRunning.store(false);
+			return;
+		}
+	}
+	mTimer.expires_from_now(boost::posix_time::millisec(100));
+	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+	                              boost::ref(*this), boost::lambda::_1));
+//	qDebug() << "exit timerFunc";
 }
