@@ -49,6 +49,7 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
 	mIsRunning.store(false);
+	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
@@ -97,7 +98,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardOutput != "stdout") freopen(mStandardOutput.toLocal8Bit().data(), "wt", stdout);
 		if(mStandardError != "stderr")  freopen(mStandardError.toLocal8Bit().data(), "wt", stdout);
 
-	/*	if(mLimits.useMemoryLimit)
+		if(mLimits.useMemoryLimit)
 		{
 			rlimit limit;
 			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
@@ -108,9 +109,9 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			rlimit limit;
 			// 100 - c потолка, возможно, что неверно
-			limit.rlim_cur = limit.rlim_max = 100 * mLimits.timeLimit;
+			limit.rlim_cur = limit.rlim_max = mLimits.timeLimit / 1000 + 1;
 			setrlimit(RLIMIT_CPU, &limit);
-		}*/
+		}
 
 		char **args = new char*[mParams.size() + 2];
 		args[0] = new char[mProgram.size() + 1];
@@ -145,6 +146,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
 		                              boost::ref(*this), boost::lambda::_1));
 		mIsRunning.store(true);
+		mStartTime = QDateTime::currentDateTime();
 	}
 }
 
@@ -261,11 +263,25 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	   >> tpgid >> flags >> minflt >> cminflt >> majflt >> cmajflt
 	   >> utime >> stime;
 
-	if(mLimits.useTimeLimit && mLimits.timeLimit < utime + stime)
+	int currentCPUTime = (utime + stime) / mTicks * 1000;
+	mOldCPUTime.store(currentCPUTime);
+	if(mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
 		mProcessStatus.store(psTimeLimit);
 		kill(mChildPid, SIGUSR1);
-		qDebug() << "Time limit";
+		waitpid(mChildPid, NULL, WCONTINUED);
+		mIsRunning.store(false);
+		return;
+	}
+
+	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
+	if(fullTime > 2000 && currentCPUTime * 8 < fullTime)
+	{
+		mProcessStatus.store(psIdlenessLimit);
+		kill(mChildPid, SIGUSR1);
+		waitpid(mChildPid, NULL, WCONTINUED);
+		mIsRunning.store(false);
+		return;
 	}
 
 	is.close();
@@ -320,14 +336,14 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		if(WIFEXITED(status))
 		{
-			qDebug() << "Timer.WIFEXITED";
+//			qDebug() << "Timer.WIFEXITED";
 			mProcessStatus.store(psExited);
 			mIsRunning.store(false);
 			return;
 		}
 		if(WIFSIGNALED(status))
 		{
-			qDebug() << "Timer.WIFSIGNALED";
+//			qDebug() << "Timer.WIFSIGNALED";
 			mProcessStatus.store(psRuntimeError);
 			mIsRunning.store(false);
 			return;
@@ -336,5 +352,4 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	mTimer.expires_from_now(boost::posix_time::millisec(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
 	                              boost::ref(*this), boost::lambda::_1));
-//	qDebug() << "exit timerFunc";
 }

@@ -82,6 +82,9 @@ private:
 	mutable std::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
+	// Количество тиков на секунду.
+	float mTicks;
+
 	void doCheck();
 
 	void doFinalize();
