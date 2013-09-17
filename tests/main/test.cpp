@@ -9,14 +9,13 @@
 
 void TestRun::initTestCase()
 {
-
 }
 
 void TestRun::cleanupTestCase()
 {
-	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/input.txt"));
-	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output.txt"));
-	boost::filesystem::remove(boost::filesystem::path("./tests_runexamples/output_re.txt"));
+	boost::filesystem::remove(boost::filesystem::path(sum_input));
+	boost::filesystem::remove(boost::filesystem::path(sum_output));
+	boost::filesystem::remove(boost::filesystem::path(stderr_out_error));
 }
 
 void TestRun::isRunningChecking()
@@ -54,9 +53,41 @@ void TestRun::testTL()
 	QVERIFY(runner.processStatus() == checklib::psTimeLimit);
 }
 
+void TestRun::testArgs()
+{
+	checklib::RestrictedProcess runner;
+	runner.setProgram("./examples/pArgsOut");
+	QStringList params;
+	params << "param1" << "param with space" << "param3";
+	runner.setParams(params);
+
+#ifdef Q_OS_WIN
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(args_output).native()));
+#else
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(args_output).native().c_str()));
+#endif
+	runner.start();
+	runner.wait();
+
+	QVERIFY(runner.processStatus() == checklib::psExited);
+
+	std::ifstream is(boost::filesystem::path(args_output).native());
+
+	int count;
+	is >> count;
+	QVERIFY(is.good());
+	QVERIFY(count == params.size());
+	for(int i = 0; i < count; ++i)
+	{
+		std::string str;
+		std::getline(is, str);
+		QVERIFY(is.good());
+		QVERIFY(str == params[i].toStdString());
+	}
+}
+
 void TestRun::testML()
 {
-	qDebug() << "Start ML";
 	checklib::RestrictedProcess runner;
 
 	checklib::Limits limits;
@@ -74,28 +105,24 @@ void TestRun::testML()
 void TestRun::testRE()
 {
 	checklib::RestrictedProcess runner;
-	runner.setProgram("tests_runexamples/pRE");
-	runner.setParams(QStringList() << "2");
+	runner.setProgram("./examples/pRE");
+	runner.setParams(QStringList() << "1");
 
-#ifdef Q_OS_WIN
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output_re.txt").native()));
-#else
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output_re.txt").native().c_str()));
-#endif
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.processStatus() == checklib::psExited);
+	QVERIFY(runner.processStatus() == checklib::psRuntimeError);
 
-	std::ifstream is(boost::filesystem::path("./tests_runexamples/output_re.txt").native());
-	std::string str;
-	QVERIFY(is.good());
-	QVERIFY(is >> str);
-	QVERIFY(str == "Normal_exit");
+	runner.reset();
+	runner.setParams(QStringList() << "0");
 
+	runner.start();
+	runner.wait();
+
+	QVERIFY(runner.processStatus() == checklib::psRuntimeError);
 }
 
-void TestRun::testSumStandard()
+void TestRun::testStandardStreamsRedirection()
 {
 	checklib::RestrictedProcess runner;
 
@@ -106,42 +133,75 @@ void TestRun::testSumStandard()
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
 
-	runner.setProgram("./tests_runexamples/pSum");
+	runner.setProgram("./examples/pSum");
 
 	const int a = 24;
 	const int b = 18;
 
-	std::ofstream os(boost::filesystem::path("./tests_runexamples/input.txt").native());
+	std::ofstream os(boost::filesystem::path(sum_input).native());
 	os << a << " " << b;
 	os.close();
 
 #ifdef Q_OS_WIN
-	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/input.txt").native()));
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path("./tests_runexamples/output.txt").native()));
+	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path(sum_input).native()));
+	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(sum_output).native()));
 #else
-	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/input.txt").native().c_str()));
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path("./tests_runexamples/output.txt").native().c_str()));
+	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path(sum_input).native().c_str()));
+	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(sum_output).native().c_str()));
 #endif
 	runner.start();
 	runner.wait();
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
-	std::ifstream is(boost::filesystem::path("./tests_runexamples/output.txt").native());
+	{
+		std::ifstream is(boost::filesystem::path(sum_output).native());
 
-	int val = a + b + 1;
+		int val = a + b + 1;
 
-	QVERIFY(is.good());
-	QVERIFY(is >> val);
-	QVERIFY(val == a + b);
+		QVERIFY(is.good());
+		QVERIFY(is >> val);
+		QVERIFY(val == a + b);
+	}
+
+
+	runner.reset();
+	runner.setProgram("./examples/pStderr_out");
+
+#ifdef Q_OS_WIN
+	runner.setStandardError(QString::fromStdWString(boost::filesystem::path(stderr_out_error).native()));
+#else
+	runner.setStandardError(QString::fromLocal8Bit(boost::filesystem::path(stderr_out_error).native().c_str()));
+#endif
+	runner.start();
+	runner.wait();
+
+	QVERIFY(runner.processStatus() == checklib::psExited);
+
+	{
+		std::ifstream is(boost::filesystem::path(stderr_out_error).native());
+		std::string str;
+		QVERIFY(is.good());
+		QVERIFY(is >> str);
+		QVERIFY(str == "Normal_exit");
+	}
 }
 
 void TestRun::testIL()
 {
 	checklib::RestrictedProcess runner;
 
-	runner.setProgram("tests_runexamples/pIL");
+	runner.setProgram("./examples/pIL");
 	runner.start();
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psIdlenessLimit);
+}
+
+TestRun::TestRun():
+	sum_input("./examples/sum_input.txt")
+	, sum_output("./examples/sum_output.txt")
+	, stderr_out_error("./examples/stderr_out_error.txt")
+	, args_output("./examples/args_output.txt")
+{
+
 }

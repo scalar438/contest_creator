@@ -6,4 +6,6 @@ SUBDIRS =  TL \
 		   IL \
 		   RE \
 		   ML \
-		   sum
+		   sum \
+		   stderr_out \
+		   args_out

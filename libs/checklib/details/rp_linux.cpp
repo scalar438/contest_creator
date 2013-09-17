@@ -48,11 +48,11 @@ ServiceInstance instance;
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
+	mIsRunning.store(false);
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
-	qDebug() << "destructor";
 }
 
 QString checklib::details::RestrictedProcessImpl::getProgram() const
@@ -87,7 +87,6 @@ void checklib::details::RestrictedProcessImpl::start()
 	mChildPid = fork();
 	if(mChildPid == -1)
 	{
-		mProcessStatus.store(psFailed);
 		return;
 	}
 	if(mChildPid == 0)
@@ -122,9 +121,19 @@ void checklib::details::RestrictedProcessImpl::start()
 			args[i + 1] = new char[mParams[i].length() + 1];
 			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
 		}
-		args[mProgram.size() + 1] = 0;
-
+		args[mParams.size() + 1] = 0;
+		std::ofstream os("out.log");
+		os << "Calling " << mProgram.toLocal8Bit().data() << std::endl;
 		execv(mProgram.toLocal8Bit().data(), args);
+
+		os << "Calling failed :(" << std::endl;
+
+		os << "Params:" << std::endl;
+		for(int i = 0; i < mParams.size() + 2; i++)
+		{
+			if(args[i]) os << args[i] << std::endl;
+			else os << "\\0" << std::endl;
+		}
 
 		exit(-1);
 	}
@@ -311,14 +320,14 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		if(WIFEXITED(status))
 		{
-//			qDebug() << "Timer.WIFEXITED";
+			qDebug() << "Timer.WIFEXITED";
 			mProcessStatus.store(psExited);
 			mIsRunning.store(false);
 			return;
 		}
 		if(WIFSIGNALED(status))
 		{
-//			qDebug() << "Timer.WIFSIGNALED";
+			qDebug() << "Timer.WIFSIGNALED";
 			mProcessStatus.store(psRuntimeError);
 			mIsRunning.store(false);
 			return;
