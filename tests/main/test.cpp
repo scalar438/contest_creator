@@ -181,8 +181,10 @@ void TestRun::testStandardStreamsRedirection()
 		std::ifstream is(boost::filesystem::path(stderr_out_error).native());
 		std::string str;
 		QVERIFY(is.good());
-		QVERIFY(is >> str);
-		QVERIFY(str == "Normal_exit");
+		QVERIFY(std::getline(is, str));
+		QVERIFY(str == "Test printing to stderr");
+		QVERIFY(std::getline(is, str));
+		QVERIFY(str == "Line2");
 	}
 }
 
