@@ -60,6 +60,8 @@ void TestRun::testArgs()
 	QStringList params;
 	params << "param1" << "param with space" << "param3";
 	runner.setParams(params);
+	boost::filesystem::path dir("./examples");
+	runner.setCurrentDirectory(QString::fromStdWString(dir.native()));
 
 #ifdef Q_OS_WIN
 	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(args_output).native()));
@@ -71,8 +73,9 @@ void TestRun::testArgs()
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
-	std::ifstream is(boost::filesystem::path(args_output).native());
+	std::ifstream is(boost::filesystem::path("./examples/args_out.txt").native());
 
+	params.prepend("./examples/pArgsOut");
 	int count;
 	is >> count;
 	QVERIFY(is.good());

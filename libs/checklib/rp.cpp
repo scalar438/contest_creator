@@ -35,6 +35,16 @@ void checklib::RestrictedProcess::setParams(const QStringList &params)
 	pimpl->setParams(params);
 }
 
+QString checklib::RestrictedProcess::currentDirectory() const
+{
+	return pimpl->currentDirectory();
+}
+
+void checklib::RestrictedProcess::setCurrentDirectory(const QString &directory)
+{
+	pimpl->setCurrentDirectory(directory);
+}
+
 bool checklib::RestrictedProcess::isRunning() const
 {
 	return pimpl->isRunning();

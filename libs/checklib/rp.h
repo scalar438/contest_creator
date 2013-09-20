@@ -30,6 +30,9 @@ public:
 	QStringList getParams() const;
 	void setParams(const QStringList &params);
 
+	QString currentDirectory() const;
+	void setCurrentDirectory(const QString &directory);
+
 	bool isRunning() const;
 
 	// Запуск процесса

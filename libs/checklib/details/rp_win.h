@@ -32,6 +32,10 @@ public:
 	QStringList getParams() const;
 	void setParams(const QStringList &params);
 
+	QString currentDirectory() const;
+	void setCurrentDirectory(const QString &directory);
+
+
 	bool isRunning() const;
 
 	void start();
@@ -65,7 +69,9 @@ public:
 private:
 	QString mProgram;
 	QStringList mParams;
-	QDateTime mStartTime, mEndTime;
+	QString mCurrentDirectory;
+
+	QDateTime mStartTime;
 
 	QString mStandardInput, mStandardOutput, mStandardError;
 

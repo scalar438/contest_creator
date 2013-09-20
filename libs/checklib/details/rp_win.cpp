@@ -92,6 +92,16 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 	mParams = params;
 }
 
+QString checklib::details::RestrictedProcessImpl::currentDirectory() const
+{
+	return mCurrentDirectory;
+}
+
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const QString &directory)
+{
+	mCurrentDirectory = directory;
+}
+
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
 	return mIsRunning.load();
@@ -166,7 +176,16 @@ void checklib::details::RestrictedProcessImpl::start()
 		cmdLine += mParams[i];
 	}
 
-	if(!CreateProcessA(NULL, cmdLine.toAscii().data(), &sa, NULL, TRUE, CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, NULL, &si, &pi))
+	LPCSTR curDir;
+	if(mCurrentDirectory.isEmpty()) curDir = 0;
+	else curDir = mCurrentDirectory.toLocal8Bit().data();
+	if(curDir)
+	{
+		qDebug() << "current directory:" << mCurrentDirectory << ", dirData:" << curDir;
+	}
+
+	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
+					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir, &si, &pi))
 	{
 		qDebug() << "Cannot create process";
 		return;
@@ -274,6 +293,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mProcessStatus.store(psNotRunning);
 	mLimits = Limits();
 	mIsRunning.store(false);
+	mCurrentDirectory = "";
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -365,10 +385,10 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 {
 	if(err) return;
 	doCheck();
-	if(!isRunning()) 
+/*	if(!isRunning())
 	{
 		return;
-	}
+	}*/
 
 	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
 	{
