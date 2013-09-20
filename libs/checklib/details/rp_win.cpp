@@ -229,6 +229,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	{
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
+		destroyHandles();
 		return true;
 	}
 	// Тут надо бросить исключение
@@ -385,10 +386,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 {
 	if(err) return;
 	doCheck();
-/*	if(!isRunning())
-	{
-		return;
-	}*/
 
 	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
 	{
