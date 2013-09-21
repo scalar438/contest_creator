@@ -78,11 +78,12 @@ void TestRun::testArgs()
 	params.prepend("./examples/pArgsOut");
 	int count;
 	is >> count;
+	std::string str;
+	std::getline(is, str);
 	QVERIFY(is.good());
 	QVERIFY(count == params.size());
 	for(int i = 0; i < count; ++i)
 	{
-		std::string str;
 		std::getline(is, str);
 		QVERIFY(is.good());
 		QVERIFY(str == params[i].toStdString());

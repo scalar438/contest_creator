@@ -2,6 +2,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/shared_array.hpp>
 
 #include <Windows.h>
 
@@ -173,19 +174,25 @@ void checklib::details::RestrictedProcessImpl::start()
 	for(int i = 0; i < mParams.size(); i++)
 	{
 		cmdLine += " ";
-		cmdLine += mParams[i];
+		if(mParams[i].contains(' '))
+		{
+			cmdLine += '\"';
+			cmdLine += mParams[i];
+			cmdLine += '\"';
+		}
+		else cmdLine += mParams[i];
 	}
 
-	LPCSTR curDir;
-	if(mCurrentDirectory.isEmpty()) curDir = 0;
-	else curDir = mCurrentDirectory.toLocal8Bit().data();
-	if(curDir)
+	//LPCSTR curDir;
+	boost::shared_array<char> curDir;
+	if(!mCurrentDirectory.isEmpty())
 	{
-		qDebug() << "current directory:" << mCurrentDirectory << ", dirData:" << curDir;
+		curDir = boost::shared_array<char>(new char[mCurrentDirectory.size() + 1]);
+		strcpy(curDir.get(), mCurrentDirectory.toLocal8Bit().data());
 	}
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
-					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir, &si, &pi))
+					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi))
 	{
 		qDebug() << "Cannot create process";
 		return;
@@ -288,6 +295,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mStandardInput = "stdin";
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
+	mParams.clear();
 
 	mOldCPUTime.store(0);
 	mOldPeakMemoryUsage.store(0);
