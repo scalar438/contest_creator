@@ -260,7 +260,7 @@ int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
 	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return peakMemoryUsageS();
-	return mOldPeakMemoryUsage.load();
+	return mPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
@@ -268,14 +268,14 @@ int checklib::details::RestrictedProcessImpl::CPUTime()
 {
 	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return CPUTimeS();
-	return mOldCPUTime.load();
+	return mCPUTime.load();
 }
 
 int checklib::details::RestrictedProcessImpl::peakMemoryUsageS() const
 {
 	PROCESS_MEMORY_COUNTERS data;
 	GetProcessMemoryInfo(mCurrentInformation.hProcess, &data, sizeof data);
-	mOldCPUTime.store(static_cast<int>(data.PeakWorkingSetSize));
+	mPeakMemoryUsage.store(static_cast<int>(data.PeakWorkingSetSize));
 	return static_cast<int>(data.PeakWorkingSetSize);
 }
 
@@ -286,7 +286,7 @@ int checklib::details::RestrictedProcessImpl::CPUTimeS() const
 	auto ticks = ((kernelTime.dwHighDateTime * 1ll) << 32) + kernelTime.dwLowDateTime +
 	             ((userTime.dwHighDateTime * 1ll) << 32) + userTime.dwLowDateTime;
 	ticks = ticks / 1000 / 10;
-	mOldCPUTime.store(static_cast<int>(ticks));
+	mCPUTime.store(static_cast<int>(ticks));
 	return static_cast<int>(ticks);
 }
 
@@ -297,8 +297,8 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mStandardError = "stderr";
 	mParams.clear();
 
-	mOldCPUTime.store(0);
-	mOldPeakMemoryUsage.store(0);
+	mCPUTime.store(0);
+	mPeakMemoryUsage.store(0);
 	mProcessStatus.store(psNotRunning);
 	mLimits = Limits();
 	mIsRunning.store(false);
@@ -343,22 +343,21 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	{
 		if(time > mLimits.timeLimit)
 		{
-			mProcessStatus.store(psTimeLimit);
-			Sleep(1000);
+			mProcessStatus.store(psTimeLimitExceeded);
 			doFinalize();
 		}
 	}
 	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
 	if(fullTime > 2000 && time * 8 < fullTime)
 	{
-		mProcessStatus.store(psIdlenessLimit);
+		mProcessStatus.store(psIdlenessLimitExceeded);
 		doFinalize();
 	}
 	if(mLimits.useMemoryLimit)
 	{
 		if(peakMemoryUsage() > mLimits.memoryLimit)
 		{
-			mProcessStatus.store(psMemoryLimit);
+			mProcessStatus.store(psMemoryLimitExceeded);
 			doFinalize();
 		}
 	}
@@ -372,6 +371,15 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	// Сохранить параметры перед закрытием 
 	CPUTimeS();
 	peakMemoryUsageS();
+
+	if(mLimits.useTimeLimit && mCPUTime.load() > mLimits.timeLimit)
+	{
+		mProcessStatus.store(psTimeLimitExceeded);
+	}
+	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
+	{
+		mProcessStatus.store(psMemoryLimitExceeded);
+	}
 
 	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_TIMEOUT)
 	{

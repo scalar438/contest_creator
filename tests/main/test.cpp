@@ -51,8 +51,8 @@ void TestRun::testTL()
 
 	runner.wait();
 
-	QVERIFY(runner.processStatus() == checklib::psTimeLimit);
 	qDebug() << "pTL time:" << runner.CPUTime();
+	QVERIFY(runner.processStatus() == checklib::psTimeLimitExceeded);
 }
 
 void TestRun::testArgs()
@@ -105,8 +105,8 @@ void TestRun::testML()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.processStatus() == checklib::psMemoryLimit);
 	qDebug() << "pML memory:" << runner.peakMemoryUsage();
+	QVERIFY(runner.processStatus() == checklib::psMemoryLimitExceeded);
 }
 
 void TestRun::testRE()
@@ -203,7 +203,7 @@ void TestRun::testIL()
 	runner.start();
 	runner.wait();
 
-	QVERIFY(runner.processStatus() == checklib::psIdlenessLimit);
+	QVERIFY(runner.processStatus() == checklib::psIdlenessLimitExceeded);
 }
 
 TestRun::TestRun():

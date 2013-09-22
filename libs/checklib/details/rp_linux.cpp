@@ -282,7 +282,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	mCPUTime.store(currentCPUTime);
 	if(mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
-		mProcessStatus.store(psTimeLimit);
+		mProcessStatus.store(psTimeLimitExceeded);
 		kill(mChildPid, SIGUSR1);
 		waitpid(mChildPid, NULL, WCONTINUED);
 		mIsRunning.store(false);
@@ -292,7 +292,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
 	if(fullTime > 2000 && currentCPUTime * 8 < fullTime)
 	{
-		mProcessStatus.store(psIdlenessLimit);
+		mProcessStatus.store(psIdlenessLimitExceeded);
 		kill(mChildPid, SIGUSR1);
 		waitpid(mChildPid, NULL, WCONTINUED);
 		mIsRunning.store(false);
@@ -331,7 +331,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	}
 	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
-		mProcessStatus.store(psMemoryLimit);
+		mProcessStatus.store(psMemoryLimitExceeded);
 		kill(mChildPid, SIGUSR1);
 		waitpid(mChildPid, NULL, WCONTINUED);
 		mIsRunning.store(false);

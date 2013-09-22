@@ -88,7 +88,7 @@ private:
 	boost::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
-	mutable boost::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
+	mutable boost::atomic<int> mCPUTime, mPeakMemoryUsage;
 	boost::atomic<bool> mIsRunning;
 
 	void doCheck();

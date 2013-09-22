@@ -21,7 +21,7 @@ struct Limits
 // Тип завершения программы.
 enum ProcessStatus
 {
-	psNotRunning, psRunning, psExited, psTimeLimit, psMemoryLimit, psIdlenessLimit, psRuntimeError, psTerminated
+	psNotRunning, psRunning, psExited, psTimeLimitExceeded, psMemoryLimitExceeded, psIdlenessLimitExceeded, psRuntimeError, psTerminated
 };
 
 enum StandardStream
