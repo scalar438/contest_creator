@@ -50,6 +50,8 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 {
 	mIsRunning.store(false);
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
+
+	reset();
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
@@ -94,9 +96,30 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
-		if(mStandardInput != "stdin")   freopen(mStandardInput.toLocal8Bit().data(), "rt", stdin);
-		if(mStandardOutput != "stdout") freopen(mStandardOutput.toLocal8Bit().data(), "wt", stdout);
-		if(mStandardError != "stderr")  freopen(mStandardError.toLocal8Bit().data(), "wt", stdout);
+		if(mStandardInput != "stdin")
+		{
+			int d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
+			dup2(d, 0);
+			close(d);
+		}
+		if(mStandardOutput != "stdout")
+		{
+			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			if(d == -1)
+			{
+				qDebug() << "File not opened";
+			}
+			dup2(d, 1);
+			close(d);
+		}
+		if(mStandardError != "stderr")
+		{
+			int d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			dup2(d, 2);
+			close(d);
+		}
 
 		if(mLimits.useMemoryLimit)
 		{
@@ -108,7 +131,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
-			// 100 - c потолка, возможно, что неверно
 			limit.rlim_cur = limit.rlim_max = mLimits.timeLimit / 1000 + 1;
 			setrlimit(RLIMIT_CPU, &limit);
 		}
@@ -123,18 +145,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
 		}
 		args[mParams.size() + 1] = 0;
-		std::ofstream os("out.log");
-		os << "Calling " << mProgram.toLocal8Bit().data() << std::endl;
 		execv(mProgram.toLocal8Bit().data(), args);
-
-		os << "Calling failed :(" << std::endl;
-
-		os << "Params:" << std::endl;
-		for(int i = 0; i < mParams.size() + 2; i++)
-		{
-			if(args[i]) os << args[i] << std::endl;
-			else os << "\\0" << std::endl;
-		}
 
 		exit(-1);
 	}
@@ -193,13 +204,13 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 // Пиковое значение потребляемой памяти
 int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
-	return 0;
+	return mPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::CPUTime()
 {
-	return 0;
+	return mCPUTime.load();
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -235,6 +246,9 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 
 void checklib::details::RestrictedProcessImpl::reset()
 {
+	mStandardInput = "stdin";
+	mStandardOutput = "stdout";
+	mStandardError = "stderr";
 
 }
 
@@ -264,7 +278,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	   >> utime >> stime;
 
 	int currentCPUTime = (utime + stime) / mTicks * 1000;
-	mOldCPUTime.store(currentCPUTime);
+	mCPUTime.store(currentCPUTime);
 	if(mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
 		mProcessStatus.store(psTimeLimit);
@@ -299,7 +313,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 			iis >> tmp;
 			long long int rr;
 			iis >> rr;
-			mOldPeakMemoryUsage.store(static_cast<int>(rr * 1024));
+			mPeakMemoryUsage.store(static_cast<int>(rr * 1024));
 			found = true;
 			break;
 		}
@@ -311,10 +325,10 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		is.open("/proc/" + name.str() + "/statm");
 		long long int cur;
 		is >> cur;
-		int tmp = mOldPeakMemoryUsage.load();
-		mOldPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		int tmp = mPeakMemoryUsage.load();
+		mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
 	}
-	if(mLimits.useMemoryLimit && mOldPeakMemoryUsage.load() > mLimits.memoryLimit)
+	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
 		mProcessStatus.store(psMemoryLimit);
 		kill(mChildPid, SIGUSR1);

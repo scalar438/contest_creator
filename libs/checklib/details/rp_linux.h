@@ -79,7 +79,7 @@ private:
 	boost::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
-	mutable std::atomic<int> mOldCPUTime, mOldPeakMemoryUsage;
+	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
 	// Количество тиков на секунду.
