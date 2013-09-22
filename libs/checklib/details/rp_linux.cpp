@@ -16,6 +16,7 @@
 #include <QStringList>
 #include <QDebug>
 #include <boost/lambda/lambda.hpp>
+#include <boost/filesystem.hpp>
 
 // TODO: перенести это в отдельный header и в реализации под windows тоже использовать его
 class ServiceInstance
@@ -48,7 +49,6 @@ ServiceInstance instance;
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
-	mIsRunning.store(false);
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
 	reset();
@@ -78,6 +78,16 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 	mParams = params;
 }
 
+QString checklib::details::RestrictedProcessImpl::currentDirectory() const
+{
+	return mCurrentDirectory;
+}
+
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const QString &directory)
+{
+	mCurrentDirectory = directory;
+}
+
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
 	return mIsRunning.load();
@@ -96,29 +106,42 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
+		if(!mCurrentDirectory.isEmpty())
+		{
+			chdir(mCurrentDirectory.toLocal8Bit().data());
+		}
+
 		if(mStandardInput != "stdin")
 		{
 			int d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
-			dup2(d, 0);
-			close(d);
+			if(d == -1) qDebug() << "File not opened";
+			else
+			{
+				dup2(d, 0);
+				close(d);
+			}
 		}
 		if(mStandardOutput != "stdout")
 		{
 			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-			if(d == -1)
+			if(d == -1) qDebug() << "File not opened";
+			else
 			{
-				qDebug() << "File not opened";
+				dup2(d, 1);
+				close(d);
 			}
-			dup2(d, 1);
-			close(d);
 		}
 		if(mStandardError != "stderr")
 		{
 			int d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-			dup2(d, 2);
-			close(d);
+			if(d == -1) qDebug() << "File not opened";
+			else
+			{
+				dup2(d, 2);
+				close(d);
+			}
 		}
 
 /*		if(mLimits.useMemoryLimit)
@@ -138,7 +161,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		char **args = new char*[mParams.size() + 2];
 		args[0] = new char[mProgram.size() + 1];
 		strcpy(args[0], mProgram.toLocal8Bit().data());
-
 
 		for(int i = 0; i < mParams.size(); i++)
 		{
@@ -251,6 +273,9 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
 
+	mPeakMemoryUsage.store(0);
+	mCPUTime.store(0);
+	mIsRunning.store(false);
 }
 
 void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
@@ -325,9 +350,11 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		is.close();
 		is.open("/proc/" + name.str() + "/statm");
 		long long int cur;
-		is >> cur;
-		int tmp = mPeakMemoryUsage.load();
-		mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		if(is >> cur)
+		{
+			int tmp = mPeakMemoryUsage.load();
+			mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		}
 	}
 	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{

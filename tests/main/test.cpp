@@ -63,13 +63,12 @@ void TestRun::testArgs()
 	params << "param1" << "param with space" << "param3";
 	runner.setParams(params);
 	boost::filesystem::path dir("./examples");
-	runner.setCurrentDirectory(QString::fromStdWString(dir.native()));
-
 #ifdef Q_OS_WIN
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(args_output).native()));
+	runner.setCurrentDirectory(QString::fromStdWString(dir.native()));
 #else
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(args_output).native().c_str()));
+	runner.setCurrentDirectory(QString::fromLocal8Bit(dir.native().c_str()));
 #endif
+
 	runner.start();
 	runner.wait();
 
@@ -158,6 +157,7 @@ void TestRun::testStandardStreamsRedirection()
 #endif
 	runner.start();
 	runner.wait();
+	qDebug() << "sum time and memory" << runner.CPUTime() << runner.peakMemoryUsage();
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
 	{
