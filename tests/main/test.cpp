@@ -16,6 +16,7 @@ void TestRun::cleanupTestCase()
 	boost::filesystem::remove(boost::filesystem::path(sum_input));
 	boost::filesystem::remove(boost::filesystem::path(sum_output));
 	boost::filesystem::remove(boost::filesystem::path(stderr_out_error));
+	boost::filesystem::remove(boost::filesystem::path(args_output));
 }
 
 void TestRun::isRunningChecking()
@@ -51,6 +52,7 @@ void TestRun::testTL()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psTimeLimit);
+	qDebug() << "pTL time:" << runner.CPUTime();
 }
 
 void TestRun::testArgs()
@@ -104,6 +106,7 @@ void TestRun::testML()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psMemoryLimit);
+	qDebug() << "pML memory:" << runner.peakMemoryUsage();
 }
 
 void TestRun::testRE()
