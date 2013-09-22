@@ -105,7 +105,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardOutput != "stdout")
 		{
 			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			if(d == -1)
 			{
 				qDebug() << "File not opened";
@@ -116,28 +116,29 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardError != "stderr")
 		{
 			int d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			dup2(d, 2);
 			close(d);
 		}
 
-		if(mLimits.useMemoryLimit)
+/*		if(mLimits.useMemoryLimit)
 		{
 			rlimit limit;
 			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
 
 			setrlimit(RLIMIT_AS, &limit);
-		}
+		}*/
 		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
-			limit.rlim_cur = limit.rlim_max = mLimits.timeLimit / 1000 + 1;
+			limit.rlim_cur = limit.rlim_max = mLimits.timeLimit / 1000 + 2;
 			setrlimit(RLIMIT_CPU, &limit);
 		}
 
 		char **args = new char*[mParams.size() + 2];
 		args[0] = new char[mProgram.size() + 1];
 		strcpy(args[0], mProgram.toLocal8Bit().data());
+
 
 		for(int i = 0; i < mParams.size(); i++)
 		{
@@ -332,6 +333,9 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psMemoryLimit);
 		kill(mChildPid, SIGUSR1);
+		waitpid(mChildPid, NULL, WCONTINUED);
+		mIsRunning.store(false);
+		return;
 	}
 
 //	qDebug() << "Before checking exit status";
@@ -340,24 +344,20 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	int r = waitpid(mChildPid, &status, WNOHANG);
 	if(r < 0)
 	{
-//		qDebug() << "waitpid error";
 	}
 	else if(r == 0)
 	{
-//		qDebug() << "timer.Still_running";
 	}
 	else
 	{
 		if(WIFEXITED(status))
 		{
-//			qDebug() << "Timer.WIFEXITED";
 			mProcessStatus.store(psExited);
 			mIsRunning.store(false);
 			return;
 		}
 		if(WIFSIGNALED(status))
 		{
-//			qDebug() << "Timer.WIFSIGNALED";
 			mProcessStatus.store(psRuntimeError);
 			mIsRunning.store(false);
 			return;

@@ -102,7 +102,7 @@ void TestRun::testML()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psMemoryLimit);
-	qDebug() << "mML memory:" << runner.peakMemoryUsage();
+	qDebug() << "pML memory:" << runner.peakMemoryUsage();
 }
 
 void TestRun::testRE()
