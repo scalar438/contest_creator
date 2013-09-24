@@ -74,7 +74,7 @@ void TestRun::testArgs()
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
-	std::ifstream is(boost::filesystem::path("./examples/args_out.txt").native());
+	std::ifstream is(boost::filesystem::path(args_output).native());
 
 	params.prepend("./examples/pArgsOut");
 	int count;
@@ -210,7 +210,7 @@ TestRun::TestRun():
 	sum_input("./examples/sum_input.txt")
 	, sum_output("./examples/sum_output.txt")
 	, stderr_out_error("./examples/stderr_out_error.txt")
-	, args_output("./examples/args_output.txt")
+	, args_output("./examples/args_out.txt")
 {
 
 }

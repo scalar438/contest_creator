@@ -15,8 +15,8 @@
 
 #include <QStringList>
 #include <QDebug>
+#include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
-#include <boost/filesystem.hpp>
 
 // TODO: перенести это в отдельный header и в реализации под windows тоже использовать его
 class ServiceInstance
@@ -106,6 +106,9 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
+		// Сохраняем полный путь к файлу. Надо из-за того, что меняется текущая директория
+		QString programPath = QFileInfo(mProgram).absoluteFilePath();
+
 		if(!mCurrentDirectory.isEmpty())
 		{
 			chdir(mCurrentDirectory.toLocal8Bit().data());
@@ -144,13 +147,13 @@ void checklib::details::RestrictedProcessImpl::start()
 			}
 		}
 
-/*		if(mLimits.useMemoryLimit)
-		{
-			rlimit limit;
-			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
+		/*		if(mLimits.useMemoryLimit)
+				{
+					rlimit limit;
+					limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
 
-			setrlimit(RLIMIT_AS, &limit);
-		}*/
+					setrlimit(RLIMIT_AS, &limit);
+				}*/
 		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
@@ -168,7 +171,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
 		}
 		args[mParams.size() + 1] = 0;
-		execv(mProgram.toLocal8Bit().data(), args);
+		execv(programPath.toLocal8Bit().data(), args);
 
 		exit(-1);
 	}
@@ -286,7 +289,6 @@ void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const Q
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
-//	qDebug() << "Timer";
 	if(!isRunning()) return;
 
 	using namespace std;
@@ -371,9 +373,13 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	int r = waitpid(mChildPid, &status, WNOHANG);
 	if(r < 0)
 	{
+		qDebug() << "Error";
 	}
 	else if(r == 0)
 	{
+		mTimer.expires_from_now(boost::posix_time::millisec(100));
+		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+		                              boost::ref(*this), boost::lambda::_1));
 	}
 	else
 	{
@@ -390,7 +396,5 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 			return;
 		}
 	}
-	mTimer.expires_from_now(boost::posix_time::millisec(100));
-	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-	                              boost::ref(*this), boost::lambda::_1));
+
 }
