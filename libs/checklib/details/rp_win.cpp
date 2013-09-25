@@ -192,7 +192,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
-					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi))
+	                   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi))
 	{
 		qDebug() << "Cannot create process";
 		return;
@@ -367,8 +367,8 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 {
 	mutex_locker lock1(mHandlesMutex);
 	if(!isRunning()) return;
-	
-	// Сохранить параметры перед закрытием 
+
+	// Сохранить параметры перед закрытием
 	CPUTimeS();
 	peakMemoryUsageS();
 
@@ -383,7 +383,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 
 	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_TIMEOUT)
 	{
-		if(mProcessStatus.load() == psRunning) 
+		if(mProcessStatus.load() == psRunning)
 		{
 			qDebug() << "Logic error";
 		}
@@ -395,6 +395,34 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		qDebug() << "Cannot get exit code process";
 	}
+	// Определение исключения делается через код возврата. Через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS будет надежнее
+	switch(tmpExitCode)
+	{
+	case EXCEPTION_ACCESS_VIOLATION:
+	case EXCEPTION_DATATYPE_MISALIGNMENT:
+	case EXCEPTION_BREAKPOINT:
+	case EXCEPTION_SINGLE_STEP:
+	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+	case EXCEPTION_FLT_DENORMAL_OPERAND:
+	case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+	case EXCEPTION_FLT_INEXACT_RESULT:
+	case EXCEPTION_FLT_INVALID_OPERATION:
+	case EXCEPTION_FLT_OVERFLOW:
+	case EXCEPTION_FLT_STACK_CHECK:
+	case EXCEPTION_FLT_UNDERFLOW:
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+	case EXCEPTION_INT_OVERFLOW:
+	case EXCEPTION_PRIV_INSTRUCTION:
+	case EXCEPTION_IN_PAGE_ERROR:
+	case EXCEPTION_ILLEGAL_INSTRUCTION:
+	case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+	case EXCEPTION_STACK_OVERFLOW:
+	case EXCEPTION_INVALID_DISPOSITION:
+	case EXCEPTION_GUARD_PAGE:
+	case EXCEPTION_INVALID_HANDLE:
+		mProcessStatus.store(psRuntimeError);
+	}
+
 	mExitCode.store(tmpExitCode);
 }
 

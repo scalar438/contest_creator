@@ -170,7 +170,6 @@ void TestRun::testStandardStreamsRedirection()
 		QVERIFY(val == a + b);
 	}
 
-
 	runner.reset();
 	runner.setProgram("./examples/pStderr_out");
 
