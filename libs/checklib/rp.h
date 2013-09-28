@@ -83,10 +83,12 @@ public:
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-	void sendBufferToStandardInput(const QByteArray &data);
+	void sendDataToStandardInput(const QByteArray &data);
+	void sendDataToStandardInput(const QString &data, bool newLine = false);
 
 	// Получить буфер из стандартного потока вывода
-	void getBufferFromStandardOutput(const QByteArray &data);
+	void getDataFromStandardOutput(QByteArray &data);
+	void getDataFromStandardOutput(QString &data);
 
 private:
 

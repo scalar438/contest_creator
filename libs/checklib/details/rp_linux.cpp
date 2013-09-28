@@ -124,6 +124,10 @@ void checklib::details::RestrictedProcessImpl::start()
 				close(d);
 			}
 		}
+		else
+		{
+
+		}
 		if(mStandardOutput != "stdout")
 		{
 			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
@@ -270,6 +274,26 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
+void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QByteArray &data)
+{
+
+}
+
+void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+{
+
+}
+
+void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QByteArray &data)
+{
+
+}
+
+void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+{
+
+}
+
 void checklib::details::RestrictedProcessImpl::reset()
 {
 	mStandardInput = "stdin";
@@ -279,11 +303,6 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);
 	mIsRunning.store(false);
-}
-
-void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
-{
-
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
@@ -366,8 +385,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		mIsRunning.store(false);
 		return;
 	}
-
-//	qDebug() << "Before checking exit status";
 
 	int status;
 	int r = waitpid(mChildPid, &status, WNOHANG);

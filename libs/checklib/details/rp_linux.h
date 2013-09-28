@@ -60,7 +60,14 @@ public:
 	void redirectStandardOutput(const QString &fileName);
 	void redirectStandardError(const QString &fileName);
 
-	void sendBufferToStandardInput(const QByteArray &data);
+	// Отправить буфер в указанный стандартный поток.
+	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
+	void sendDataToStandardInput(const QByteArray &data);
+	void sendDataToStandardInput(const QString &data, bool newLine);
+
+	// Получить буфер из стандартного потока вывода
+	void getDataFromStandardOutput(QByteArray &data);
+	void getDataFromStandardOutput(QString &data);
 
 private:
 	QString mProgram;

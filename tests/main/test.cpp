@@ -145,7 +145,7 @@ void TestRun::testStandardStreamsRedirection()
 	const int b = 18;
 
 	std::ofstream os(boost::filesystem::path(sum_input).native());
-	os << a << " " << b;
+	os << a << " " << b << std::endl << "0 0";
 	os.close();
 
 #ifdef Q_OS_WIN
