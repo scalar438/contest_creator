@@ -97,6 +97,20 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
+
+	if(mStandardInput == "interactive")
+	{
+		pipe(mInputPipe);
+	}
+	if(mStandardOutput == "interactive")
+	{
+		pipe(mOutputPipe);
+	}
+	if(mStandardError == "interactive")
+	{
+		pipe(mErrorPipe);
+	}
+
 	mChildPid = fork();
 	if(mChildPid == -1)
 	{
@@ -107,57 +121,61 @@ void checklib::details::RestrictedProcessImpl::start()
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
 		// Сохраняем полный путь к файлу. Надо из-за того, что меняется текущая директория
-		QString programPath = QFileInfo(mProgram).absoluteFilePath();
-
-		if(!mCurrentDirectory.isEmpty())
-		{
-			chdir(mCurrentDirectory.toLocal8Bit().data());
-		}
 
 		if(mStandardInput != "stdin")
 		{
-			int d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
-			if(d == -1) qDebug() << "File not opened";
+			int d;
+
+			if(mStandardInput == "interactive")
+			{
+				d = mInputPipe[0];
+				close(mInputPipe[1]);
+			}
 			else
 			{
-				dup2(d, 0);
-				close(d);
+				d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
+				if(d == -1) qDebug() << "File not opened";
 			}
-		}
-		else
-		{
-
+			dup2(d, 0);
+			close(d);
 		}
 		if(mStandardOutput != "stdout")
 		{
-			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-			if(d == -1) qDebug() << "File not opened";
+			int d;
+
+			if(mStandardOutput == "interactive")
+			{
+				d = mOutputPipe[1];
+				close(mOutputPipe[0]);
+			}
 			else
 			{
-				dup2(d, 1);
-				close(d);
+				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if(d == -1) qDebug() << "File not opened";
 			}
+			dup2(d, 1);
+			close(d);
 		}
 		if(mStandardError != "stderr")
 		{
-			int d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-			if(d == -1) qDebug() << "File not opened";
+			int d;
+
+			if(mStandardError == "interactive")
+			{
+				d = mErrorPipe[1];
+				close(mErrorPipe[0]);
+			}
 			else
 			{
-				dup2(d, 2);
-				close(d);
+				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if(d == -1) qDebug() << "File not opened";
 			}
+			dup2(d, 2);
+			close(d);
 		}
 
-		/*		if(mLimits.useMemoryLimit)
-				{
-					rlimit limit;
-					limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
-
-					setrlimit(RLIMIT_AS, &limit);
-				}*/
 		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
@@ -165,9 +183,19 @@ void checklib::details::RestrictedProcessImpl::start()
 			setrlimit(RLIMIT_CPU, &limit);
 		}
 
+		QString programPath = QFileInfo(mProgram).absoluteFilePath();
+		if(!mCurrentDirectory.isEmpty())
+		{
+			chdir(mCurrentDirectory.toLocal8Bit().data());
+		}
+		else
+		{
+			chdir(QFileInfo(programPath).absolutePath().toLocal8Bit().data());
+		}
+
 		char **args = new char*[mParams.size() + 2];
-		args[0] = new char[mProgram.size() + 1];
-		strcpy(args[0], mProgram.toLocal8Bit().data());
+		args[0] = new char[programPath.size() + 1];
+		strcpy(args[0], programPath.toLocal8Bit().data());
 
 		for(int i = 0; i < mParams.size(); i++)
 		{
@@ -188,6 +216,10 @@ void checklib::details::RestrictedProcessImpl::start()
 		                              boost::ref(*this), boost::lambda::_1));
 		mIsRunning.store(true);
 		mStartTime = QDateTime::currentDateTime();
+
+		if(mStandardInput == "interactive") close(mInputPipe[0]);
+		if(mStandardOutput == "interactive") close(mOutputPipe[1]);
+		if(mStandardError == "interactive") close(mErrorPipe[1]);
 	}
 }
 
@@ -274,24 +306,32 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QByteArray &data)
-{
-
-}
-
 void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
 {
-
-}
-
-void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QByteArray &data)
-{
-
+	if(mStandardInput == "interactive")
+	{
+		auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
+		if(newLine)
+		{
+			const char c = '\n';
+			write(mInputPipe[1], &c, 1);
+		}
+	}
 }
 
 void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
 {
-
+	char buf[100];
+	if(mStandardOutput == "interactive")
+	{
+		auto count = read(mOutputPipe[0], buf, 100);
+		if(count != -1)
+		{
+			buf[count] = 0;
+			data = buf;
+		}
+		else data = "";
+	}
 }
 
 void checklib::details::RestrictedProcessImpl::reset()

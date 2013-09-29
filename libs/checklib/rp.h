@@ -18,7 +18,7 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess //: public QObject
+class RestrictedProcess
 {
 public:
 	RestrictedProcess();
@@ -82,12 +82,10 @@ public:
 	void setStandardError(const QString &fileName);
 
 	// Отправить буфер в указанный стандартный поток.
-	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-	void sendDataToStandardInput(const QByteArray &data);
+	// Если процесс не интерактивный или программа не запущена, то ничего не произойдет
 	void sendDataToStandardInput(const QString &data, bool newLine = false);
 
 	// Получить буфер из стандартного потока вывода
-	void getDataFromStandardOutput(QByteArray &data);
 	void getDataFromStandardOutput(QString &data);
 
 private:

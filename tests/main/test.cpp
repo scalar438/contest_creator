@@ -63,11 +63,6 @@ void TestRun::testArgs()
 	params << "param1" << "param with space" << "param3";
 	runner.setParams(params);
 	boost::filesystem::path dir("./examples");
-#ifdef Q_OS_WIN
-	runner.setCurrentDirectory(QString::fromStdWString(dir.native()));
-#else
-	runner.setCurrentDirectory(QString::fromLocal8Bit(dir.native().c_str()));
-#endif
 
 	runner.start();
 	runner.wait();
@@ -76,7 +71,7 @@ void TestRun::testArgs()
 
 	std::ifstream is(boost::filesystem::path(args_output).native());
 
-	params.prepend("./examples/pArgsOut");
+	params.prepend(QFileInfo("./examples/pArgsOut").absoluteFilePath());
 	int count;
 	is >> count;
 	std::string str;
@@ -148,13 +143,9 @@ void TestRun::testStandardStreamsRedirection()
 	os << a << " " << b << std::endl << "0 0";
 	os.close();
 
-#ifdef Q_OS_WIN
-	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path(sum_input).native()));
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(sum_output).native()));
-#else
-	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path(sum_input).native().c_str()));
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(sum_output).native().c_str()));
-#endif
+	runner.setStandardInput(QFileInfo(QString::fromStdString(sum_input)).absoluteFilePath());
+	runner.setStandardOutput(QFileInfo(QString::fromStdString(sum_output)).absoluteFilePath());
+
 	runner.start();
 	runner.wait();
 	qDebug() << "sum time and memory" << runner.CPUTime() << runner.peakMemoryUsage();
@@ -204,6 +195,38 @@ void TestRun::testIL()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psIdlenessLimitExceeded);
+}
+
+void TestRun::testInteractive()
+{
+	checklib::RestrictedProcess runner;
+
+	checklib::Limits limits;
+	limits.useMemoryLimit = true;
+	limits.memoryLimit = 65536 * 1024;
+	limits.useTimeLimit = true;
+	limits.timeLimit = 2000;
+	runner.setLimits(limits);
+
+	runner.setStandardInput("interactive");
+	runner.setStandardOutput("interactive");
+
+	runner.setProgram("./examples/pSum");
+
+	runner.start();
+	runner.sendDataToStandardInput("4 5\n");
+	QString ans;
+	runner.getDataFromStandardOutput(ans);
+	QVERIFY(ans == "9\n");
+
+	runner.sendDataToStandardInput("2 3", true);
+	runner.getDataFromStandardOutput(ans);
+	QVERIFY(ans == "5\n");
+
+	runner.sendDataToStandardInput("0 0", true);
+	runner.wait();
+
+	QVERIFY(runner.processStatus() == checklib::psExited);
 }
 
 TestRun::TestRun():

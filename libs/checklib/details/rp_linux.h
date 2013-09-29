@@ -62,11 +62,9 @@ public:
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-	void sendDataToStandardInput(const QByteArray &data);
 	void sendDataToStandardInput(const QString &data, bool newLine);
 
 	// Получить буфер из стандартного потока вывода
-	void getDataFromStandardOutput(QByteArray &data);
 	void getDataFromStandardOutput(QString &data);
 
 private:
@@ -93,6 +91,8 @@ private:
 
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
+
+	int mInputPipe[2], mOutputPipe[2], mErrorPipe[2];
 
 	// Количество тиков на секунду.
 	float mTicks;
