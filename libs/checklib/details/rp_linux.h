@@ -101,8 +101,6 @@ private:
 
 	void doFinalize();
 
-	void destroyHandles();
-
 	void timerHandler(const boost::system::error_code &err);
 
 	int peakMemoryUsageS() const;

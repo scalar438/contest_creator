@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "rp_types.h"
+#include "rp_consts.h"
 
 #include <memory>
 
@@ -70,15 +71,18 @@ public:
 	void reset();
 
 	// Перенаправить стандартный поток ввода в указанный файл.
-	// Если stdin, то перенаправления не происходит
+	// Если ss::stdin, то перенаправления не происходит
+	// Если ss::interactive, то будет возможность писать в stdin процесса
 	void setStandardInput(const QString &fileName);
 
 	// Перенаправить стандартный поток вывода в указанный файл.
-	// Если stdout, то перенаправления не происходит
+	// Если ss::stdout, то перенаправления не происходит
+	// Если ss::interactive, то будет возможность читать из stdout процесса
 	void setStandardOutput(const QString &fileName);
 
 	// Перенаправить стандартный поток ошибок в указанный файл.
-	// Если stderr, то перенаправления не происходит
+	// Если ss::stderr, то перенаправления не происходит
+	// Если ss::interactive, то будет возможность читать из stderr процесса
 	void setStandardError(const QString &fileName);
 
 	// Отправить буфер в указанный стандартный поток.

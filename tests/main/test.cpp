@@ -208,8 +208,8 @@ void TestRun::testInteractive()
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
 
-	runner.setStandardInput("interactive");
-	runner.setStandardOutput("interactive");
+	runner.setStandardInput(checklib::ss::interactive);
+	runner.setStandardOutput(checklib::ss::interactive);
 
 	runner.setProgram("./examples/pSum");
 

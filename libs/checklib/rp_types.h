@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <QString>
 
 namespace checklib
 {
@@ -24,13 +23,5 @@ enum ProcessStatus
 {
 	psNotRunning, psRunning, psExited, psTimeLimitExceeded, psMemoryLimitExceeded, psIdlenessLimitExceeded, psRuntimeError, psTerminated
 };
-
-namespace StandardStreams
-{
-const QString stdin = "stdin";
-const QString stdout = "stdout";
-const QString stderr = "stderr";
-const QString interactive = "interactive";
-}
 
 }

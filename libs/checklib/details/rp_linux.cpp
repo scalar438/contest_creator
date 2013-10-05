@@ -1,5 +1,5 @@
 ﻿#include "rp_linux.h"
-
+#include "rp_consts.h"
 #include "checklib_exception.h"
 
 #include <exception>
@@ -120,13 +120,11 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
-		// Сохраняем полный путь к файлу. Надо из-за того, что меняется текущая директория
-
-		if(mStandardInput != "stdin")
+		if(mStandardInput != ss::stdin)
 		{
 			int d;
 
-			if(mStandardInput == "interactive")
+			if(mStandardInput == ss::interactive)
 			{
 				d = mInputPipe[0];
 				close(mInputPipe[1]);
@@ -139,11 +137,11 @@ void checklib::details::RestrictedProcessImpl::start()
 			dup2(d, 0);
 			close(d);
 		}
-		if(mStandardOutput != "stdout")
+		if(mStandardOutput != ss::stdout)
 		{
 			int d;
 
-			if(mStandardOutput == "interactive")
+			if(mStandardOutput == ss::interactive)
 			{
 				d = mOutputPipe[1];
 				close(mOutputPipe[0]);
@@ -157,11 +155,11 @@ void checklib::details::RestrictedProcessImpl::start()
 			dup2(d, 1);
 			close(d);
 		}
-		if(mStandardError != "stderr")
+		if(mStandardError != ss::stderr)
 		{
 			int d;
 
-			if(mStandardError == "interactive")
+			if(mStandardError == ss::interactive)
 			{
 				d = mErrorPipe[1];
 				close(mErrorPipe[0]);
@@ -336,12 +334,26 @@ void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 
 void checklib::details::RestrictedProcessImpl::reset()
 {
+	doFinalize();
+
 	mStandardInput = "stdin";
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
 
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);
+	mIsRunning.store(false);
+}
+
+void checklib::details::RestrictedProcessImpl::doFinalize()
+{
+	mutex_locker locker(mHandlesMutex);
+
+	if(!mIsRunning.load()) return;
+
+	kill(mChildPid, SIGUSR1);
+	waitpid(mChildPid, NULL, WCONTINUED);
+
 	mIsRunning.store(false);
 }
 
@@ -369,9 +381,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
 
@@ -379,9 +389,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(fullTime > 2000 && currentCPUTime * 8 < fullTime)
 	{
 		mProcessStatus.store(psIdlenessLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
 
@@ -420,9 +428,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
 		mProcessStatus.store(psMemoryLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
 
@@ -440,18 +446,9 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	}
 	else
 	{
-		if(WIFEXITED(status))
-		{
-			mProcessStatus.store(psExited);
-			mIsRunning.store(false);
-			return;
-		}
-		if(WIFSIGNALED(status))
-		{
-			mProcessStatus.store(psRuntimeError);
-			mIsRunning.store(false);
-			return;
-		}
-	}
+		if(WIFEXITED(status)) mProcessStatus.store(psExited);
+		if(WIFSIGNALED(status)) mProcessStatus.store(psRuntimeError);
 
+		mIsRunning.store(false);
+	}
 }
