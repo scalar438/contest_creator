@@ -7,6 +7,7 @@
 #include <Windows.h>
 
 #include <QDebug>
+#include <QFileInfo>
 
 class HandleCloser
 {
@@ -170,7 +171,8 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 
 	PROCESS_INFORMATION pi;
-	QString cmdLine = "\"" + mProgram + "\"";
+	QString programPath = QFileInfo(mProgram).absoluteFilePath();
+	QString cmdLine = "\"" + programPath + "\"";
 	for(int i = 0; i < mParams.size(); i++)
 	{
 		cmdLine += " ";
@@ -185,10 +187,17 @@ void checklib::details::RestrictedProcessImpl::start()
 
 	//LPCSTR curDir;
 	boost::shared_array<char> curDir;
+
 	if(!mCurrentDirectory.isEmpty())
 	{
 		curDir = boost::shared_array<char>(new char[mCurrentDirectory.size() + 1]);
 		strcpy(curDir.get(), mCurrentDirectory.toLocal8Bit().data());
+	}
+	else
+	{
+		QString currentDir = QFileInfo(programPath).absolutePath();
+		curDir = boost::shared_array<char>(new char[currentDir.size() + 1]);
+		strcpy(curDir.get(), currentDir.toLocal8Bit().data());
 	}
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,

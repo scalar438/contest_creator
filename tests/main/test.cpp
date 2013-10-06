@@ -62,7 +62,6 @@ void TestRun::testArgs()
 	QStringList params;
 	params << "param1" << "param with space" << "param3";
 	runner.setParams(params);
-	boost::filesystem::path dir("./examples");
 
 	runner.start();
 	runner.wait();
