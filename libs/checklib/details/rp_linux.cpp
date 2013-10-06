@@ -124,7 +124,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			int d;
 
-			if(mStandardInput == ss::interactive)
+			if(mStandardInput == ss::Interactive)
 			{
 				d = mInputPipe[0];
 				close(mInputPipe[1]);
@@ -141,7 +141,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			int d;
 
-			if(mStandardOutput == ss::interactive)
+			if(mStandardOutput == ss::Interactive)
 			{
 				d = mOutputPipe[1];
 				close(mOutputPipe[0]);
@@ -159,7 +159,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			int d;
 
-			if(mStandardError == ss::interactive)
+			if(mStandardError == ss::Interactive)
 			{
 				d = mErrorPipe[1];
 				close(mErrorPipe[0]);

@@ -5,13 +5,13 @@ namespace checklib
 {
 
 // ss - Standard Streams
-// СТроковые константы с предопределенными названиями
+// Строковые константы с предопределенными названиями
 namespace ss
 {
-const QString stdin = "stdin";
-const QString stdout = "stdout";
-const QString stderr = "stderr";
-const QString interactive = "interactive";
+const QString Stdin = "stdin";
+const QString Stdout = "stdout";
+const QString Stderr = "stderr";
+const QString Interactive = "interactive";
 }
 
 }
