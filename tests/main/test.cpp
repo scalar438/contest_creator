@@ -63,21 +63,15 @@ void TestRun::testArgs()
 	params << "param1" << "param with space" << "param3";
 	runner.setParams(params);
 	boost::filesystem::path dir("./examples");
-	runner.setCurrentDirectory(QString::fromStdWString(dir.native()));
 
-#ifdef Q_OS_WIN
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(args_output).native()));
-#else
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(args_output).native().c_str()));
-#endif
 	runner.start();
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
-	std::ifstream is(boost::filesystem::path("./examples/args_out.txt").native());
+	std::ifstream is(boost::filesystem::path(args_output).native());
 
-	params.prepend("./examples/pArgsOut");
+	params.prepend(QFileInfo("./examples/pArgsOut").absoluteFilePath());
 	int count;
 	is >> count;
 	std::string str;
@@ -146,18 +140,15 @@ void TestRun::testStandardStreamsRedirection()
 	const int b = 18;
 
 	std::ofstream os(boost::filesystem::path(sum_input).native());
-	os << a << " " << b;
+	os << a << " " << b << std::endl << "0 0";
 	os.close();
 
-#ifdef Q_OS_WIN
-	runner.setStandardInput(QString::fromStdWString(boost::filesystem::path(sum_input).native()));
-	runner.setStandardOutput(QString::fromStdWString(boost::filesystem::path(sum_output).native()));
-#else
-	runner.setStandardInput(QString::fromLocal8Bit(boost::filesystem::path(sum_input).native().c_str()));
-	runner.setStandardOutput(QString::fromLocal8Bit(boost::filesystem::path(sum_output).native().c_str()));
-#endif
+	runner.setStandardInput(QFileInfo(QString::fromStdString(sum_input)).absoluteFilePath());
+	runner.setStandardOutput(QFileInfo(QString::fromStdString(sum_output)).absoluteFilePath());
+
 	runner.start();
 	runner.wait();
+	qDebug() << "sum time and memory" << runner.CPUTime() << runner.peakMemoryUsage();
 	QVERIFY(runner.processStatus() == checklib::psExited);
 
 	{
@@ -205,11 +196,43 @@ void TestRun::testIL()
 	QVERIFY(runner.processStatus() == checklib::psIdlenessLimitExceeded);
 }
 
+void TestRun::testInteractive()
+{
+	checklib::RestrictedProcess runner;
+
+	checklib::Limits limits;
+	limits.useMemoryLimit = true;
+	limits.memoryLimit = 65536 * 1024;
+	limits.useTimeLimit = true;
+	limits.timeLimit = 2000;
+	runner.setLimits(limits);
+
+	runner.setStandardInput(checklib::ss::Interactive);
+	runner.setStandardOutput(checklib::ss::Interactive);
+
+	runner.setProgram("./examples/pSum");
+
+	runner.start();
+	runner.sendDataToStandardInput("4 5\n");
+	QString ans;
+	runner.getDataFromStandardOutput(ans);
+	QVERIFY(ans == "9\n");
+
+	runner.sendDataToStandardInput("2 3", true);
+	runner.getDataFromStandardOutput(ans);
+	QVERIFY(ans == "5\n");
+
+	runner.sendDataToStandardInput("0 0", true);
+	runner.wait();
+
+	QVERIFY(runner.processStatus() == checklib::psExited);
+}
+
 TestRun::TestRun():
 	sum_input("./examples/sum_input.txt")
 	, sum_output("./examples/sum_output.txt")
 	, stderr_out_error("./examples/stderr_out_error.txt")
-	, args_output("./examples/args_output.txt")
+	, args_output("./examples/args_out.txt")
 {
 
 }

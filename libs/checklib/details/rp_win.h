@@ -64,7 +64,8 @@ public:
 	void redirectStandardOutput(const QString &fileName);
 	void redirectStandardError(const QString &fileName);
 
-	void sendBufferToStandardInput(const QByteArray &data);
+	void sendDataToStandardInput(const QString &data, bool newLine);
+	void getDataFromStandardOutput(QString &data);
 
 private:
 	QString mProgram;

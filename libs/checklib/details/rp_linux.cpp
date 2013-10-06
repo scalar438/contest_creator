@@ -1,5 +1,5 @@
 ﻿#include "rp_linux.h"
-
+#include "rp_consts.h"
 #include "checklib_exception.h"
 
 #include <exception>
@@ -15,6 +15,7 @@
 
 #include <QStringList>
 #include <QDebug>
+#include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
 
 // TODO: перенести это в отдельный header и в реализации под windows тоже использовать его
@@ -48,7 +49,6 @@ ServiceInstance instance;
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
-	mIsRunning.store(false);
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
 	reset();
@@ -78,6 +78,16 @@ void checklib::details::RestrictedProcessImpl::setParams(const QStringList &para
 	mParams = params;
 }
 
+QString checklib::details::RestrictedProcessImpl::currentDirectory() const
+{
+	return mCurrentDirectory;
+}
+
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const QString &directory)
+{
+	mCurrentDirectory = directory;
+}
+
 bool checklib::details::RestrictedProcessImpl::isRunning() const
 {
 	return mIsRunning.load();
@@ -87,6 +97,20 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
+
+	if(mStandardInput == "interactive")
+	{
+		pipe(mInputPipe);
+	}
+	if(mStandardOutput == "interactive")
+	{
+		pipe(mOutputPipe);
+	}
+	if(mStandardError == "interactive")
+	{
+		pipe(mErrorPipe);
+	}
+
 	mChildPid = fork();
 	if(mChildPid == -1)
 	{
@@ -96,38 +120,60 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
-		if(mStandardInput != "stdin")
+		if(mStandardInput != ss::stdin)
 		{
-			int d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
+			int d;
+
+			if(mStandardInput == ss::Interactive)
+			{
+				d = mInputPipe[0];
+				close(mInputPipe[1]);
+			}
+			else
+			{
+				d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
+				if(d == -1) qDebug() << "File not opened";
+			}
 			dup2(d, 0);
 			close(d);
 		}
-		if(mStandardOutput != "stdout")
+		if(mStandardOutput != ss::stdout)
 		{
-			int d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-			if(d == -1)
+			int d;
+
+			if(mStandardOutput == ss::Interactive)
 			{
-				qDebug() << "File not opened";
+				d = mOutputPipe[1];
+				close(mOutputPipe[0]);
+			}
+			else
+			{
+				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if(d == -1) qDebug() << "File not opened";
 			}
 			dup2(d, 1);
 			close(d);
 		}
-		if(mStandardError != "stderr")
+		if(mStandardError != ss::stderr)
 		{
-			int d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-			             S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			int d;
+
+			if(mStandardError == ss::Interactive)
+			{
+				d = mErrorPipe[1];
+				close(mErrorPipe[0]);
+			}
+			else
+			{
+				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if(d == -1) qDebug() << "File not opened";
+			}
 			dup2(d, 2);
 			close(d);
 		}
 
-/*		if(mLimits.useMemoryLimit)
-		{
-			rlimit limit;
-			limit.rlim_max = limit.rlim_cur = mLimits.memoryLimit + 1024 * 1024;
-
-			setrlimit(RLIMIT_AS, &limit);
-		}*/
 		if(mLimits.useTimeLimit)
 		{
 			rlimit limit;
@@ -135,10 +181,19 @@ void checklib::details::RestrictedProcessImpl::start()
 			setrlimit(RLIMIT_CPU, &limit);
 		}
 
-		char **args = new char*[mParams.size() + 2];
-		args[0] = new char[mProgram.size() + 1];
-		strcpy(args[0], mProgram.toLocal8Bit().data());
+		QString programPath = QFileInfo(mProgram).absoluteFilePath();
+		if(!mCurrentDirectory.isEmpty())
+		{
+			chdir(mCurrentDirectory.toLocal8Bit().data());
+		}
+		else
+		{
+			chdir(QFileInfo(programPath).absolutePath().toLocal8Bit().data());
+		}
 
+		char **args = new char*[mParams.size() + 2];
+		args[0] = new char[programPath.size() + 1];
+		strcpy(args[0], programPath.toLocal8Bit().data());
 
 		for(int i = 0; i < mParams.size(); i++)
 		{
@@ -146,7 +201,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
 		}
 		args[mParams.size() + 1] = 0;
-		execv(mProgram.toLocal8Bit().data(), args);
+		execv(programPath.toLocal8Bit().data(), args);
 
 		exit(-1);
 	}
@@ -159,6 +214,10 @@ void checklib::details::RestrictedProcessImpl::start()
 		                              boost::ref(*this), boost::lambda::_1));
 		mIsRunning.store(true);
 		mStartTime = QDateTime::currentDateTime();
+
+		if(mStandardInput == "interactive") close(mInputPipe[0]);
+		if(mStandardOutput == "interactive") close(mOutputPipe[1]);
+		if(mStandardError == "interactive") close(mErrorPipe[1]);
 	}
 }
 
@@ -245,23 +304,62 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
+void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+{
+	if(mStandardInput == "interactive")
+	{
+		auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
+		if(newLine)
+		{
+			const char c = '\n';
+			write(mInputPipe[1], &c, 1);
+		}
+	}
+}
+
+void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+{
+	char buf[100];
+	if(mStandardOutput == "interactive")
+	{
+		auto count = read(mOutputPipe[0], buf, 100);
+		if(count != -1)
+		{
+			buf[count] = 0;
+			data = buf;
+		}
+		else data = "";
+	}
+}
+
 void checklib::details::RestrictedProcessImpl::reset()
 {
+	doFinalize();
+
 	mStandardInput = "stdin";
 	mStandardOutput = "stdout";
 	mStandardError = "stderr";
 
+	mPeakMemoryUsage.store(0);
+	mCPUTime.store(0);
+	mIsRunning.store(false);
 }
 
-void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
+void checklib::details::RestrictedProcessImpl::doFinalize()
 {
+	mutex_locker locker(mHandlesMutex);
 
+	if(!mIsRunning.load()) return;
+
+	kill(mChildPid, SIGUSR1);
+	waitpid(mChildPid, NULL, WCONTINUED);
+
+	mIsRunning.store(false);
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
-//	qDebug() << "Timer";
 	if(!isRunning()) return;
 
 	using namespace std;
@@ -283,9 +381,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
 
@@ -293,9 +389,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(fullTime > 2000 && currentCPUTime * 8 < fullTime)
 	{
 		mProcessStatus.store(psIdlenessLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
 
@@ -325,45 +419,36 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		is.close();
 		is.open("/proc/" + name.str() + "/statm");
 		long long int cur;
-		is >> cur;
-		int tmp = mPeakMemoryUsage.load();
-		mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		if(is >> cur)
+		{
+			int tmp = mPeakMemoryUsage.load();
+			mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		}
 	}
 	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
 		mProcessStatus.store(psMemoryLimitExceeded);
-		kill(mChildPid, SIGUSR1);
-		waitpid(mChildPid, NULL, WCONTINUED);
-		mIsRunning.store(false);
+		doFinalize();
 		return;
 	}
-
-//	qDebug() << "Before checking exit status";
 
 	int status;
 	int r = waitpid(mChildPid, &status, WNOHANG);
 	if(r < 0)
 	{
+		qDebug() << "Error";
 	}
 	else if(r == 0)
 	{
+		mTimer.expires_from_now(boost::posix_time::millisec(100));
+		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+		                              boost::ref(*this), boost::lambda::_1));
 	}
 	else
 	{
-		if(WIFEXITED(status))
-		{
-			mProcessStatus.store(psExited);
-			mIsRunning.store(false);
-			return;
-		}
-		if(WIFSIGNALED(status))
-		{
-			mProcessStatus.store(psRuntimeError);
-			mIsRunning.store(false);
-			return;
-		}
+		if(WIFEXITED(status)) mProcessStatus.store(psExited);
+		if(WIFSIGNALED(status)) mProcessStatus.store(psRuntimeError);
+
+		mIsRunning.store(false);
 	}
-	mTimer.expires_from_now(boost::posix_time::millisec(100));
-	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-	                              boost::ref(*this), boost::lambda::_1));
 }

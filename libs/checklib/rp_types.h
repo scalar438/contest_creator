@@ -24,9 +24,4 @@ enum ProcessStatus
 	psNotRunning, psRunning, psExited, psTimeLimitExceeded, psMemoryLimitExceeded, psIdlenessLimitExceeded, psRuntimeError, psTerminated
 };
 
-enum StandardStream
-{
-	ssStdin, ssStdout, ssStderr
-};
-
 }

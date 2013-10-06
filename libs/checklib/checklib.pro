@@ -6,7 +6,11 @@ CONFIG += staticlib
 HEADERS += \
     checklib_exception.h \
     rp_types.h \
-    rp.h 
+    rp.h \  
+    rp_consts.h
+
+SOURCES += \
+	rp.cpp
 
 win32 {
 HEADERS += details/rp_win.h
@@ -24,6 +28,3 @@ TARGET = checklib
 QMAKE_CXXFLAGS += --std=c++0x
 LIBS += -lboost_system
 }
-
-SOURCES += \
-    rp.cpp

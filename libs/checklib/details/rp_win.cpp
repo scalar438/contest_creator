@@ -331,9 +331,14 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::sendBufferToStandardInput(const QByteArray &data)
+void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
 {
 // Пока не реализовано
+}
+
+void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+{
+
 }
 
 void checklib::details::RestrictedProcessImpl::doCheck()

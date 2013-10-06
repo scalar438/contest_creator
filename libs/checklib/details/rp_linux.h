@@ -29,6 +29,9 @@ public:
 	QStringList getParams() const;
 	void setParams(const QStringList &params);
 
+	QString currentDirectory() const;
+	void setCurrentDirectory(const QString &directory);
+
 	bool isRunning() const;
 
 	void start();
@@ -57,7 +60,12 @@ public:
 	void redirectStandardOutput(const QString &fileName);
 	void redirectStandardError(const QString &fileName);
 
-	void sendBufferToStandardInput(const QByteArray &data);
+	// Отправить буфер в указанный стандартный поток.
+	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
+	void sendDataToStandardInput(const QString &data, bool newLine);
+
+	// Получить буфер из стандартного потока вывода
+	void getDataFromStandardOutput(QString &data);
 
 private:
 	QString mProgram;
@@ -65,6 +73,8 @@ private:
 	QDateTime mStartTime, mEndTime;
 
 	QString mStandardInput, mStandardOutput, mStandardError;
+
+	QString mCurrentDirectory;
 
 	std::atomic<ProcessStatus> mProcessStatus;
 	std::atomic<int> mExitCode;
@@ -82,14 +92,14 @@ private:
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
+	int mInputPipe[2], mOutputPipe[2], mErrorPipe[2];
+
 	// Количество тиков на секунду.
 	float mTicks;
 
 	void doCheck();
 
 	void doFinalize();
-
-	void destroyHandles();
 
 	void timerHandler(const boost::system::error_code &err);
 
