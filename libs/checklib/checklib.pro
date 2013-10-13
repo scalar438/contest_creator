@@ -7,7 +7,9 @@ HEADERS += \
     checklib_exception.h \
     rp_types.h \
     rp.h \  
-    rp_consts.h
+    rp_consts.h \
+    TimerService.h \
+    timer_service.h
 
 SOURCES += \
 	rp.cpp

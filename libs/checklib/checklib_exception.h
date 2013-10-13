@@ -2,7 +2,7 @@
 #include <exception>
 #include <QString>
 
-namespace checlib
+namespace checklib
 {
 	class ExceptionBase : public std::exception
 	{
@@ -12,10 +12,10 @@ namespace checlib
 		}
 	};
 
-	class exception_cannot_open_file : public ExceptionBase
+	class ExceptionCannotOpenFile : public ExceptionBase
 	{
 	public:
-		exception_cannot_open_file(const QString &fileName)
+		ExceptionCannotOpenFile(const QString &fileName)
 			: ExceptionBase(fileName)
 		{
 

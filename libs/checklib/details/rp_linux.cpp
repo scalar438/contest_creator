@@ -18,34 +18,6 @@
 #include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
 
-// TODO: перенести это в отдельный header и в реализации под windows тоже использовать его
-class ServiceInstance
-{
-public:
-	ServiceInstance()
-		: mWork(mService)
-	{
-		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
-	}
-	~ServiceInstance()
-	{
-		mService.stop();
-		mThread.join();
-	}
-
-	boost::asio::io_service &io_service()
-	{
-		return mService;
-	}
-
-private:
-	boost::asio::io_service mService;
-	boost::asio::io_service::work mWork;
-	boost::thread mThread;
-};
-
-ServiceInstance instance;
-
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(instance.io_service())
 {
@@ -98,15 +70,15 @@ void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
 
-	if(mStandardInput == "interactive")
+	if(mStandardInput == ss::Interactive)
 	{
 		pipe(mInputPipe);
 	}
-	if(mStandardOutput == "interactive")
+	if(mStandardOutput == ss::Interactive)
 	{
 		pipe(mOutputPipe);
 	}
-	if(mStandardError == "interactive")
+	if(mStandardError == ss::Interactive)
 	{
 		pipe(mErrorPipe);
 	}
@@ -215,9 +187,9 @@ void checklib::details::RestrictedProcessImpl::start()
 		mIsRunning.store(true);
 		mStartTime = QDateTime::currentDateTime();
 
-		if(mStandardInput == "interactive") close(mInputPipe[0]);
-		if(mStandardOutput == "interactive") close(mOutputPipe[1]);
-		if(mStandardError == "interactive") close(mErrorPipe[1]);
+		if(mStandardInput == ss::Interactive) close(mInputPipe[0]);
+		if(mStandardOutput == ss::Interactive) close(mOutputPipe[1]);
+		if(mStandardError == ss::Interactive) close(mErrorPipe[1]);
 	}
 }
 
@@ -306,7 +278,7 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 
 void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
 {
-	if(mStandardInput == "interactive")
+	if(mStandardInput == ss::Interactive)
 	{
 		auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
 		if(newLine)
@@ -320,7 +292,7 @@ void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
 {
 	char buf[100];
-	if(mStandardOutput == "interactive")
+	if(mStandardOutput == ss::Interactive)
 	{
 		auto count = read(mOutputPipe[0], buf, 100);
 		if(count != -1)
@@ -336,9 +308,9 @@ void checklib::details::RestrictedProcessImpl::reset()
 {
 	doFinalize();
 
-	mStandardInput = "stdin";
-	mStandardOutput = "stdout";
-	mStandardError = "stderr";
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
 
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);

@@ -1,69 +1,21 @@
 ﻿#include "rp_win.h"
+#include "../timer_service.h"
+#include "../rp_consts.h"
 
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/shared_array.hpp>
 
+#include <deque>
+
 #include <Windows.h>
+#include <strsafe.h>
 
 #include <QDebug>
 #include <QFileInfo>
 
-class HandleCloser
-{
-public:
-	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE)
-	{
-		setHandle(h);
-	}
-
-	~HandleCloser()
-	{
-		if(handle != INVALID_HANDLE_VALUE) CloseHandle(handle);
-	}
-
-	void setHandle(HANDLE h)
-	{
-		handle = h;
-	}
-
-private:
-	HANDLE handle;
-};
-
-typedef std::unique_ptr<HandleCloser> Closer;
-
-class ServiceInstance
-{
-public:
-	ServiceInstance()
-		: mWork(mService)
-	{
-		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
-	}
-	~ServiceInstance()
-	{
-		mService.stop();
-		mThread.join();
-	}
-
-	boost::asio::io_service &io_service()
-	{
-		return mService;
-	}
-
-private:
-	boost::asio::io_service mService;
-	boost::asio::io_service::work mWork;
-	boost::thread mThread;
-};
-
-ServiceInstance instance;
-
-// TODO: Сделать бросание исключения в случае ошибок
-
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(instance.io_service())
+	: mTimer(TimerService::instance()->io_service())
 {
 	reset();
 }
@@ -122,52 +74,93 @@ void checklib::details::RestrictedProcessImpl::start()
 	sa.bInheritHandle = TRUE;
 	sa.lpSecurityDescriptor = NULL;
 	sa.nLength = sizeof sa;
-	std::vector<Closer> handles;
+	std::vector<HandleCloser> handlesForAutoClose; // Хендлы, требующие закрытия на выходе из функции
+	std::deque<HandleCloser> tmpHandles;           // Хендлы, требующие закрытия после окончания работы программы
 
-	if(mStandardInput == "stdin") si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+	if(mStandardInput == ss::Stdin) si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 	else
 	{
-		std::vector<wchar_t> str(mStandardInput.length() + 1, 0);
-		mStandardInput.toWCharArray(&str[0]);
-		HANDLE f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
-		                      &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(f == INVALID_HANDLE_VALUE)
+		HANDLE f;
+
+		if(mStandardInput == ss::Interactive)
 		{
-			qDebug() << "Cannot open file" << mStandardInput;
-			return;
+			HANDLE readPipe, writePipe;
+			if(!CreatePipe(&readPipe, &writePipe, &sa, 0))
+			{
+				qDebug() << "CreatePipe error";
+			}
+			f = readPipe;
+			tmpHandles.push_back(HandleCloser(writePipe));
+		}
+		else
+		{
+			std::vector<wchar_t> str(mStandardInput.length() + 1, 0);
+			mStandardInput.toWCharArray(&str[0]);
+
+			f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
+			               &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if(f == INVALID_HANDLE_VALUE)
+			{
+				qDebug() << "Cannot open file" << mStandardInput;
+				return;
+			}
 		}
 		si.hStdInput = f;
-		handles.push_back(Closer(new HandleCloser(f)));
+		handlesForAutoClose.push_back(HandleCloser(f));
 	}
 
-	if(mStandardOutput == "stdout") si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	if(mStandardOutput == ss::Stdout) si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 	else
 	{
-		std::vector<wchar_t> str(mStandardOutput.length() + 1, 0);
-		mStandardOutput.toWCharArray(&str[0]);
-		HANDLE f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(f == INVALID_HANDLE_VALUE)
+		HANDLE f;
+
+		if(mStandardOutput == ss::Interactive)
 		{
-			qDebug() << "Cannot open file" << mStandardOutput;
-			return;
+			HANDLE readPipe, writePipe;
+			CreatePipe(&readPipe, &writePipe, &sa, 0);
+			f = writePipe;
+			tmpHandles.push_back(HandleCloser(readPipe));
+		}
+		else
+		{
+			std::vector<wchar_t> str(mStandardOutput.length() + 1, 0);
+			mStandardOutput.toWCharArray(&str[0]);
+			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			if(f == INVALID_HANDLE_VALUE)
+			{
+				qDebug() << "Cannot open file" << mStandardOutput;
+				return;
+			}
 		}
 		si.hStdOutput = f;
-		handles.push_back(Closer(new HandleCloser(f)));
+		handlesForAutoClose.push_back(HandleCloser(f));
 	}
 
-	if(mStandardError == "stderr") si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+	if(mStandardError == ss::Stderr) si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 	else
 	{
-		std::vector<wchar_t> str(mStandardError.length() + 1, 0);
-		mStandardError.toWCharArray(&str[0]);
-		HANDLE f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if(f == INVALID_HANDLE_VALUE)
+		HANDLE f;
+
+		if(mStandardError == ss::Interactive)
 		{
-			qDebug() << "Cannot open file" << mStandardError;
-			return;
+			HANDLE readPipe, writePipe;
+			CreatePipe(&readPipe, &writePipe, &sa, 0);
+			f = writePipe;
+			tmpHandles.push_back(HandleCloser(readPipe));
+		}
+		else
+		{
+			std::vector<wchar_t> str(mStandardError.length() + 1, 0);
+			mStandardError.toWCharArray(&str[0]);
+			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			if(f == INVALID_HANDLE_VALUE)
+			{
+				qDebug() << "Cannot open file" << mStandardError;
+				return;
+			}
 		}
 		si.hStdError = f;
-		handles.push_back(Closer(new HandleCloser(f)));
+		handlesForAutoClose.push_back(HandleCloser(f));
 	}
 
 	PROCESS_INFORMATION pi;
@@ -185,7 +178,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		else cmdLine += mParams[i];
 	}
 
-	//LPCSTR curDir;
 	boost::shared_array<char> curDir;
 
 	if(!mCurrentDirectory.isEmpty())
@@ -206,7 +198,13 @@ void checklib::details::RestrictedProcessImpl::start()
 		qDebug() << "Cannot create process";
 		return;
 	}
-	handles.clear();
+	handlesForAutoClose.clear();
+
+	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
+	if(mStandardInput == ss::Interactive) mInputHandle = pop();
+	if(mStandardOutput == ss::Interactive) mOutputHandle = pop();
+	if(mStandardError == ss::Interactive) mErrorHandle = pop();
+
 	ResumeThread(pi.hThread);
 	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
@@ -301,9 +299,9 @@ int checklib::details::RestrictedProcessImpl::CPUTimeS() const
 
 void checklib::details::RestrictedProcessImpl::reset()
 {
-	mStandardInput = "stdin";
-	mStandardOutput = "stdout";
-	mStandardError = "stderr";
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
 	mParams.clear();
 
 	mCPUTime.store(0);
@@ -340,14 +338,56 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
 {
-// Пока не реализовано
+	mutex_locker lock(mHandlesMutex);
+	if(!isRunning()) return false;
+	DWORD count;
+	if(!WriteFile(mInputHandle.handle(), data.toLocal8Bit().data(), data.length(), &count, NULL))
+	{
+		qDebug() << "WriteFile error";
+		return false;
+	}
+	qDebug() << count;
+	if(newLine)
+	{
+		char c = '\n';
+		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
+		{
+			qDebug() << "WriteFile error2";
+			return false;
+		}
+		qDebug() << count;
+	}
+	return true;
 }
 
-void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
 {
+	if(!isRunning()) return false;
 
+	const int MAX = 100;
+	char buf[MAX];
+	if(mStandardOutput == ss::Interactive)
+	{
+		while(true)
+		{
+			DWORD count;
+			if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
+			{
+				qDebug() << "Error";
+				return false;
+			}
+			buf[count] = 0;
+			data += buf;
+			if(data.endsWith("\r\n"))
+			{
+				data.resize(data.size() - 2);
+			}
+		}
+		if(data.size() >= 2) data.resize(data.size() - 2);
+	}
+	return true;
 }
 
 void checklib::details::RestrictedProcessImpl::doCheck()
@@ -437,12 +477,17 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		mProcessStatus.store(psRuntimeError);
 	}
 
+	mInputHandle.reset();
+	mOutputHandle.reset();
+	mErrorHandle.reset();
+
 	mExitCode.store(tmpExitCode);
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
+	qDebug() << "timerHandler";
 	doCheck();
 
 	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
@@ -451,6 +496,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
 		destroyHandles();
+		qDebug() << "wait_object_0";
 		break;
 	case WAIT_TIMEOUT:
 		{

@@ -215,11 +215,11 @@ void TestRun::testInteractive()
 	runner.sendDataToStandardInput("4 5\n");
 	QString ans;
 	runner.getDataFromStandardOutput(ans);
-	QVERIFY(ans == "9\n");
+	QVERIFY(ans == "9");
 
 	runner.sendDataToStandardInput("2 3", true);
 	runner.getDataFromStandardOutput(ans);
-	QVERIFY(ans == "5\n");
+	QVERIFY(ans == "5");
 
 	runner.sendDataToStandardInput("0 0", true);
 	runner.wait();

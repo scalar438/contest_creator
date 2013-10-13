@@ -14,11 +14,65 @@
 #include <QDateTime>
 #include <QString>
 #include <QStringList>
+#include <QDebug>
 
 namespace checklib
 {
 namespace details
 {
+
+
+class HandleCloser
+{
+private:
+	struct AutoCloser
+	{
+		AutoCloser(HANDLE h = INVALID_HANDLE_VALUE)
+		{
+			setHandle(h);
+		}
+
+		~AutoCloser()
+		{
+			if(handle != INVALID_HANDLE_VALUE)
+			{
+				CloseHandle(handle);
+			}
+		}
+
+		void setHandle(HANDLE h)
+		{
+			handle = h;
+		}
+
+		HANDLE handle;
+	};
+
+public:
+	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE)
+		: ptr(new AutoCloser(h))
+	{
+	}
+
+	void setHandle(HANDLE h)
+	{
+		ptr = std::shared_ptr<AutoCloser>(new AutoCloser(h));
+	}
+
+	HANDLE handle() const
+	{
+		if(ptr) return ptr->handle;
+		else return INVALID_HANDLE_VALUE;
+	}
+
+	void reset()
+	{
+		setHandle(INVALID_HANDLE_VALUE);
+	}
+
+private:
+	std::shared_ptr<AutoCloser> ptr;
+};
 
 class RestrictedProcessImpl
 {
@@ -64,8 +118,8 @@ public:
 	void redirectStandardOutput(const QString &fileName);
 	void redirectStandardError(const QString &fileName);
 
-	void sendDataToStandardInput(const QString &data, bool newLine);
-	void getDataFromStandardOutput(QString &data);
+	bool sendDataToStandardInput(const QString &data, bool newLine);
+	bool getDataFromStandardOutput(QString &data);
 
 private:
 	QString mProgram;
@@ -91,6 +145,8 @@ private:
 
 	mutable boost::atomic<int> mCPUTime, mPeakMemoryUsage;
 	boost::atomic<bool> mIsRunning;
+
+	HandleCloser mInputHandle, mOutputHandle, mErrorHandle;
 
 	void doCheck();
 
