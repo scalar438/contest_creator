@@ -1,6 +1,7 @@
 ﻿#include "rp_linux.h"
 #include "rp_consts.h"
 #include "checklib_exception.h"
+#include <timer_service.h>
 
 #include <exception>
 #include <sstream>
@@ -19,7 +20,7 @@
 #include <boost/lambda/lambda.hpp>
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(instance.io_service())
+	: mTimer(TimerService::instance()->io_service())
 {
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
@@ -92,7 +93,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 
-		if(mStandardInput != ss::stdin)
+		if(mStandardInput != ss::Stdin)
 		{
 			int d;
 
@@ -109,7 +110,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			dup2(d, 0);
 			close(d);
 		}
-		if(mStandardOutput != ss::stdout)
+		if(mStandardOutput != ss::Stdout)
 		{
 			int d;
 
@@ -121,13 +122,13 @@ void checklib::details::RestrictedProcessImpl::start()
 			else
 			{
 				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 				if(d == -1) qDebug() << "File not opened";
 			}
 			dup2(d, 1);
 			close(d);
 		}
-		if(mStandardError != ss::stderr)
+		if(mStandardError != ss::Stderr)
 		{
 			int d;
 
@@ -139,7 +140,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			else
 			{
 				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
-						 S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 				if(d == -1) qDebug() << "File not opened";
 			}
 			dup2(d, 2);
@@ -276,32 +277,42 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const QStri
 	mStandardError = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
 {
-	if(mStandardInput == ss::Interactive)
+	if(!isRunning() || mStandardInput != ss::Interactive) return false;
+
+	auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
+	if(count == -1) return false;
+	if(newLine)
 	{
-		auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
-		if(newLine)
-		{
-			const char c = '\n';
-			write(mInputPipe[1], &c, 1);
-		}
+		const char c = '\n';
+		write(mInputPipe[1], &c, 1);
 	}
+	return true;
 }
 
-void checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
 {
-	char buf[100];
-	if(mStandardOutput == ss::Interactive)
+	if(!isRunning() || mStandardOutput != ss::Interactive) return false;
+
+	data = "";
+	while(true)
 	{
-		auto count = read(mOutputPipe[0], buf, 100);
-		if(count != -1)
+		const int MAX = 100;
+		char buf[MAX];
+
+		auto count = read(mOutputPipe[0], buf, MAX - 1);
+		if(count == -1) return false;
+		buf[count] = 0;
+		data += buf;
+
+		if(data.endsWith("\n"))
 		{
-			buf[count] = 0;
-			data = buf;
+			data.resize(data.length() - 1);
+			break;
 		}
-		else data = "";
 	}
+	return true;
 }
 
 void checklib::details::RestrictedProcessImpl::reset()
