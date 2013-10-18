@@ -61,6 +61,38 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 	return mIsRunning.load();
 }
 
+void ErrorExit(PTSTR lpszFunction)
+
+// Format a readable error message, display a message box,
+// and exit from the application.
+{
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	DWORD dw = GetLastError();
+
+	FormatMessage(
+	    FORMAT_MESSAGE_ALLOCATE_BUFFER |
+	    FORMAT_MESSAGE_FROM_SYSTEM |
+	    FORMAT_MESSAGE_IGNORE_INSERTS,
+	    NULL,
+	    dw,
+	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	    (LPTSTR) &lpMsgBuf,
+	    0, NULL);
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
+	                                  (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
+	StringCchPrintf((LPTSTR)lpDisplayBuf,
+	                LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+	                TEXT("%s failed with error %d: %s"),
+	                lpszFunction, dw, lpMsgBuf);
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
+}
+
+
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
@@ -192,7 +224,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		strcpy(curDir.get(), currentDir.toLocal8Bit().data());
 	}
 
-	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
+	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), NULL, NULL, TRUE,
 	                   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi))
 	{
 		qDebug() << "Cannot create process";
@@ -218,12 +250,7 @@ void checklib::details::RestrictedProcessImpl::start()
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	if(isRunning())
-	{
-		mProcessStatus.store(psTerminated);
-		mutex_locker lock(mHandlesMutex);
-		if(isRunning()) TerminateProcess(mCurrentInformation.hProcess, -1);
-	}
+	TerminateProcess(mCurrentInformation.hProcess, -1);
 }
 
 void checklib::details::RestrictedProcessImpl::wait()
@@ -345,19 +372,19 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 	DWORD count;
 	if(!WriteFile(mInputHandle.handle(), data.toLocal8Bit().data(), data.length(), &count, NULL))
 	{
-		qDebug() << "WriteFile error";
+		qDebug() << "WriteFile1 error";
 		return false;
 	}
-	qDebug() << count;
+	qDebug() << "WriteBytes1 count:" << count;
 	if(newLine)
 	{
 		char c = '\n';
 		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
 		{
-			qDebug() << "WriteFile error2";
+			qDebug() << "WriteFile2 error";
 			return false;
 		}
-		qDebug() << count;
+		qDebug() << "WriteBytes2 count:" << count;
 	}
 	return true;
 }
@@ -365,28 +392,28 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
 {
 	if(!isRunning()) return false;
+	if(mStandardOutput != ss::Interactive) return false;
 
 	const int MAX = 100;
 	char buf[MAX];
-	if(mStandardOutput == ss::Interactive)
+	data = "";
+	while(true)
 	{
-		while(true)
+		DWORD count = 0;
+		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
-			DWORD count;
-			if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
-			{
-				qDebug() << "Error";
-				return false;
-			}
-			buf[count] = 0;
-			data += buf;
-			if(data.endsWith("\r\n"))
-			{
-				data.resize(data.size() - 2);
-			}
+			qDebug() << "Readfile error";
+			return false;
 		}
-		if(data.size() >= 2) data.resize(data.size() - 2);
+		buf[count] = 0;
+		data += buf;
+		if(data.endsWith("\r\n"))
+		{
+			data.resize(data.size() - 2);
+			break;
+		}
 	}
+
 	return true;
 }
 
@@ -421,7 +448,6 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 {
 	mutex_locker lock1(mHandlesMutex);
 	if(!isRunning()) return;
-
 	// Сохранить параметры перед закрытием
 	CPUTimeS();
 	peakMemoryUsageS();
@@ -441,7 +467,20 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		{
 			qDebug() << "Logic error";
 		}
-		TerminateProcess(mCurrentInformation.hProcess, -1);
+
+		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE && !CancelIoEx(mOutputHandle.handle(), NULL))
+		{
+			qDebug() << "IO cannot be canceled";
+		}
+
+		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
+		{
+			qDebug() << "TerminateProcess failed";
+		}
+		else
+		{
+			WaitForSingleObject(mCurrentInformation.hProcess, INFINITE);
+		}
 	}
 
 	DWORD tmpExitCode;
@@ -477,17 +516,16 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		mProcessStatus.store(psRuntimeError);
 	}
 
+	mExitCode.store(tmpExitCode);
+
 	mInputHandle.reset();
 	mOutputHandle.reset();
 	mErrorHandle.reset();
-
-	mExitCode.store(tmpExitCode);
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
-	qDebug() << "timerHandler";
 	doCheck();
 
 	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
@@ -496,7 +534,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
 		destroyHandles();
-		qDebug() << "wait_object_0";
 		break;
 	case WAIT_TIMEOUT:
 		{

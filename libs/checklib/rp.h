@@ -87,10 +87,10 @@ public:
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если процесс не интерактивный или программа не запущена, то ничего не произойдет
-	void sendDataToStandardInput(const QString &data, bool newLine = false);
+	bool sendDataToStandardInput(const QString &data, bool newLine = false);
 
-	// Получить буфер из стандартного потока вывода
-	void getDataFromStandardOutput(QString &data);
+	// Получить буфер из стандартного потока вывода. Выдает целиком строку (без символа перевода строки).
+	bool getDataFromStandardOutput(QString &data);
 
 private:
 

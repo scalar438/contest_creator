@@ -25,7 +25,6 @@ private slots:
 	void testRE();
 	void testStandardStreamsRedirection();
 	void testIL();
-
 	void testInteractive();
 
 	void cleanupTestCase();

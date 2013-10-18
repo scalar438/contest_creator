@@ -21,7 +21,6 @@ namespace checklib
 namespace details
 {
 
-
 class HandleCloser
 {
 private:

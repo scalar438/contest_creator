@@ -135,14 +135,14 @@ void checklib::RestrictedProcess::setStandardError(const QString &fileName)
 	pimpl->redirectStandardError(fileName);
 }
 
-void checklib::RestrictedProcess::getDataFromStandardOutput(QString &data)
+bool checklib::RestrictedProcess::getDataFromStandardOutput(QString &data)
 {
-	pimpl->getDataFromStandardOutput(data);
+	return pimpl->getDataFromStandardOutput(data);
 }
 
 // Отправить буфер в указанный стандартный поток.
 // Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-void checklib::RestrictedProcess::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::RestrictedProcess::sendDataToStandardInput(const QString &data, bool newLine)
 {
-	pimpl->sendDataToStandardInput(data, newLine);
+	return pimpl->sendDataToStandardInput(data, newLine);
 }
