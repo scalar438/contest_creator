@@ -76,7 +76,7 @@ private:
 class RestrictedProcessImpl
 {
 public:
-	RestrictedProcessImpl();
+	RestrictedProcessImpl(QObject *parent);
 	~RestrictedProcessImpl();
 
 	QString getProgram() const;

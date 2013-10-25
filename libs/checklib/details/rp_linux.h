@@ -17,10 +17,11 @@ namespace checklib
 namespace details
 {
 
-class RestrictedProcessImpl
+class RestrictedProcessImpl : public QObject
 {
+	Q_OBJECT
 public:
-	RestrictedProcessImpl();
+	RestrictedProcessImpl(QObject *parent);
 	~RestrictedProcessImpl();
 
 	QString getProgram() const;
@@ -66,6 +67,10 @@ public:
 
 	// Получить буфер из стандартного потока вывода
 	bool getDataFromStandardOutput(QString &data);
+
+signals:
+
+	void finished();
 
 private:
 	QString mProgram;

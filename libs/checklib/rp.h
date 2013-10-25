@@ -9,7 +9,6 @@
 #include <QStringList>
 #include <QTimer>
 
-
 namespace checklib
 {
 
@@ -19,10 +18,12 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess
+class RestrictedProcess : public QObject
 {
+	Q_OBJECT
 public:
-	RestrictedProcess();
+	RestrictedProcess(QObject *parent = nullptr);
+	RestrictedProcess(const RestrictedProcess &restricredProcess);
 	~RestrictedProcess();
 
 	QString getProgram() const;
@@ -92,9 +93,12 @@ public:
 	// Получить буфер из стандартного потока вывода. Выдает целиком строку (без символа перевода строки).
 	bool getDataFromStandardOutput(QString &data);
 
+signals:
+	void finished();
+
 private:
 
-	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
+	details::RestrictedProcessImpl *pimpl;
 };
 
 }

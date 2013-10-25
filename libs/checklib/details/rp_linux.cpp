@@ -1,7 +1,7 @@
 ﻿#include "rp_linux.h"
 #include "rp_consts.h"
 #include "checklib_exception.h"
-#include <timer_service.h>
+#include "timer_service.h"
 
 #include <exception>
 #include <sstream>
@@ -19,8 +19,9 @@
 #include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(TimerService::instance()->io_service())
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
+	: QObject(parent),
+	  mTimer(TimerService::instance()->io_service())
 {
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 

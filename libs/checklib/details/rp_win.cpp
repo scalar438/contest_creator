@@ -14,8 +14,9 @@
 #include <QDebug>
 #include <QFileInfo>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(TimerService::instance()->io_service())
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
+	: QObject(parent),
+	  mTimer(TimerService::instance()->io_service())
 {
 	reset();
 }

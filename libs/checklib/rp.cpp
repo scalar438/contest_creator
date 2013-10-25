@@ -6,9 +6,16 @@
 #include "details/rp_linux.h"
 #endif
 
-checklib::RestrictedProcess::RestrictedProcess()
+checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
+	: QObject(parent)
 {
-	pimpl = std::unique_ptr<details::RestrictedProcessImpl>(new details::RestrictedProcessImpl());
+	pimpl = new details::RestrictedProcessImpl(this);
+	connect(pimpl, &details::RestrictedProcessImpl::finished, this, &checklib::RestrictedProcess::finished);
+}
+
+checklib::RestrictedProcess::RestrictedProcess(const checklib::RestrictedProcess &restricredProcess)
+{
+	pimpl = new details::RestrictedProcessImpl(this);
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()
@@ -146,3 +153,4 @@ bool checklib::RestrictedProcess::sendDataToStandardInput(const QString &data, b
 {
 	return pimpl->sendDataToStandardInput(data, newLine);
 }
+
