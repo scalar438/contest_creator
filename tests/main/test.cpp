@@ -215,12 +215,10 @@ void TestRun::testInteractive()
 	runner.sendDataToStandardInput("4 5\n");
 	QString ans;
 	if(!runner.getDataFromStandardOutput(ans)) QFAIL("getDataFromStandardOutput returned false");
-	qDebug() << ans;
 	QVERIFY(ans == "9");
 
 	runner.sendDataToStandardInput("2 3", true);
 	if(!runner.getDataFromStandardOutput(ans)) QFAIL("getDataFromStandardOutput returned false");
-	qDebug() << "currentAnswer" << ans;
 	QVERIFY(ans == "5");
 
 	runner.sendDataToStandardInput("0 0", true);

@@ -13,16 +13,11 @@ checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	connect(pimpl, &details::RestrictedProcessImpl::finished, this, &checklib::RestrictedProcess::finished);
 }
 
-checklib::RestrictedProcess::RestrictedProcess(const checklib::RestrictedProcess &restricredProcess)
-{
-	pimpl = new details::RestrictedProcessImpl(this);
-}
-
 checklib::RestrictedProcess::~RestrictedProcess()
 {
 }
 
-QString checklib::RestrictedProcess::getProgram() const
+QString checklib::RestrictedProcess::program() const
 {
 	return pimpl->getProgram();
 }
@@ -32,7 +27,7 @@ void checklib::RestrictedProcess::setProgram(const QString &program)
 	pimpl->setProgram(program);
 }
 
-QStringList checklib::RestrictedProcess::getParams() const
+QStringList checklib::RestrictedProcess::params() const
 {
 	return pimpl->getParams();
 }
@@ -106,7 +101,7 @@ int checklib::RestrictedProcess::CPUTime() const
 	return pimpl->CPUTime();
 }
 
-checklib::Limits checklib::RestrictedProcess::getLimits() const
+checklib::Limits checklib::RestrictedProcess::limits() const
 {
 	return pimpl->getLimits();
 }

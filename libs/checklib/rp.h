@@ -8,6 +8,7 @@
 #include <QString>
 #include <QStringList>
 #include <QTimer>
+#include <boost/noncopyable.hpp>
 
 namespace checklib
 {
@@ -18,18 +19,17 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess : public QObject
+class RestrictedProcess : public QObject, private boost::noncopyable
 {
 	Q_OBJECT
 public:
 	RestrictedProcess(QObject *parent = nullptr);
-	RestrictedProcess(const RestrictedProcess &restricredProcess);
 	~RestrictedProcess();
 
-	QString getProgram() const;
+	QString program() const;
 	void setProgram(const QString &program);
 
-	QStringList getParams() const;
+	QStringList params() const;
 	void setParams(const QStringList &params);
 
 	QString currentDirectory() const;
@@ -64,7 +64,7 @@ public:
 	// Если процесс не запущен, возвращает значение для последнего запуска
 	int CPUTime() const;
 
-	Limits getLimits() const;
+	Limits limits() const;
 	void setLimits(const Limits &restrictions);
 
 	// Возвращает объект в исходное состояние

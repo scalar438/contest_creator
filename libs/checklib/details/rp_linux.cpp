@@ -18,6 +18,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
+#include <boost/chrono.hpp>
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
 	: QObject(parent),
@@ -211,15 +212,17 @@ void checklib::details::RestrictedProcessImpl::wait()
 // @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
+	boost::chrono::system_clock::time_point start = boost::chrono::system_clock::now();
+
 	const int resolution = 10;
-	int cur = 0;
-	while(cur < milliseconds)
+	while(1)
 	{
-		int status;
-		boost::this_thread::sleep(boost::posix_time::milliseconds(resolution));
 		if(!isRunning()) return true;
-		cur += resolution;
+		boost::chrono::duration<double> msec = (boost::chrono::system_clock::now() - start) * 1000;
+		if(msec.count() > milliseconds) break;
+		boost::this_thread::sleep(boost::posix_time::milliseconds(resolution));
 	}
+
 	return false;
 }
 
