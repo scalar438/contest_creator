@@ -4,11 +4,10 @@
 
 #include <memory>
 
-#include <QObject>
 #include <QString>
+#include <QObject>
 #include <QStringList>
 #include <QTimer>
-#include <boost/noncopyable.hpp>
 
 namespace checklib
 {
@@ -19,7 +18,7 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess : public QObject, private boost::noncopyable
+class RestrictedProcess : public QObject
 {
 	Q_OBJECT
 public:
@@ -94,7 +93,8 @@ public:
 	bool getDataFromStandardOutput(QString &data);
 
 signals:
-	void finished();
+
+	void finished(int exitCode);
 
 private:
 

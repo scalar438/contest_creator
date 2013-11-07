@@ -15,8 +15,8 @@
 #include <QFileInfo>
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
-	: QObject(parent),
-	  mTimer(TimerService::instance()->io_service())
+	: QObject(parent)
+	, mTimer(TimerService::instance()->io_service())
 {
 	reset();
 }
@@ -251,7 +251,11 @@ void checklib::details::RestrictedProcessImpl::start()
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	TerminateProcess(mCurrentInformation.hProcess, -1);
+	if(isRunning())
+	{
+		mProcessStatus.store(psTerminated);
+		TerminateProcess(mCurrentInformation.hProcess, -1);
+	}
 }
 
 void checklib::details::RestrictedProcessImpl::wait()
@@ -271,7 +275,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	{
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
-		destroyHandles();
+		while(mIsRunning.load()) Sleep(0);
 		return true;
 	}
 	// Тут надо бросить исключение
@@ -327,6 +331,9 @@ int checklib::details::RestrictedProcessImpl::CPUTimeS() const
 
 void checklib::details::RestrictedProcessImpl::reset()
 {
+	terminate();
+	wait();
+
 	mStandardInput = ss::Stdin;
 	mStandardOutput = ss::Stdout;
 	mStandardError = ss::Stderr;
@@ -376,7 +383,6 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 		qDebug() << "WriteFile1 error";
 		return false;
 	}
-	qDebug() << "WriteBytes1 count:" << count;
 	if(newLine)
 	{
 		char c = '\n';
@@ -385,7 +391,6 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 			qDebug() << "WriteFile2 error";
 			return false;
 		}
-		qDebug() << "WriteBytes2 count:" << count;
 	}
 	return true;
 }
@@ -545,16 +550,34 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		}
 		break;
 	case WAIT_FAILED:
-		qDebug() << "Wait failed";
+		{
+			void* cstr;
+			FormatMessageA(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				NULL,
+				GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+				(LPSTR) &cstr,
+				0,
+				NULL
+			);
+			qDebug() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
+						", isRunning =" << isRunning();
+			LocalFree(cstr);
+		}
 		break;
 	}
 }
 
 void checklib::details::RestrictedProcessImpl::destroyHandles()
 {
-	mutex_locker lock(mHandlesMutex);
-	if(!isRunning()) return;
-	CloseHandle(mCurrentInformation.hProcess);
-	CloseHandle(mCurrentInformation.hThread);
-	mIsRunning.store(false);
+	{
+		mutex_locker lock(mHandlesMutex);
+		if(!isRunning()) return;
+		CloseHandle(mCurrentInformation.hProcess);
+		CloseHandle(mCurrentInformation.hThread);
+
+		mIsRunning.store(false);
+	}
+	emit finished(mExitCode);
 }

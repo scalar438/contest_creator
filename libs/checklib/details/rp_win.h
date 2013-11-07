@@ -3,10 +3,12 @@
 #include "../rp_types.h"
 
 #include <memory>
+#ifndef Q_MOC_RUN
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/atomic.hpp>
+#endif
 
 #include <windows.h>
 #include <psapi.h>
@@ -73,10 +75,11 @@ private:
 	std::shared_ptr<AutoCloser> ptr;
 };
 
-class RestrictedProcessImpl
+class RestrictedProcessImpl : public QObject
 {
+	Q_OBJECT
 public:
-	RestrictedProcessImpl(QObject *parent);
+	RestrictedProcessImpl(QObject *parent = nullptr);
 	~RestrictedProcessImpl();
 
 	QString getProgram() const;
@@ -119,6 +122,10 @@ public:
 
 	bool sendDataToStandardInput(const QString &data, bool newLine);
 	bool getDataFromStandardOutput(QString &data);
+
+signals:
+
+	void finished(int exitCode);
 
 private:
 	QString mProgram;

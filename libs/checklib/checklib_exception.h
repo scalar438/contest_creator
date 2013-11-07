@@ -18,6 +18,20 @@ namespace checklib
 		ExceptionCannotOpenFile(const QString &fileName)
 			: ExceptionBase(fileName)
 		{
+		}
+		ExceptionCannotOpenFile(const QString &fileName, const QString &info)
+			: ExceptionBase("File " + fileName + " cannot be open: " + info)
+		{
+
+		}
+	};
+
+	class ExseptionCannotStartProcess : public ExceptionBase
+	{
+	public:
+		ExseptionCannotStartProcess(const QString &process, const QString &)
+			: ExceptionBase("123")
+		{
 
 		}
 	};

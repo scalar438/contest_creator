@@ -10,7 +10,7 @@ checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	: QObject(parent)
 {
 	pimpl = new details::RestrictedProcessImpl(this);
-	connect(pimpl, &details::RestrictedProcessImpl::finished, this, &checklib::RestrictedProcess::finished);
+	connect(pimpl, &details::RestrictedProcessImpl::finished, this, &RestrictedProcess::finished);
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()
