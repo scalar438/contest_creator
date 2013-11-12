@@ -37,6 +37,19 @@ void TestRun::isRunningChecking()
 	QVERIFY(!runner.isRunning());
 }
 
+void TestRun::testTerminate()
+{
+	checklib::RestrictedProcess runner;
+
+	runner.setProgram("./examples/pTL");
+	runner.start();
+	QVERIFY(!runner.wait(500));
+
+	runner.terminate();
+	QVERIFY(runner.wait(100));
+	QVERIFY(runner.processStatus() == checklib::psTerminated);
+}
+
 void TestRun::testTL()
 {
 	checklib::RestrictedProcess runner;

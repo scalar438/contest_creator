@@ -15,6 +15,8 @@ private slots:
 
 	void isRunningChecking();
 
+	void testTerminate();
+
 	void testTL();
 
 	void testArgs();
