@@ -20,6 +20,5 @@ PRE_TARGETDEPS += ../../libs/checklib
 
 unix:QMAKE_CXXFLAGS += --std=c++0x
 unix: LIBS += -lboost_system -lboost_filesystem -lboost_thread -lboost_chrono
-TARGET = runTests
 
 DESTDIR = ../

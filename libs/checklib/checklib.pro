@@ -8,7 +8,6 @@ HEADERS += \
     rp_types.h \
     rp.h \  
     rp_consts.h \
-    TimerService.h \
     timer_service.h
 
 SOURCES += \
