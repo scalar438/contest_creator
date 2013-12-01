@@ -3,18 +3,11 @@
 #include <QSettings>
 #include <QFile>
 
-Tester::Tester(const QString &settingsFileName)
+Tester::Tester()
 {
-	QSettings settings(settingsFileName);
-
 }
 
 Tester::~Tester()
-{
-
-}
-
-void Tester::onCheckTimerTimeout()
 {
 
 }
@@ -49,10 +42,26 @@ checklib::ProcessStatus Runner::getProcessStatus() const
 	return mProcess.processStatus();
 }
 
-void Runner::run(QString inputFileName, QString outputFileName)
+void Runner::startTest(QString inputFileName, QString outputFileName)
 {
 	mProcess.setStandardInput(inputFileName);
 	mProcess.setStandardOutput(outputFileName);
 	mProcess.start();
 	mProcess.wait();
+}
+
+
+ParamsReader::ParamsReader(const QString &settingsFileName)
+{
+
+}
+
+QString ParamsReader::programName() const
+{
+	return "";
+}
+
+checklib::Limits ParamsReader::limits() const
+{
+	return checklib::Limits();
 }

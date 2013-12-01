@@ -3,19 +3,32 @@
 #include <QString>
 #include "checklib/rp.h"
 
+class ParamsReader
+{
+public:
+	ParamsReader(const QString &settingsFileName);
+
+	QString programName() const;
+	checklib::Limits limits() const;
+};
+
+// Класс, обеспечивающий запуск программы
 class Tester : public QObject
 {
 	Q_OBJECT
 public:
-	Tester(const QString &settingsFileName);
+	Tester();
 	~Tester();
 
-private slots:
-
-	// Проверка и вывод использования ресурсов
-	void onCheckTimerTimeout();
+public slots:
 
 	void onTestFinished(int exitCode);
+
+signals:
+
+	void nextTest(QString inputFileName, QString outputFileName);
+
+	void testCompleted();
 };
 
 // Класс, живущий в отдельном потоке, запускающий программу и выдающий ее вердикты
@@ -31,7 +44,7 @@ public:
 
 	checklib::ProcessStatus getProcessStatus() const;
 public slots:
-	void run(QString inputFileName, QString outputFileName);
+	void startTest(QString inputFileName, QString outputFileName);
 
 signals:
 
