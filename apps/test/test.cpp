@@ -2,6 +2,7 @@
 
 #include <QSettings>
 #include <QFile>
+#include <QDebug>
 
 Tester::Tester()
 {
@@ -17,6 +18,10 @@ void Tester::onTestFinished(int exitCode)
 
 }
 
+void Tester::startTesting()
+{
+	qDebug() << "start testing";
+}
 
 Runner::Runner(const QString &programName, checklib::Limits limits)
 {

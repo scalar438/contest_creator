@@ -24,6 +24,8 @@ public slots:
 
 	void onTestFinished(int exitCode);
 
+	void startTesting();
+
 signals:
 
 	void nextTest(QString inputFileName, QString outputFileName);

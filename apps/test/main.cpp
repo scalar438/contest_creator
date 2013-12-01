@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
 	QCoreApplication app(argc, argv);
 
-	QString settingsFileName = "settings.ini";
+	QString settingsFileName = "test.ini";
 
 	if(app.arguments().size() > 1)
 	{
@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 	QObject::connect(&runner, &Runner::finished, &tester, &Tester::onTestFinished);
 	QObject::connect(&tester, &Tester::nextTest, &runner, &Runner::startTest);
 	QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
+	QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
+	QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
 
 	return app.exec();
 }
