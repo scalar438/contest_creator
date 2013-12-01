@@ -6,8 +6,8 @@
 class Tester : public QObject
 {
 	Q_OBJECT
-private:
-	Tester();
+public:
+	Tester(const QString &settingsFileName);
 	~Tester();
 
 private slots:
@@ -23,7 +23,7 @@ class Runner : public QObject
 {
 	Q_OBJECT
 public:
-	Runner(const QString &programName);
+	Runner(const QString &programName, checklib::Limits limits);
 
 	int getTime() const;
 
@@ -39,5 +39,7 @@ signals:
 
 private:
 
-	checklib::RestrictedProcess rp;
+	checklib::RestrictedProcess mProcess;
+
+	checklib::Limits mLimits;
 };
