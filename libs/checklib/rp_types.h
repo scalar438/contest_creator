@@ -8,7 +8,9 @@ struct Limits
 {
 	bool useTimeLimit;
 	bool useMemoryLimit;
+	// Лимит времени на выполнение программы, в миллисекундах
 	int timeLimit;
+	// Лимит памяти, в байтах
 	int memoryLimit;
 	Limits()
 	{

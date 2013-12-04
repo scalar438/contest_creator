@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QDebug>
 #include <QFile>
+#include <QDir>
 
 int main(int argc, char *argv[])
 {
@@ -13,43 +14,47 @@ int main(int argc, char *argv[])
 
 	QString settingsFileName = "test.ini";
 
-	if(app.arguments().size() > 1)
+	try
 	{
-		if(app.arguments()[1] == "-ini")
+		if(app.arguments().size() > 1)
 		{
-			if(app.arguments().size() > 2)
+			if(app.arguments()[1] == "-ini")
 			{
-				settingsFileName = app.arguments()[2];
+				if(app.arguments().size() > 2)
+				{
+					settingsFileName = app.arguments()[2];
+				}
+				else
+				{
+					throw std::exception("Wrong argument format. Usage: -ini <settings-file>");
+				}
 			}
 			else
 			{
-				std::cout << "Wrong format arguments. Usage: -ini <settings-file>" << std::endl;
-				return 0;
+				throw std::exception(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
 			}
 		}
-		else
-		{
-			std::cout << "Unknown argument: " << app.arguments()[1].toStdString() << std::endl;
-			return 0;
-		}
+		if(!QFile(settingsFileName).exists()) throw std::exception("settings file is not exists");
+
+		ParamsReader reader(settingsFileName);
+
+		Tester tester;
+		Runner runner(reader.programName(), reader.limits());
+		QThread thrd;
+		runner.moveToThread(&thrd);
+		thrd.start();
+
+		QObject::connect(&runner, &Runner::finished, &tester, &Tester::onTestFinished);
+		QObject::connect(&tester, &Tester::nextTest, &runner, &Runner::startTest);
+		QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
+		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
+		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
+
+		return app.exec();
 	}
-	if(!QFile(settingsFileName).exists())
+	catch(std::exception &e)
 	{
-		std::cout << "Settings file is not exists" << std::endl;
-		return 0;
+		std::cout << e.what();
+		return -1;
 	}
-
-	ParamsReader reader(settingsFileName);
-
-	Tester tester;
-	Runner runner(reader.programName(), reader.limits());
-	QThread thrd;
-
-	QObject::connect(&runner, &Runner::finished, &tester, &Tester::onTestFinished);
-	QObject::connect(&tester, &Tester::nextTest, &runner, &Runner::startTest);
-	QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
-	QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
-	QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
-
-	return app.exec();
 }

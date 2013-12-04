@@ -1,7 +1,16 @@
 ﻿#pragma once
+#include "checklib/rp.h"
+
 #include <QObject>
 #include <QString>
-#include "checklib/rp.h"
+#include <QSettings>
+#include <vector>
+
+struct OneTest
+{
+	QString inputFile;
+	QString outputFile;
+};
 
 class ParamsReader
 {
@@ -10,6 +19,14 @@ public:
 
 	QString programName() const;
 	checklib::Limits limits() const;
+	std::vector<OneTest> tests() const;
+private:
+	QSettings mSettings;
+	QString mProgramName;
+	checklib::Limits mLimits;
+	std::vector<OneTest> mTests;
+
+	void readLimits();
 };
 
 // Класс, обеспечивающий запуск программы
@@ -54,7 +71,7 @@ signals:
 
 private:
 
-	checklib::RestrictedProcess mProcess;
+	checklib::RestrictedProcess *mProcess;
 
 	checklib::Limits mLimits;
 };
