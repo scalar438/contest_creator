@@ -12,34 +12,18 @@ struct OneTest
 	QString outputFile;
 };
 
-class ParamsReader
-{
-public:
-	ParamsReader(const QString &settingsFileName);
-
-	QString programName() const;
-	checklib::Limits limits() const;
-	std::vector<OneTest> tests() const;
-private:
-	QSettings mSettings;
-	QString mProgramName;
-	checklib::Limits mLimits;
-	std::vector<OneTest> mTests;
-
-	void readLimits();
-};
+class ParamsReader;
+class Runner;
 
 // Класс, обеспечивающий запуск программы
 class Tester : public QObject
 {
 	Q_OBJECT
 public:
-	Tester();
+	Tester(const ParamsReader *reader, Runner *runner);
 	~Tester();
 
 public slots:
-
-	void onTestFinished(int exitCode);
 
 	void startTesting();
 
@@ -48,6 +32,20 @@ signals:
 	void nextTest(QString inputFileName, QString outputFileName);
 
 	void testCompleted();
+
+private slots:
+
+	void onTestFinished(int exitCode);
+
+private:
+
+	const ParamsReader *mReader;
+
+	Runner *mRunner;
+
+	int mCurrentTest;
+
+	std::vector<OneTest> mTests;
 };
 
 // Класс, живущий в отдельном потоке, запускающий программу и выдающий ее вердикты
@@ -74,4 +72,27 @@ private:
 	checklib::RestrictedProcess *mProcess;
 
 	checklib::Limits mLimits;
+};
+
+class ParamsReader
+{
+public:
+	ParamsReader(const QString &settingsFileName);
+
+	QString programName() const;
+	checklib::Limits limits() const;
+	std::vector<OneTest> tests() const;
+	QString checker() const;
+	bool interrupt() const;
+	bool genAnswers() const;
+private:
+	QSettings mSettings;
+	QString mProgramName;
+	QString mChecker;
+	checklib::Limits mLimits;
+	std::vector<OneTest> mTests;
+	bool mInterrupt;
+	bool mGenAnswers;
+
+	void readTests();
 };

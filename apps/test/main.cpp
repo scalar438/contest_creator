@@ -37,15 +37,13 @@ int main(int argc, char *argv[])
 		if(!QFile(settingsFileName).exists()) throw std::exception("settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
-
-		Tester tester;
 		Runner runner(reader.programName(), reader.limits());
+		Tester tester(&reader, &runner);
+
 		QThread thrd;
 		runner.moveToThread(&thrd);
 		thrd.start();
 
-		QObject::connect(&runner, &Runner::finished, &tester, &Tester::onTestFinished);
-		QObject::connect(&tester, &Tester::nextTest, &runner, &Runner::startTest);
 		QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
 		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
 		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);

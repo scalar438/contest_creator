@@ -4,8 +4,16 @@
 #include <QFile>
 #include <QDebug>
 
-Tester::Tester()
+//-----------------------------------------------------
+// Tester
+//-----------------------------------------------------
+
+Tester::Tester(const ParamsReader *reader, Runner *runner)
+	: mReader(reader),
+	  mRunner(runner)
 {
+	QObject::connect(runner, &Runner::finished, this, &Tester::onTestFinished, Qt::QueuedConnection);
+	QObject::connect(this, &Tester::nextTest, runner, &Runner::startTest, Qt::QueuedConnection);
 }
 
 Tester::~Tester()
@@ -15,13 +23,35 @@ Tester::~Tester()
 
 void Tester::onTestFinished(int exitCode)
 {
+	switch(mRunner->getProcessStatus())
+	{
+	case checklib::psExited:;
+		if(mCurrentTest == (int)mTests.size())
+		{
+			emit testCompleted();
+			return;
+		}
+		break;
+	case checklib::psTimeLimitExceeded:;
+	case checklib::psMemoryLimitExceeded:;
+	case checklib::psRuntimeError:;
 
+		break;
+	default:
+		throw std::logic_error("unexpected process status");
+	}
 }
 
 void Tester::startTesting()
 {
+	mCurrentTest = 1;
+
 	emit testCompleted();
 }
+
+//----------------------------------------------
+// Runner
+//----------------------------------------------
 
 Runner::Runner(const QString &programName, checklib::Limits limits)
 	: mProcess(new checklib::RestrictedProcess(this))
@@ -56,6 +86,11 @@ void Runner::startTest(QString inputFileName, QString outputFileName)
 	mProcess->wait();
 }
 
+
+//---------------------------------------------------
+// ParamsReader
+//---------------------------------------------------
+
 ParamsReader::ParamsReader(const QString &settingsFileName)
 	: mSettings(settingsFileName, QSettings::IniFormat)
 {
@@ -67,7 +102,16 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	mLimits.useMemoryLimit = mSettings.value("MemoryLimit", 64).toString().toLower() != "no";
 	mLimits.useMemoryLimit = mSettings.value("MemoryLimit", 64).toInt() * 1024 * 1024;
 
-	readLimits();
+	mInterrupt = mSettings.value("Interrupt", "YES").toString().toLower() == "yes" ||
+			mSettings.value("Interrupt", "YES").toString() == "1";
+
+	if(!mSettings.contains("Checker")) throw std::exception("Checker must be set");
+	mChecker = mSettings.value("Checker").toString();
+
+	mGenAnswers = mSettings.value("GenAnswers", "YES").toString().toLower() == "yes" ||
+			mSettings.value("Interrupt", "YES").toString() == "1";
+
+	readTests();
 }
 
 QString ParamsReader::programName() const
@@ -85,7 +129,22 @@ std::vector<OneTest> ParamsReader::tests() const
 	return mTests;
 }
 
-void ParamsReader::readLimits()
+QString ParamsReader::checker() const
+{
+	return mChecker;
+}
+
+bool ParamsReader::interrupt() const
+{
+	return mInterrupt;
+}
+
+bool ParamsReader::genAnswers() const
+{
+	return mGenAnswers;
+}
+
+void ParamsReader::readTests()
 {
 	auto testNumberS = mSettings.value("TestNumber", "auto").toString().toLower();
 	int testNumber;
