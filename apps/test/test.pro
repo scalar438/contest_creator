@@ -8,7 +8,7 @@ SOURCES += \
 	consoleUtils.cpp
 
 HEADERS += test.h \
-	consoleUtils.h
+    consoleUtils.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)

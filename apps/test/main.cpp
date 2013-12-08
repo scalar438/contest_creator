@@ -1,4 +1,5 @@
 ﻿#include "test.h"
+#include "consoleUtils.h"
 
 #include <iostream>
 
@@ -52,7 +53,7 @@ int main(int argc, char *argv[])
 	}
 	catch(std::exception &e)
 	{
-		std::cout << e.what();
+		std::cout << cu::textColor(cu::red) << "Error: " << cu::textColor(cu::lightGray) << e.what();
 		return -1;
 	}
 }
