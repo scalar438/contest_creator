@@ -26,17 +26,25 @@ static Color textColor(TextColor textColor)
 
 class Position;
 Position cursorPosition(int x, int y);
+// Задает позицию в текущей строке.
+Position cursorPosition(int y);
 class Position
 {
 	Position(int x, int y) : mx(x), my(y){}
 	friend std::ostream& operator << (std::ostream &os, const Position &p);
 	friend Position cursorPosition(int, int);
+	friend Position cursorPosition(int);
 	int mx, my;
 };
 
 static Position cursorPosition(int x, int y)
 {
 	return Position(x, y);
+}
+
+static Position cursorPosition(int x)
+{
+	return Position(x, -1);
 }
 
 }

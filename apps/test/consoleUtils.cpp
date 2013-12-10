@@ -1,5 +1,6 @@
 ﻿#include "consoleUtils.h"
 #include <QtCore>
+#include <iostream>
 
 #ifdef Q_OS_WIN
 #include "Windows.h"
@@ -14,11 +15,24 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
 std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 {
 	os.flush();
-	COORD c = {p.mx, p.my};
+	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD c;
+	c.X = p.mx;
+	if(p.my == -1)
+	{
+		CONSOLE_SCREEN_BUFFER_INFO info;
+		auto res = GetConsoleScreenBufferInfo(handle, &info);
+		//std::cout << "gcsbi: " << res << " ";
+
+		c.Y = info.dwCursorPosition.Y;
+		//std::cout << "c.X = " << c.X;
+	}
+	else c.Y = p.my;
 
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), c);
 	return os;
 }
+
 #else
 std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Color &color)
 {
@@ -30,3 +44,5 @@ std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::P
 	return os;
 }
 #endif
+
+
