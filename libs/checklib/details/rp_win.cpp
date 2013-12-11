@@ -1,6 +1,7 @@
 ﻿#include "rp_win.h"
 #include "../timer_service.h"
 #include "../rp_consts.h"
+#include "../checklib_exception.h"
 
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -132,11 +133,7 @@ void checklib::details::RestrictedProcessImpl::start()
 
 			f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
 			               &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE)
-			{
-				qDebug() << "Cannot open file" << mStandardInput;
-				return;
-			}
+			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardInput);
 		}
 		si.hStdInput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -159,11 +156,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			std::vector<wchar_t> str(mStandardOutput.length() + 1, 0);
 			mStandardOutput.toWCharArray(&str[0]);
 			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE)
-			{
-				qDebug() << "Cannot open file" << mStandardOutput;
-				return;
-			}
+			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardOutput);
 		}
 		si.hStdOutput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -186,11 +179,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			std::vector<wchar_t> str(mStandardError.length() + 1, 0);
 			mStandardError.toWCharArray(&str[0]);
 			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE)
-			{
-				qDebug() << "Cannot open file" << mStandardError;
-				return;
-			}
+			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardError);
 		}
 		si.hStdError = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -226,11 +215,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), NULL, NULL, TRUE,
-	                   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi))
-	{
-		qDebug() << "Cannot create process";
-		return;
-	}
+					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
 	handlesForAutoClose.clear();
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};

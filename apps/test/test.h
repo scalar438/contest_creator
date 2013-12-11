@@ -94,5 +94,6 @@ private:
 	bool mInterrupt;
 	bool mGenAnswers;
 
+	// Читает и парсит названия входных и выходных файлов
 	void readTests();
 };

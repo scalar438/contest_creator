@@ -1,4 +1,5 @@
 ﻿#include "test.h"
+#include "consoleUtils.h"
 
 #include <QSettings>
 #include <QFile>
@@ -32,7 +33,14 @@ void Tester::onTestFinished(int exitCode)
 			return;
 		}
 		break;
-	case checklib::psTimeLimitExceeded:;
+	case checklib::psTimeLimitExceeded:
+	//	std::cout << cu::textColor(cu::cyan) << "Time limit exceeded";
+		if(mReader->interrupt())
+		{
+
+		}
+		//std::cout << cu
+		break;
 	case checklib::psMemoryLimitExceeded:;
 	case checklib::psRuntimeError:;
 
