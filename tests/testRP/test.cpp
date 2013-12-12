@@ -1,5 +1,6 @@
 ﻿#include "test.h"
 #include "checklib/rp.h"
+#include "checklib/checklib_exception.h"
 
 #include <QtTest/QtTest>
 #include <fstream>
@@ -43,6 +44,7 @@ void TestRun::testTerminate()
 
 	runner.setProgram("./examples/pTL");
 	runner.start();
+
 	QVERIFY(!runner.wait(500));
 
 	runner.terminate();
@@ -238,6 +240,24 @@ void TestRun::testInteractive()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
+}
+
+void TestRun::isExceptionThrowed()
+{
+	checklib::RestrictedProcess runner;
+	runner.setProgram("./examples/FileNotExists");
+	bool exceptionFlag = false;
+	try
+	{
+		runner.start();
+		runner.wait();
+	}
+	catch(checklib::Exception &)
+	{
+		exceptionFlag = true;
+	}
+
+	QVERIFY(exceptionFlag);
 }
 
 TestRun::TestRun():

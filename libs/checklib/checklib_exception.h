@@ -4,21 +4,20 @@
 
 namespace checklib {
 
-class ChecklibException : public std::exception
+class Exception : public std::exception
 {
 public:
-	ChecklibException(const QString &str)
+	Exception(const QString &str)
 		: std::exception(str.toLocal8Bit().data()) {}
 };
 
-class CannotStartProcess : public ChecklibException
+class CannotStartProcess : public Exception
 {
 public:
 	CannotStartProcess(const QString &programName)
-		: ChecklibException("Cannot start program \"" + programName + "\""),
+		: Exception("Cannot start program \"" + programName + "\""),
 		  mProgram(programName)
 	{
-
 	}
 	QString programName() const
 	{
@@ -28,14 +27,13 @@ private:
 	QString mProgram;
 };
 
-class FileNotFound : public ChecklibException
+class FileNotFound : public Exception
 {
 public:
 	FileNotFound(const QString &fileName)
-		: ChecklibException("Cannot start program \"" + fileName + "\""),
+		: Exception("Cannot start program \"" + fileName + "\""),
 		  mFileName(fileName)
 	{
-
 	}
 	QString fileName() const
 	{
