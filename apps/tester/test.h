@@ -37,6 +37,10 @@ private slots:
 
 	void onTestFinished(int exitCode);
 
+protected:
+
+	void timerEvent(QTimerEvent *arg) override;
+
 private:
 
 	const ParamsReader *mReader;
@@ -45,7 +49,12 @@ private:
 
 	int mCurrentTest;
 
+	int mCheckTimer;
+
 	std::vector<OneTest> mTests;
+	bool mIsRunning;
+
+	void printUsage();
 };
 
 // Класс, живущий в отдельном потоке, запускающий программу и выдающий ее вердикты

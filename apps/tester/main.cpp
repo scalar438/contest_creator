@@ -1,5 +1,6 @@
 ﻿#include "test.h"
 #include "consoleUtils.h"
+#include "checklib/checklib_exception.h"
 
 #include <iostream>
 
@@ -51,9 +52,14 @@ int main(int argc, char *argv[])
 
 		return app.exec();
 	}
+	catch(checklib::Exception &e)
+	{
+		std::cout << cu::textColor(cu::red) << "Test error: " << cu::textColor(cu::lightGray) << e.what();
+		return -1;
+	}
 	catch(std::exception &e)
 	{
-		std::cout << cu::textColor(cu::red) << "Error: " << cu::textColor(cu::lightGray) << e.what();
-		return -1;
+		std::cout << cu::textColor(cu::red) << "Internal error: " << cu::textColor(cu::lightGray) << e.what();
+		return -2;
 	}
 }

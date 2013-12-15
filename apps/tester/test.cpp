@@ -1,9 +1,12 @@
 ﻿#include "test.h"
 #include "consoleUtils.h"
 
+#include <iostream>
+
 #include <QSettings>
 #include <QFile>
 #include <QDebug>
+#include <QTimerEvent>
 
 //-----------------------------------------------------
 // Tester
@@ -34,15 +37,14 @@ void Tester::onTestFinished(int exitCode)
 		}
 		break;
 	case checklib::psTimeLimitExceeded:
-	//	std::cout << cu::textColor(cu::cyan) << "Time limit exceeded";
+		std::cout << cu::textColor(cu::cyan) << "Time limit exceeded";
 		if(mReader->interrupt())
 		{
-
 		}
-		//std::cout << cu
 		break;
 	case checklib::psMemoryLimitExceeded:;
 	case checklib::psRuntimeError:;
+
 
 		break;
 	default:
@@ -50,9 +52,25 @@ void Tester::onTestFinished(int exitCode)
 	}
 }
 
+void Tester::timerEvent(QTimerEvent *arg)
+{
+	if(mIsRunning && arg->timerId() == mCheckTimer)
+	{
+		std::cout << cu::textColor(cu::lightGray);
+		printUsage();
+	}
+}
+
+void Tester::printUsage()
+{
+	std::cout << cu::cursorPosition(0) << "Test " << mCurrentTest << ": ";
+}
+
 void Tester::startTesting()
 {
 	mCurrentTest = 1;
+
+	mCheckTimer = this->startTimer(200);
 
 	emit testCompleted();
 }
