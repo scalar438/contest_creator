@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		if(!QFile(settingsFileName).exists()) throw std::exception("settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
-		Runner runner(reader.programName(), reader.limits());
+		Runner runner(reader.programName, reader.limits);
 		Tester tester(&reader, &runner);
 
 		QThread thrd;
@@ -54,12 +54,17 @@ int main(int argc, char *argv[])
 	}
 	catch(checklib::Exception &e)
 	{
-		std::cout << cu::textColor(cu::red) << "Test error: " << cu::textColor(cu::lightGray) << e.what();
+		std::cout << cu::textColor(cu::red) << "Testing error: " << cu::textColor(cu::lightGray) << e.what();
+		return -1;
+	}
+	catch(std::logic_error &e)
+	{
+		std::cout << cu::textColor(cu::red) << "Internal error: " << cu::textColor(cu::lightGray) << e.what();
 		return -1;
 	}
 	catch(std::exception &e)
 	{
-		std::cout << cu::textColor(cu::red) << "Internal error: " << cu::textColor(cu::lightGray) << e.what();
-		return -2;
+		std::cout << cu::textColor(cu::red) << "Error: " << cu::textColor(cu::lightGray) << e.what();
+		return -1;
 	}
 }

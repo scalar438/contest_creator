@@ -4,7 +4,9 @@
 #include <QObject>
 #include <QString>
 #include <QSettings>
+#include <QFile>
 #include <vector>
+#include <memory>
 
 struct OneTest
 {
@@ -14,6 +16,7 @@ struct OneTest
 
 class ParamsReader;
 class Runner;
+class ResourceManager;
 
 // Класс, обеспечивающий запуск программы
 class Tester : public QObject
@@ -51,10 +54,23 @@ private:
 
 	int mCheckTimer;
 
-	std::vector<OneTest> mTests;
 	bool mIsRunning;
 
+	std::shared_ptr<ResourceManager> mResourceManager;
+
 	void printUsage();
+
+	void beginTest();
+};
+
+// Класс для копирования входных и выходных файлов и их очистки
+class ResourceManager
+{
+public:
+	ResourceManager(const QString &inputFile, const QString &outputFile, const QString &testFile);
+	~ResourceManager();
+private:
+	QString mInputFile, mOutputFile, mTestFile;
 };
 
 // Класс, живущий в отдельном потоке, запускающий программу и выдающий ее вердикты
@@ -88,21 +104,17 @@ class ParamsReader
 public:
 	ParamsReader(const QString &settingsFileName);
 
-	QString programName() const;
-	checklib::Limits limits() const;
-	std::vector<OneTest> tests() const;
-	QString checker() const;
-	bool interrupt() const;
-	bool genAnswers() const;
+	QString programName;
+	QString checker;
+	QString inputFile;
+	QString outputFile;
+	checklib::Limits limits;
+	std::vector<OneTest> tests;
+	bool interrupt;
+	bool genAnswers;
 private:
-	QSettings mSettings;
-	QString mProgramName;
-	QString mChecker;
-	checklib::Limits mLimits;
-	std::vector<OneTest> mTests;
-	bool mInterrupt;
-	bool mGenAnswers;
 
+	QSettings mSettings;
 	// Читает и парсит названия входных и выходных файлов
 	void readTests();
 };

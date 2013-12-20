@@ -1,3 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS += tester
+SUBDIRS += tester \
+		   checkers
