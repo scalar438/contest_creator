@@ -7,9 +7,12 @@
 namespace cu
 {
 
+// Полу
+void initStandard();
+
 class Color;
 enum TextColor {black, navy, green, teal, brown, purple, olive, lightGray,
-				darkGray, blue, lime, cyan, red, magenta, yellow, white};
+				darkGray, blue, lime, cyan, red, magenta, yellow, white, standard};
 Color textColor(TextColor textColor);
 class Color
 {

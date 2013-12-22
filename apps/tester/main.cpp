@@ -12,6 +12,7 @@
 
 int main(int argc, char *argv[])
 {
+	cu::initStandard();
 	QCoreApplication app(argc, argv);
 
 	QString settingsFileName = "test.ini";

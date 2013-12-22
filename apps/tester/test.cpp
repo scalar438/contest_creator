@@ -1,5 +1,6 @@
 ﻿#include "test.h"
 #include "consoleUtils.h"
+#include "checklib/checklib_exception.h"
 
 #include <iostream>
 
@@ -7,6 +8,7 @@
 #include <QFile>
 #include <QDebug>
 #include <QTimerEvent>
+#include <QProcess>
 
 //-----------------------------------------------------
 // Tester
@@ -30,8 +32,52 @@ Tester::~Tester()
 
 void Tester::onTestFinished(int exitCode)
 {
+	mIsRunning = false;
 	std::cout << cu::textColor(cu::white);
 	printUsage();
+
+	switch(mRunner->getProcessStatus())
+	{
+	case checklib::psRuntimeError:
+		std::cout << cu::textColor(cu::red) << "Runtime error";
+		break;
+	case checklib::psTimeLimitExceeded:
+		std::cout << cu::textColor(cu::red) << "Time limit exceeded";
+		break;
+	case checklib::psMemoryLimitExceeded:
+		std::cout << cu::textColor(cu::red) << "Memory limit exceeded";
+		break;
+	case checklib::psIdlenessLimitExceeded:
+		std::cout << cu::textColor(cu::red) << "Idleness limit exceeded";
+		break;
+	case checklib::psExited:
+		{
+			QProcess process;
+
+			process.start("lcmp",
+			              QStringList() << mReader->inputFile <<
+			              mReader->outputFile << mReader->tests[mCurrentTest].outputFile);
+			process.waitForFinished();
+
+			std::cout << QString(process.readAllStandardError()).toStdString();
+
+			mCurrentTest++;
+			if(mCurrentTest == (int)mReader->tests.size() ||
+			        process.exitCode() && mReader->interrupt)
+			{
+				emit testCompleted();
+			}
+			else
+			{
+				beginTest();
+			}
+		}
+		break;
+
+	default:
+		qDebug() << mRunner->getProcessStatus();
+		throw std::logic_error("Unexpected process status");
+	}
 }
 
 void Tester::timerEvent(QTimerEvent *arg)
@@ -48,16 +94,20 @@ void Tester::timerEvent(QTimerEvent *arg)
 
 void Tester::printUsage()
 {
-	std::cout << cu::cursorPosition(0) << "Test " << mCurrentTest + 1 << ": ";
+	std::cout << cu::cursorPosition(0) << "Test " << mCurrentTest + 1 << ": "
+				 << mRunner->getTime() << " ms " << mRunner->getMemoryUsage() / 1024 << " KBytes";
 }
 
 void Tester::beginTest()
 {
-	mResourceManager = std::make_shared<ResourceManager>(mReader->tests[mCurrentTest].inputFile,
-														 mReader->inputFile, mReader->outputFile);
+	mResourceManager.reset();
+	mResourceManager = std::make_shared<ResourceManager>(mReader->inputFile,
+	                   mReader->outputFile,
+	                   mReader->tests[mCurrentTest].inputFile);
+
 	mIsRunning = true;
 
-	emit nextTest(mReader->tests[mCurrentTest].inputFile, mReader->outputFile);
+	emit nextTest(mReader->inputFile, mReader->outputFile);
 }
 
 void Tester::startTesting()
@@ -98,11 +148,19 @@ checklib::ProcessStatus Runner::getProcessStatus() const
 
 void Runner::startTest(QString inputFileName, QString outputFileName)
 {
-	qDebug() << "testStarted";
-	if(inputFileName == "#STDIN") mProcess->setStandardInput(inputFileName);
-	if(inputFileName == "#STDOUT") mProcess->setStandardOutput(outputFileName);
-	mProcess->start();
-	mProcess->wait();
+	mProcess->reset();
+	if(inputFileName.toUpper() == "#STDIN") mProcess->setStandardInput(inputFileName);
+	if(outputFileName.toUpper() == "#STDOUT") mProcess->setStandardOutput(outputFileName);
+	try
+	{
+		mProcess->start();
+	}
+	catch(checklib::Exception &e)
+	{
+		qDebug() << "Error: cannot start process," << e.what();
+		emit finished(-1);
+		return;
+	}
 }
 
 
@@ -136,13 +194,17 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	}
 
 	interrupt = mSettings.value("Interrupt", "YES").toString().toLower() == "yes" ||
-			mSettings.value("Interrupt", "YES").toString() == "1";
+	            mSettings.value("Interrupt", "YES").toString() == "1";
 
 	if(!mSettings.contains("Checker")) throw std::exception("Checker must be set");
 	checker = mSettings.value("Checker").toString();
 
-	genAnswers = mSettings.value("GenAnswers", "YES").toString().toLower() == "yes" ||
-			mSettings.value("Interrupt", "YES").toString() == "1";
+	{
+		QString tmp = mSettings.value("GenAnswers", "YES").toString().toLower();
+		if(tmp == "yes" || tmp == "1") genAnswers = 1;
+		else if(tmp == "0" || tmp == "no") genAnswers = 0;
+		else genAnswers = 2;
+	}
 
 	readTests();
 
@@ -163,10 +225,11 @@ void ParamsReader::readTests()
 	}
 	else testNumber = 1000000000;
 
-	QString testInput = mSettings.value("TestInput", "00").toString();
+	if(!mSettings.contains("TestInput")) throw std::exception("Input files in not exists");
+	QString testInput = mSettings.value("TestInput").toString();
 	int zStart, zEnd;
 
-	auto getZerosPos = [&zStart, &zEnd](const QString &str)
+	auto getZerosPos = [&zStart, &zEnd](const QString & str)
 	{
 		zStart = str.indexOf('0');
 		zEnd = zStart;
@@ -174,13 +237,13 @@ void ParamsReader::readTests()
 		while(zEnd < str.length() && str[zEnd] == '0') ++zEnd;
 	};
 
-	auto getFileName = [&zStart, &zEnd](const QString &str, int testNumber) -> QString
+	auto getFileName = [&zStart, &zEnd](const QString & str, int testNumber) -> QString
 	{
 		QString tmp = QString::number(testNumber);
 		while(tmp.length() < zEnd - zStart) tmp = "0" + tmp;
 		return str.left(zStart) +
-				tmp +
-				str.right(str.length() - zEnd);
+		tmp +
+		str.right(str.length() - zEnd);
 	};
 
 	getZerosPos(testInput);
@@ -211,7 +274,7 @@ void ParamsReader::readTests()
 ResourceManager::ResourceManager(const QString &inputFile, const QString &outputFile, const QString &testFile)
 	: mInputFile(inputFile), mOutputFile(outputFile), mTestFile(testFile)
 {
-//	if(QFile::exists(mInputFile)) QFile::remove(mInputFile);
+	if(QFile::exists(mInputFile)) QFile::remove(mInputFile);
 
 	QFile::copy(testFile, mInputFile);
 	QFile::remove(mOutputFile);

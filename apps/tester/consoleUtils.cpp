@@ -5,6 +5,8 @@
 #ifdef Q_OS_WIN
 #include "Windows.h"
 
+int defaultColor;
+
 std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
 {
 	os.flush();
@@ -33,6 +35,11 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 	return os;
 }
 
+void cu::initStandard()
+{
+	//GetConsoleTextAttr
+}
+
 #else
 std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Color &color)
 {
@@ -44,5 +51,6 @@ std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::P
 	return os;
 }
 #endif
+
 
 

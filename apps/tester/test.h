@@ -63,12 +63,14 @@ private:
 	void beginTest();
 };
 
-// Класс для копирования входных и выходных файлов и их очистки
+// Управляет входными и выходными данными тестируемой программы и автоматически
+// их удаляет
 class ResourceManager
 {
 public:
 	ResourceManager(const QString &inputFile, const QString &outputFile, const QString &testFile);
 	~ResourceManager();
+
 private:
 	QString mInputFile, mOutputFile, mTestFile;
 };
@@ -111,7 +113,8 @@ public:
 	checklib::Limits limits;
 	std::vector<OneTest> tests;
 	bool interrupt;
-	bool genAnswers;
+	// 0 - do not generate, 1 - generate, 2 - generate missing
+	int genAnswers;
 private:
 
 	QSettings mSettings;

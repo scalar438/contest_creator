@@ -31,7 +31,7 @@ class FileNotFound : public Exception
 {
 public:
 	FileNotFound(const QString &fileName)
-		: Exception("Cannot start program \"" + fileName + "\""),
+		: Exception("File not found: \"" + fileName + "\""),
 		  mFileName(fileName)
 	{
 	}
