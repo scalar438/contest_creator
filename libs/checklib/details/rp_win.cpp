@@ -205,13 +205,13 @@ void checklib::details::RestrictedProcessImpl::start()
 	if(!mCurrentDirectory.isEmpty())
 	{
 		curDir = boost::shared_array<char>(new char[mCurrentDirectory.size() + 1]);
-		strcpy(curDir.get(), mCurrentDirectory.toLocal8Bit().data());
+		strcpy_s(curDir.get(), mCurrentDirectory.size() + 1, mCurrentDirectory.toLocal8Bit().data());
 	}
 	else
 	{
 		QString currentDir = QFileInfo(programPath).absolutePath();
 		curDir = boost::shared_array<char>(new char[currentDir.size() + 1]);
-		strcpy(curDir.get(), currentDir.toLocal8Bit().data());
+		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.toLocal8Bit().data());
 	}
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), NULL, NULL, TRUE,
