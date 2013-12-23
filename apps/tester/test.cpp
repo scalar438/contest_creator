@@ -75,7 +75,6 @@ void Tester::onTestFinished(int exitCode)
 		break;
 
 	default:
-		qDebug() << mRunner->getProcessStatus();
 		throw std::logic_error("Unexpected process status");
 	}
 }
@@ -95,7 +94,7 @@ void Tester::timerEvent(QTimerEvent *arg)
 void Tester::printUsage()
 {
 	std::cout << cu::cursorPosition(0) << "Test " << mCurrentTest + 1 << ": "
-				 << mRunner->getTime() << " ms " << mRunner->getMemoryUsage() / 1024 << " KBytes";
+				 << mRunner->getTime() << " ms " << mRunner->getMemoryUsage() / 1024 << " KBytes ";
 }
 
 void Tester::beginTest()
@@ -155,9 +154,8 @@ void Runner::startTest(QString inputFileName, QString outputFileName)
 	{
 		mProcess->start();
 	}
-	catch(checklib::Exception &e)
+	catch(checklib::Exception &)
 	{
-		qDebug() << "Error: cannot start process," << e.what();
 		emit finished(-1);
 		return;
 	}

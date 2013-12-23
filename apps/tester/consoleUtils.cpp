@@ -10,7 +10,14 @@ int defaultColor;
 std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
 {
 	os.flush();
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color.mTextColor);
+	if(color.mTextColor == standard)
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), defaultColor);
+	}
+	else
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color.mTextColor);
+	}
 	return os;
 }
 
@@ -24,10 +31,8 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 	{
 		CONSOLE_SCREEN_BUFFER_INFO info;
 		auto res = GetConsoleScreenBufferInfo(handle, &info);
-		//std::cout << "gcsbi: " << res << " ";
 
 		c.Y = info.dwCursorPosition.Y;
-		//std::cout << "c.X = " << c.X;
 	}
 	else c.Y = p.my;
 
@@ -37,7 +42,7 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 
 void cu::initStandard()
 {
-	//GetConsoleTextAttr
+	defaultColor = (int)lightGray;
 }
 
 #else
