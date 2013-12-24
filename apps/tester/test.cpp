@@ -30,7 +30,7 @@ Tester::~Tester()
 
 }
 
-void Tester::onTestFinished(int exitCode)
+void Tester::onTestFinished(int)
 {
 	mIsRunning = false;
 	std::cout << cu::textColor(cu::white);
@@ -52,18 +52,16 @@ void Tester::onTestFinished(int exitCode)
 		break;
 	case checklib::psExited:
 		{
-			QProcess process;
-
-			process.start("lcmp",
-			              QStringList() << mReader->inputFile <<
-			              mReader->outputFile << mReader->tests[mCurrentTest].outputFile);
-			process.waitForFinished();
-
-			std::cout << QString(process.readAllStandardError()).toStdString();
+			checklib::RestrictedProcess process;
+			process.setProgram("lcmp");
+			process.setParams(QStringList() << mReader->inputFile <<
+						 mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
+			process.start();
+			process.wait();
 
 			mCurrentTest++;
 			if(mCurrentTest == (int)mReader->tests.size() ||
-			        process.exitCode() && mReader->interrupt)
+					process.exitCode() && mReader->interrupt)
 			{
 				emit testCompleted();
 			}
@@ -264,7 +262,7 @@ void ParamsReader::readTests()
 
 	for(int i = 0; i < testNumber; ++i)
 	{
-		tests[i].outputFile = getFileName(testOutput, i + 1);
+		tests[i].answerFile = getFileName(testOutput, i + 1);
 	}
 }
 

@@ -7,25 +7,37 @@
 namespace cu
 {
 
-// Полу
-void initStandard();
-
+namespace details {
 class Color;
+}
 enum TextColor {black, navy, green, teal, brown, purple, olive, lightGray,
 				darkGray, blue, lime, cyan, red, magenta, yellow, white, standard};
-Color textColor(TextColor textColor);
+details::Color textColor(TextColor textColor);
+
+namespace details {
 class Color
 {
-	Color(TextColor textColor) : mTextColor(textColor){}
-	friend std::ostream& operator << (std::ostream &os, const Color &color);
-	friend Color textColor(TextColor);
+public:
+	Color(TextColor textColor = standard) : mTextColor(textColor){}
+	friend std::ostream& operator << (std::ostream &os, const details::Color &color);
+	details::Color textColor(TextColor);
 	TextColor mTextColor;
 };
-
-static Color textColor(TextColor textColor)
-{
-	return Color(textColor);
 }
+
+static details::Color textColor(TextColor textColor)
+{
+	return details::Color(textColor);
+}
+
+class ColorSaver
+{
+public:
+	ColorSaver();
+	~ColorSaver();
+private:
+	details::Color mColor;
+};
 
 class Position;
 Position cursorPosition(int x, int y);

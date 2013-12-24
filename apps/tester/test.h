@@ -11,7 +11,7 @@
 struct OneTest
 {
 	QString inputFile;
-	QString outputFile;
+	QString answerFile;
 };
 
 class ParamsReader;
@@ -38,7 +38,7 @@ signals:
 
 private slots:
 
-	void onTestFinished(int exitCode);
+	void onTestFinished(int);
 
 protected:
 

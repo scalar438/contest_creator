@@ -63,38 +63,6 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 	return mIsRunning.load();
 }
 
-void ErrorExit(PTSTR lpszFunction)
-
-// Format a readable error message, display a message box,
-// and exit from the application.
-{
-	LPVOID lpMsgBuf;
-	LPVOID lpDisplayBuf;
-	DWORD dw = GetLastError();
-
-	FormatMessage(
-	    FORMAT_MESSAGE_ALLOCATE_BUFFER |
-	    FORMAT_MESSAGE_FROM_SYSTEM |
-	    FORMAT_MESSAGE_IGNORE_INSERTS,
-	    NULL,
-	    dw,
-	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	    (LPTSTR) &lpMsgBuf,
-	    0, NULL);
-
-	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-	                                  (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-	StringCchPrintf((LPTSTR)lpDisplayBuf,
-	                LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-	                TEXT("%s failed with error %d: %s"),
-	                lpszFunction, dw, lpMsgBuf);
-	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
-
-	LocalFree(lpMsgBuf);
-	LocalFree(lpDisplayBuf);
-}
-
-
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
@@ -214,8 +182,8 @@ void checklib::details::RestrictedProcessImpl::start()
 		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.toLocal8Bit().data());
 	}
 
-	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), NULL, NULL, TRUE,
-					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
+	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
+					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
 	handlesForAutoClose.clear();
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};

@@ -7,12 +7,12 @@
 
 int defaultColor;
 
-std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
+std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
 	os.flush();
 	if(color.mTextColor == standard)
 	{
-		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), defaultColor);
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), lightGray);
 	}
 	else
 	{
@@ -40,11 +40,6 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 	return os;
 }
 
-void cu::initStandard()
-{
-	defaultColor = (int)lightGray;
-}
-
 #else
 std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Color &color)
 {
@@ -58,4 +53,12 @@ std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::P
 #endif
 
 
+cu::ColorSaver::ColorSaver()
+{
 
+}
+
+cu::ColorSaver::~ColorSaver()
+{
+	std::cout << mColor;
+}

@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-	cu::initStandard();
+	cu::ColorSaver saver;
 	QCoreApplication app(argc, argv);
 
 	QString settingsFileName = "test.ini";
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 				throw std::exception(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
 			}
 		}
-		if(!QFile(settingsFileName).exists()) throw std::exception("settings file is not exists");
+		if(!QFile(settingsFileName).exists()) throw std::exception("Settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
 		Runner runner(reader.programName, reader.limits);
