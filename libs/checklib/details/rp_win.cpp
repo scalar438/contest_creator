@@ -250,7 +250,6 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 // Пиковое значение потребляемой памяти
 int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
-	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return peakMemoryUsageS();
 	return mPeakMemoryUsage.load();
 }
@@ -258,7 +257,6 @@ int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 // Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::CPUTime()
 {
-	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return CPUTimeS();
 	return mCPUTime.load();
 }
@@ -424,17 +422,20 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		if(mProcessStatus.load() == psRunning)
 		{
-			qDebug() << "Logic error";
+			qWarning() << "Process status is invalid";
 		}
 
-		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE && !CancelIoEx(mOutputHandle.handle(), NULL))
+		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
 		{
-			qDebug() << "IO cannot be canceled";
+			if(!CancelIoEx(mOutputHandle.handle(), NULL))
+			{
+				qWarning() << "IO cannot be canceled";
+			}
 		}
 
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
-			qDebug() << "TerminateProcess failed";
+			qWarning() << "TerminateProcess failed";
 		}
 		else
 		{
@@ -445,7 +446,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	DWORD tmpExitCode;
 	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
-		qDebug() << "Cannot get exit code process";
+		qWarning() << "Cannot get exit code process";
 	}
 	// Определение исключения делается через код возврата. Через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS будет надежнее
 	switch(tmpExitCode)
@@ -514,7 +515,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 				0,
 				NULL
 			);
-			qDebug() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
+			qWarning() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
 						", isRunning =" << isRunning();
 			LocalFree(cstr);
 		}
