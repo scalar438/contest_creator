@@ -36,44 +36,54 @@ void Tester::onTestFinished(int)
 	std::cout << cu::textColor(cu::white);
 	printUsage();
 
-	switch(mRunner->getProcessStatus())
+	bool needContinue = false;
+
 	{
-	case checklib::psRuntimeError:
-		std::cout << cu::textColor(cu::red) << "Runtime error";
-		break;
-	case checklib::psTimeLimitExceeded:
-		std::cout << cu::textColor(cu::red) << "Time limit exceeded";
-		break;
-	case checklib::psMemoryLimitExceeded:
-		std::cout << cu::textColor(cu::red) << "Memory limit exceeded";
-		break;
-	case checklib::psIdlenessLimitExceeded:
-		std::cout << cu::textColor(cu::red) << "Idleness limit exceeded";
-		break;
-	case checklib::psExited:
+		cu::ColorSaver saver;
+		switch(mRunner->getProcessStatus())
 		{
-			checklib::RestrictedProcess process;
-			process.setProgram("lcmp");
-			process.setParams(QStringList() << mReader->inputFile <<
-						 mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
-			process.start();
-			process.wait();
-
-			mCurrentTest++;
-			if(mCurrentTest == (int)mReader->tests.size() ||
-					process.exitCode() && mReader->interrupt)
-			{
-				emit testCompleted();
-			}
-			else
-			{
-				beginTest();
-			}
+		case checklib::psRuntimeError:
+			std::cout << cu::textColor(cu::red) << "Runtime error";
+			break;
+		case checklib::psTimeLimitExceeded:
+			std::cout << cu::textColor(cu::red) << "Time limit exceeded";
+			break;
+		case checklib::psMemoryLimitExceeded:
+			std::cout << cu::textColor(cu::red) << "Memory limit exceeded";
+			break;
+		case checklib::psIdlenessLimitExceeded:
+			std::cout << cu::textColor(cu::red) << "Idleness limit exceeded";
+			break;
+		case checklib::psExited:
+			needContinue = true;
+			break;
+		default:
+			throw std::logic_error("Unexpected process status");
 		}
-		break;
+	}
 
-	default:
-		throw std::logic_error("Unexpected process status");
+	if(needContinue)
+	{
+		checklib::RestrictedProcess process;
+		process.setProgram(mReader->checker);
+		process.setParams(QStringList() << mReader->inputFile <<
+					 mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
+		process.start();
+		process.wait();
+
+		mCurrentTest++;
+
+		needContinue = !(mCurrentTest == (int)mReader->tests.size() ||
+				process.exitCode() && mReader->interrupt);
+	}
+
+	if(needContinue)
+	{
+		beginTest();
+	}
+	else
+	{
+		emit testCompleted();
 	}
 }
 
@@ -225,6 +235,7 @@ void ParamsReader::readTests()
 	QString testInput = mSettings.value("TestInput").toString();
 	int zStart, zEnd;
 
+	// Вспомогательные функции
 	auto getZerosPos = [&zStart, &zEnd](const QString & str)
 	{
 		zStart = str.indexOf('0');
