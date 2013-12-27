@@ -22,7 +22,16 @@ Tester::Tester(const ParamsReader *reader, Runner *runner)
 	QObject::connect(this, &Tester::nextTest, runner, &Runner::startTest, Qt::QueuedConnection);
 
 	mIsRunning = false;
-	mCheckTimer = this->startTimer(200);
+	mCheckTimer = this->startTimer(400);
+
+	mNumberOfDigits = 0;
+	int d = 1;
+	while(mReader->tests.size() >= d)
+	{
+		d *= 10;
+		mNumberOfDigits++;
+	}
+	qDebug() << mNumberOfDigits << mReader->tests.size();
 }
 
 Tester::~Tester()
@@ -36,10 +45,10 @@ void Tester::onTestFinished(int)
 	std::cout << cu::textColor(cu::white);
 	printUsage();
 
-	bool needContinue = false;
+	bool normalExit = false;
 
 	{
-		cu::ColorSaver saver;
+	//	cu::ColorSaver saver;
 		switch(mRunner->getProcessStatus())
 		{
 		case checklib::psRuntimeError:
@@ -55,14 +64,15 @@ void Tester::onTestFinished(int)
 			std::cout << cu::textColor(cu::red) << "Idleness limit exceeded";
 			break;
 		case checklib::psExited:
-			needContinue = true;
+			normalExit = true;
 			break;
 		default:
 			throw std::logic_error("Unexpected process status");
 		}
 	}
 
-	if(needContinue)
+	bool needContinue = !mReader->interrupt;
+	if(normalExit)
 	{
 		checklib::RestrictedProcess process;
 		process.setProgram(mReader->checker);
@@ -71,13 +81,15 @@ void Tester::onTestFinished(int)
 		process.start();
 		process.wait();
 
-		mCurrentTest++;
-
-		needContinue = !(mCurrentTest == (int)mReader->tests.size() ||
-				process.exitCode() && mReader->interrupt);
+		needContinue = needContinue || process.exitCode() == 0;
+	}
+	else
+	{
+		std::cout << std::endl;
 	}
 
-	if(needContinue)
+	mCurrentTest++;
+	if(needContinue && (int)mReader->tests.size() != mCurrentTest)
 	{
 		beginTest();
 	}
@@ -92,7 +104,7 @@ void Tester::timerEvent(QTimerEvent *arg)
 	if(mIsRunning && arg->timerId() == mCheckTimer)
 	{
 		// TODO: Сделать нормальную заливку - с определением ширины через GetConsoleBufferInfo
-		std::cout << cu::textColor(cu::lightGray) << cu::cursorPosition(0);
+		std::cout << cu::textColor(cu::darkGray) << cu::cursorPosition(0);
 		for(int i = 0; i < 70; ++i) std::cout << " ";
 
 		printUsage();
@@ -101,7 +113,7 @@ void Tester::timerEvent(QTimerEvent *arg)
 
 void Tester::printUsage()
 {
-	std::cout << cu::cursorPosition(0) << "Test " << mCurrentTest + 1 << ": "
+	std::cout << cu::cursorPosition(0) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
 				 << mRunner->getTime() << " ms " << mRunner->getMemoryUsage() / 1024 << " KBytes ";
 }
 
@@ -115,6 +127,22 @@ void Tester::beginTest()
 	mIsRunning = true;
 
 	emit nextTest(mReader->inputFile, mReader->outputFile);
+}
+
+std::string Tester::toString(int n, int digits)
+{
+	std::string res;
+	while(n)
+	{
+		res += n % 10 + '0';
+		n /= 10;
+	}
+	while((int)res.length() < digits)
+	{
+		res += '0';
+	}
+	std::reverse(res.begin(), res.end());
+	return res;
 }
 
 void Tester::startTesting()
@@ -156,6 +184,7 @@ checklib::ProcessStatus Runner::getProcessStatus() const
 void Runner::startTest(QString inputFileName, QString outputFileName)
 {
 	mProcess->reset();
+	mProcess->setLimits(mLimits);
 	if(inputFileName.toUpper() == "#STDIN") mProcess->setStandardInput(inputFileName);
 	if(outputFileName.toUpper() == "#STDOUT") mProcess->setStandardOutput(outputFileName);
 	try

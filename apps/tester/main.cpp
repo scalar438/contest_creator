@@ -13,6 +13,7 @@
 int main(int argc, char *argv[])
 {
 	cu::ColorSaver saver;
+
 	QCoreApplication app(argc, argv);
 
 	QString settingsFileName = "test.ini";
@@ -50,7 +51,6 @@ int main(int argc, char *argv[])
 		QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
 		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
 		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
-
 		return app.exec();
 	}
 	catch(checklib::Exception &e)

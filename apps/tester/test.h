@@ -56,11 +56,15 @@ private:
 
 	bool mIsRunning;
 
+	int mNumberOfDigits;
+
 	std::shared_ptr<ResourceManager> mResourceManager;
 
 	void printUsage();
 
 	void beginTest();
+
+	std::string toString(int n, int digits = 1);
 };
 
 // Управляет входными и выходными данными тестируемой программы и автоматически
