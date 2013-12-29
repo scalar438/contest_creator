@@ -26,12 +26,11 @@ Tester::Tester(const ParamsReader *reader, Runner *runner)
 
 	mNumberOfDigits = 0;
 	int d = 1;
-	while(mReader->tests.size() >= d)
+	while(int(mReader->tests.size()) >= d)
 	{
 		d *= 10;
 		mNumberOfDigits++;
 	}
-	qDebug() << mNumberOfDigits << mReader->tests.size();
 }
 
 Tester::~Tester()
@@ -43,12 +42,11 @@ void Tester::onTestFinished(int)
 {
 	mIsRunning = false;
 	std::cout << cu::textColor(cu::white);
-	printUsage();
+	printUsage(true);
 
 	bool normalExit = false;
 
 	{
-	//	cu::ColorSaver saver;
 		switch(mRunner->getProcessStatus())
 		{
 		case checklib::psRuntimeError:
@@ -104,17 +102,29 @@ void Tester::timerEvent(QTimerEvent *arg)
 	if(mIsRunning && arg->timerId() == mCheckTimer)
 	{
 		// TODO: Сделать нормальную заливку - с определением ширины через GetConsoleBufferInfo
-		std::cout << cu::textColor(cu::darkGray) << cu::cursorPosition(0);
-		for(int i = 0; i < 70; ++i) std::cout << " ";
+//		std::cout << cu::textColor(cu::darkGray) << cu::cursorPosition(0);
+//		for(int i = 0; i < 70; ++i) std::cout << " ";
 
-		printUsage();
+		printUsage(false);
 	}
 }
 
-void Tester::printUsage()
+void Tester::printUsage(bool final)
 {
-	std::cout << cu::cursorPosition(0) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
-				 << mRunner->getTime() << " ms " << mRunner->getMemoryUsage() / 1024 << " KBytes ";
+	using namespace cu;
+	std::cout << cu::cursorPosition(0);
+	if(final)
+	{
+		std::cout << textColor(lightGray) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
+				 << textColor(white) << mRunner->getTime() << textColor(lightGray) << " ms "
+				 << textColor(white) << mRunner->getMemoryUsage() / 1024 << textColor(lightGray) << " KB ";
+	}
+	else
+	{
+		std::cout << textColor(darkGray) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
+				  << mRunner->getTime() << " ms "
+				  << mRunner->getMemoryUsage() / 1024 << " KB ";
+	}
 }
 
 void Tester::beginTest()

@@ -218,7 +218,7 @@ void checklib::details::RestrictedProcessImpl::wait()
 
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
-	if(!isRunning()) return false;
+	//if(!isRunning()) return false;
 	auto res = WaitForSingleObject(mCurrentInformation.hProcess, milliseconds);
 	if(res == WAIT_TIMEOUT)
 	{
@@ -228,7 +228,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	{
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
-		while(mIsRunning.load()) Sleep(0);
+		mIsRunning.store(false);
 		return true;
 	}
 	// Тут надо бросить исключение

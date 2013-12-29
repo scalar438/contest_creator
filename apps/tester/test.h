@@ -60,7 +60,7 @@ private:
 
 	std::shared_ptr<ResourceManager> mResourceManager;
 
-	void printUsage();
+	void printUsage(bool final);
 
 	void beginTest();
 
