@@ -23,8 +23,13 @@ public:
 	checklib::Limits limits;
 	std::vector<OneTest> tests;
 	bool interrupt;
-	// 0 - do not generate, 1 - generate, 2 - generate missing
-	int genAnswers;
+
+	enum GenAnswerMode
+	{
+		NotGenerate, GenerateMissing, GenerateAlways
+	};
+
+	GenAnswerMode genAnswers;
 private:
 
 	QSettings mSettings;

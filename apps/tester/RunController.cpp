@@ -71,14 +71,26 @@ void RunController::onTestFinished(int)
 	bool needContinue = !mReader->interrupt;
 	if(normalExit)
 	{
-		checklib::RestrictedProcess process;
-		process.setProgram(mReader->checker);
-		process.setParams(QStringList() << mReader->inputFile <<
-		                  mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
-		process.start();
-		process.wait();
-
-		needContinue = needContinue || process.exitCode() == 0;
+		if(mReader->genAnswers == ParamsReader::GenerateAlways ||
+				mReader->genAnswers == mReader->GenerateMissing && !QFile::exists(mReader->tests[mCurrentTest].answerFile))
+		{
+			QFile::remove(mReader->tests[mCurrentTest].answerFile);
+			QFile::rename(mReader->outputFile, mReader->tests[mCurrentTest].answerFile);
+			std::cout << cu::textColor(cu::standard) << "Answer file \"" <<
+						 mReader->tests[mCurrentTest].answerFile.toStdString() <<
+						 "\" was created\n";
+			needContinue = true;
+		}
+		else
+		{
+			checklib::RestrictedProcess process;
+			process.setProgram(mReader->checker);
+			process.setParams(QStringList() << mReader->inputFile <<
+							  mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
+			process.start();
+			process.wait();
+			needContinue = needContinue || process.exitCode() == 0;
+		}
 	}
 	else
 	{
@@ -107,7 +119,7 @@ void RunController::timerEvent(QTimerEvent *arg)
 void RunController::printUsage(bool final)
 {
 	using namespace cu;
-	std::cout << cu::cursorPosition(0);
+	std::cout << cursorPosition(0);
 	if(final)
 	{
 		std::cout << textColor(lightGray) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "

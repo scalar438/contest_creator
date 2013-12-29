@@ -87,10 +87,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardInput == ss::Interactive)
 		{
 			HANDLE readPipe, writePipe;
-			if(!CreatePipe(&readPipe, &writePipe, &sa, 0))
-			{
-				qDebug() << "CreatePipe error";
-			}
+			CreatePipe(&readPipe, &writePipe, &sa, 0);
 			f = readPipe;
 			tmpHandles.push_back(HandleCloser(writePipe));
 		}
@@ -184,7 +181,6 @@ void checklib::details::RestrictedProcessImpl::start()
 
 	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
 					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
-	handlesForAutoClose.clear();
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
 	if(mStandardInput == ss::Interactive) mInputHandle = pop();
@@ -218,7 +214,7 @@ void checklib::details::RestrictedProcessImpl::wait()
 
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
-	//if(!isRunning()) return false;
+	if(!isRunning()) return false;
 	auto res = WaitForSingleObject(mCurrentInformation.hProcess, milliseconds);
 	if(res == WAIT_TIMEOUT)
 	{
@@ -331,7 +327,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 	DWORD count;
 	if(!WriteFile(mInputHandle.handle(), data.toLocal8Bit().data(), data.length(), &count, NULL))
 	{
-		qDebug() << "WriteFile1 error";
+		qWarning() << "WriteFile error";
 		return false;
 	}
 	if(newLine)
@@ -339,7 +335,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 		char c = '\n';
 		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
 		{
-			qDebug() << "WriteFile2 error";
+			qWarning() << "WriteFile error";
 			return false;
 		}
 	}
@@ -359,7 +355,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 		DWORD count = 0;
 		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
-			qDebug() << "Readfile error";
+			qWarning() << "Readfile error";
 			return false;
 		}
 		buf[count] = 0;

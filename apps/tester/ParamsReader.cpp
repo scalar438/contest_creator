@@ -33,10 +33,10 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	checker = mSettings.value("Checker").toString();
 
 	{
-		QString tmp = mSettings.value("GenAnswers", "YES").toString().toLower();
-		if(tmp == "yes" || tmp == "1") genAnswers = 1;
-		else if(tmp == "0" || tmp == "no") genAnswers = 0;
-		else genAnswers = 2;
+		QString tmp = mSettings.value("GenAnswers", "Auto").toString().toLower();
+		if(tmp == "yes" || tmp == "1") genAnswers = GenerateAlways;
+		else if(tmp == "no" || tmp == "0") genAnswers = NotGenerate;
+		else genAnswers = GenerateMissing;
 	}
 
 	readTests();
