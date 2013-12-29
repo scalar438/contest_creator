@@ -10,11 +10,6 @@
 #include <QFile>
 #include <QDebug>
 #include <QTimerEvent>
-#include <QProcess>
-
-//-----------------------------------------------------
-// Tester
-//-----------------------------------------------------
 
 RunController::RunController(const ParamsReader *reader, Runner *runner)
 	: mReader(reader),
