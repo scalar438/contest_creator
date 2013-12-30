@@ -1,16 +1,19 @@
 ﻿#include "RunController.h"
 #include "ParamsReader.h"
-#include "consoleUtils.h"
+#include "ConsoleUtils.h"
 #include "Runner.h"
+#include "TesterExceptions.h"
 #include "checklib/checklib_exception.h"
 
 #include <iostream>
+#include <stdexcept>
 
 #include <QCoreApplication>
 #include <QThread>
 #include <QDebug>
 #include <QFile>
 #include <QDir>
+
 
 int main(int argc, char *argv[])
 {	
@@ -32,15 +35,15 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					throw std::exception("Wrong argument format. Usage: -ini <settings-file>");
+					throw TesterException("Wrong argument format. Usage: -ini <settings-file>");
 				}
 			}
 			else
 			{
-				throw std::exception(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
+				throw TesterException(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
 			}
 		}
-		if(!QFile(settingsFileName).exists()) throw std::exception("Settings file is not exists");
+		if(!QFile(settingsFileName).exists()) throw TesterException("Settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
 		Runner runner(reader.programName, reader.limits);

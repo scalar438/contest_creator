@@ -4,16 +4,17 @@ QT -= gui
 
 SOURCES += \
 	main.cpp \
-	consoleUtils.cpp \
 	ParamsReader.cpp \
-    Runner.cpp \
-    RunController.cpp
+	Runner.cpp \
+	RunController.cpp \
+	ConsoleUtils.cpp
 
 HEADERS += \
-    consoleUtils.h \
-    ParamsReader.h \
-    Runner.h \
-    RunController.h
+	ParamsReader.h \
+	Runner.h \
+	RunController.h \
+	ConsoleUtils.h \
+    TesterExceptions.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)

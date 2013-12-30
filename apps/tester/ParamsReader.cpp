@@ -1,10 +1,11 @@
 ﻿#include "ParamsReader.h"
+#include "TesterExceptions.h"
 #include <QFile>
 
 ParamsReader::ParamsReader(const QString &settingsFileName)
 	: mSettings(settingsFileName, QSettings::IniFormat)
 {
-	if(!mSettings.contains("RunProgram")) throw std::exception("Program must be set");
+	if(!mSettings.contains("RunProgram")) throw TesterException("Program must be set");
 	programName = mSettings.value("RunProgram").toString();
 
 	QString tmpString = mSettings.value("TimeLimit", 1).toString().toLower();
@@ -14,7 +15,7 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	{
 		bool flag;
 		limits.timeLimit = tmpString.toInt(&flag) * 1000;
-		if(!flag) throw std::exception("Time limit is invalid");
+		if(!flag) throw TesterException("Time limit is invalid");
 	}
 
 	tmpString = mSettings.value("MemoryLimit", 64).toString().toLower();
@@ -23,13 +24,13 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	{
 		bool flag;
 		limits.memoryLimit = tmpString.toInt(&flag) * 1024 * 1024;
-		if(!flag) throw std::exception("Memory limit is invalid");
+		if(!flag) throw TesterException("Memory limit is invalid");
 	}
 
 	interrupt = mSettings.value("Interrupt", "YES").toString().toLower() == "yes" ||
 	            mSettings.value("Interrupt", "YES").toString() == "1";
 
-	if(!mSettings.contains("Checker")) throw std::exception("Checker must be set");
+	if(!mSettings.contains("Checker")) throw TesterException("Checker must be set");
 	checker = mSettings.value("Checker").toString();
 
 	{
@@ -58,7 +59,7 @@ void ParamsReader::readTests()
 	}
 	else testNumber = 1000000000;
 
-	if(!mSettings.contains("TestInput")) throw std::exception("Input files in not exists");
+	if(!mSettings.contains("TestInput")) throw TesterException("Input files in not exists");
 	QString testInput = mSettings.value("TestInput").toString();
 	int zStart, zEnd;
 
@@ -88,12 +89,12 @@ void ParamsReader::readTests()
 		tmp.inputFile = getFileName(testInput, i + 1);
 		if(!QFile(tmp.inputFile).exists())
 		{
-			if(!autoTestNumber) throw std::exception("input file(s) was not found");
+			if(!autoTestNumber) throw TesterException("input file(s) was not found");
 			break;
 		}
 		tests.push_back(tmp);
 	}
-	if(tests.empty()) throw std::exception("input file(s) was not found");
+	if(tests.empty()) throw TesterException("input file(s) was not found");
 	testNumber = int(tests.size());
 	QString testOutput = mSettings.value("TestAnswer", "00.a").toString();
 	getZerosPos(testOutput);

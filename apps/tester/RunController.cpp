@@ -1,10 +1,11 @@
 ﻿#include "RunController.h"
 #include "ParamsReader.h"
 #include "Runner.h"
-#include "consoleUtils.h"
+#include "ConsoleUtils.h"
 #include "checklib/checklib_exception.h"
 
 #include <iostream>
+#include <stdexcept>
 
 #include <QSettings>
 #include <QFile>

@@ -1,4 +1,4 @@
-﻿#include "consoleUtils.h"
+﻿#include "ConsoleUtils.h"
 #include <QtCore>
 #include <iostream>
 
@@ -62,14 +62,18 @@ struct Initializer
 } initializer;
 
 #else
-std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Color &color)
+std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
 	return os;
 }
 
-std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Position &p)
+std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Position &p)
 {
 	return os;
+}
+
+cu::ColorSaver::ColorSaver()
+{
 }
 #endif
 

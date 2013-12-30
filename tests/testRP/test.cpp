@@ -106,7 +106,7 @@ void TestRun::testML()
 
 	checklib::Limits limits;
 	limits.useMemoryLimit = true;
-	limits.memoryLimit = 256 * 1000 * 1000;
+	limits.memoryLimit = 64 * 1000 * 1000;
 	runner.setLimits(limits);
 
 	runner.setProgram("./examples/pML");

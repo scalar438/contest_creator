@@ -155,6 +155,12 @@ void checklib::details::RestrictedProcessImpl::start()
 			limit.rlim_cur = limit.rlim_max = mLimits.timeLimit / 1000 + 2;
 			setrlimit(RLIMIT_CPU, &limit);
 		}
+		if(mLimits.useMemoryLimit)
+		{
+			rlimit limit;
+			limit.rlim_cur = limit.rlim_max = mLimits.memoryLimit;
+			setrlimit(RLIMIT_DATA, &limit);
+		}
 
 		QString programPath = QFileInfo(mProgram).absoluteFilePath();
 		if(!mCurrentDirectory.isEmpty())
@@ -199,7 +205,11 @@ void checklib::details::RestrictedProcessImpl::start()
 // Завершает процесс вручную. Тип завершения становится etTerminated
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	kill(mChildPid, SIGTERM);
+	if(isRunning())
+	{
+		kill(mChildPid, SIGTERM);
+		mProcessStatus.store(psTerminated);
+	}
 }
 
 // Ждать завершения процесса
