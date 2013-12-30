@@ -2,6 +2,7 @@ TEMPLATE = app
 CONFIG += qt
 QT -= gui
 QT += testlib
+TARGET = TestRP
 
 SOURCES += \
    test.cpp \

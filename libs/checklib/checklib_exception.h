@@ -7,8 +7,14 @@ namespace checklib {
 class Exception : public std::exception
 {
 public:
-	Exception(const QString &str)
-		: std::exception(str.toLocal8Bit().data()) {}
+	Exception(const QString &str) {}
+	virtual ~Exception() noexcept {}
+	virtual const char* what() const noexcept
+	{
+		return mStr.toLocal8Bit().data();
+	}
+private:
+	QString mStr;
 };
 
 class CannotStartProcess : public Exception
@@ -19,10 +25,14 @@ public:
 		  mProgram(programName)
 	{
 	}
+
+	~CannotStartProcess() noexcept {}
+
 	QString programName() const
 	{
 		return mProgram;
 	}
+
 private:
 	QString mProgram;
 };
@@ -35,6 +45,7 @@ public:
 		  mFileName(fileName)
 	{
 	}
+	~FileNotFound() noexcept {}
 	QString fileName() const
 	{
 		return mFileName;

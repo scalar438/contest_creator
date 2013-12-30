@@ -70,7 +70,7 @@ public:
 
 signals:
 
-	void finished();
+	void finished(int exitCode);
 
 private:
 	QString mProgram;
