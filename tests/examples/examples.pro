@@ -8,4 +8,5 @@ SUBDIRS =  TL \
 		   ML \
 		   sum \
 		   stderr_out \
-		   args_out
+		   args_out \
+		   args_exitcode

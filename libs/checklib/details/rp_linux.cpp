@@ -443,8 +443,16 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	}
 	else
 	{
-		if(WIFEXITED(status)) mProcessStatus.store(psExited);
-		if(WIFSIGNALED(status)) mProcessStatus.store(psRuntimeError);
+		if(WIFEXITED(status))
+		{
+			mProcessStatus.store(psExited);
+			mExitCode.store(WEXITSTATUS(status));
+		}
+		if(WIFSIGNALED(status))
+		{
+			// Иначе уже нужный статус был установлен
+			if(mProcessStatus.load() == psRunning) mProcessStatus.store(psRuntimeError);
+		}
 
 		mIsRunning.store(false);
 	}

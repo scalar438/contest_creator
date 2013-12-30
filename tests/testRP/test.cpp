@@ -52,6 +52,22 @@ void TestRun::testTerminate()
 	QVERIFY(runner.processStatus() == checklib::psTerminated);
 }
 
+void TestRun::testExitCode()
+{
+	checklib::RestrictedProcess runner;
+	runner.setProgram("./examples/pArgsExitCode");
+	runner.start();
+
+	runner.wait();
+	QVERIFY(runner.exitCode() == 42);
+
+	runner.reset();
+	runner.setParams(QStringList() << "123");
+	runner.start();
+	runner.wait();
+	QVERIFY(runner.exitCode() == 123);
+}
+
 void TestRun::testTL()
 {
 	checklib::RestrictedProcess runner;

@@ -17,6 +17,38 @@ namespace checklib
 namespace details
 {
 
+class Pipe
+{
+	struct PipeCloser
+	{
+		int p;
+		PipeCloser(int pp = -1)
+			: p(pp)
+		{
+		}
+		~PipeCloser()
+		{
+			if(p != -1) close(p);
+		}
+	};
+
+	std::shared_ptr<PipeCloser> closer;
+public:
+	Pipe(int pp = -1)
+		: closer(std::make_shared<PipeCloser>(pp))
+	{
+	}
+	int value() const
+	{
+		if(closer) return closer->p;
+		else return -1;
+	}
+	void setValue(int p)
+	{
+		closer = std::make_shared<PipeCloser>(p);
+	}
+};
+
 class RestrictedProcessImpl : public QObject
 {
 	Q_OBJECT
@@ -98,6 +130,8 @@ private:
 	std::atomic<bool> mIsRunning;
 
 	int mInputPipe[2], mOutputPipe[2], mErrorPipe[2];
+
+	//Pipe mInputPipe, mOutputPipe, mErrorPipe;
 
 	// Количество тиков на секунду.
 	float mTicks;

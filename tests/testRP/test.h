@@ -17,6 +17,8 @@ private slots:
 
 	void testTerminate();
 
+	void testExitCode();
+
 	void testTL();
 
 	void testArgs();
