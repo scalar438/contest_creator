@@ -3,11 +3,12 @@
 #include <iostream>
 
 #ifdef Q_OS_WIN
+
 #include "Windows.h"
 
 int defaultColor;
 
-std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
+std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
 	os.flush();
 	if(color.mTextColor == standard)
@@ -21,7 +22,7 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Color &color)
 	return os;
 }
 
-std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
+std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Position &p)
 {
 	os.flush();
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -30,7 +31,7 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 	if(p.my == -1)
 	{
 		CONSOLE_SCREEN_BUFFER_INFO info;
-		auto res = GetConsoleScreenBufferInfo(handle, &info);
+		GetConsoleScreenBufferInfo(handle, &info);
 
 		c.Y = info.dwCursorPosition.Y;
 	}
@@ -40,10 +41,25 @@ std::ostream &cu::operator << (std::ostream &os, const cu::Position &p)
 	return os;
 }
 
-void cu::initStandard()
+cu::details::Color getCurrentColor()
 {
-	defaultColor = (int)lightGray;
+	CONSOLE_SCREEN_BUFFER_INFO info;
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info);
+	return cu::details::Color(cu::TextColor(info.wAttributes & 15));
 }
+
+cu::ColorSaver::ColorSaver()
+	: mColor(getCurrentColor())
+{
+}
+
+struct Initializer
+{
+	Initializer()
+	{
+		defaultColor = (int)getCurrentColor().mTextColor;
+	}
+} initializer;
 
 #else
 std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::Color &color)
@@ -57,5 +73,7 @@ std::ostream &ConsoleUtils::operator << (std::ostream &os, const ConsoleUtils::P
 }
 #endif
 
-
-
+cu::ColorSaver::~ColorSaver()
+{
+	std::cout << mColor;
+}

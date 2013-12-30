@@ -63,38 +63,6 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 	return mIsRunning.load();
 }
 
-void ErrorExit(PTSTR lpszFunction)
-
-// Format a readable error message, display a message box,
-// and exit from the application.
-{
-	LPVOID lpMsgBuf;
-	LPVOID lpDisplayBuf;
-	DWORD dw = GetLastError();
-
-	FormatMessage(
-	    FORMAT_MESSAGE_ALLOCATE_BUFFER |
-	    FORMAT_MESSAGE_FROM_SYSTEM |
-	    FORMAT_MESSAGE_IGNORE_INSERTS,
-	    NULL,
-	    dw,
-	    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	    (LPTSTR) &lpMsgBuf,
-	    0, NULL);
-
-	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,
-	                                  (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszFunction) + 40) * sizeof(TCHAR));
-	StringCchPrintf((LPTSTR)lpDisplayBuf,
-	                LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-	                TEXT("%s failed with error %d: %s"),
-	                lpszFunction, dw, lpMsgBuf);
-	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
-
-	LocalFree(lpMsgBuf);
-	LocalFree(lpDisplayBuf);
-}
-
-
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if(isRunning()) return;
@@ -119,10 +87,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardInput == ss::Interactive)
 		{
 			HANDLE readPipe, writePipe;
-			if(!CreatePipe(&readPipe, &writePipe, &sa, 0))
-			{
-				qDebug() << "CreatePipe error";
-			}
+			CreatePipe(&readPipe, &writePipe, &sa, 0);
 			f = readPipe;
 			tmpHandles.push_back(HandleCloser(writePipe));
 		}
@@ -214,9 +179,8 @@ void checklib::details::RestrictedProcessImpl::start()
 		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.toLocal8Bit().data());
 	}
 
-	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), NULL, NULL, TRUE,
-					   CREATE_NO_WINDOW | CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
-	handlesForAutoClose.clear();
+	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
+					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
 	if(mStandardInput == ss::Interactive) mInputHandle = pop();
@@ -260,7 +224,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	{
 		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
-		while(mIsRunning.load()) Sleep(0);
+		mIsRunning.store(false);
 		return true;
 	}
 	// Тут надо бросить исключение
@@ -282,7 +246,6 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 // Пиковое значение потребляемой памяти
 int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
-	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return peakMemoryUsageS();
 	return mPeakMemoryUsage.load();
 }
@@ -290,7 +253,6 @@ int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 // Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::CPUTime()
 {
-	mutex_locker lock(mHandlesMutex);
 	if(isRunning()) return CPUTimeS();
 	return mCPUTime.load();
 }
@@ -365,7 +327,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 	DWORD count;
 	if(!WriteFile(mInputHandle.handle(), data.toLocal8Bit().data(), data.length(), &count, NULL))
 	{
-		qDebug() << "WriteFile1 error";
+		qWarning() << "WriteFile error";
 		return false;
 	}
 	if(newLine)
@@ -373,7 +335,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 		char c = '\n';
 		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
 		{
-			qDebug() << "WriteFile2 error";
+			qWarning() << "WriteFile error";
 			return false;
 		}
 	}
@@ -393,7 +355,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 		DWORD count = 0;
 		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
-			qDebug() << "Readfile error";
+			qWarning() << "Readfile error";
 			return false;
 		}
 		buf[count] = 0;
@@ -456,17 +418,20 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		if(mProcessStatus.load() == psRunning)
 		{
-			qDebug() << "Logic error";
+			qWarning() << "Process status is invalid";
 		}
 
-		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE && !CancelIoEx(mOutputHandle.handle(), NULL))
+		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
 		{
-			qDebug() << "IO cannot be canceled";
+			if(!CancelIoEx(mOutputHandle.handle(), NULL))
+			{
+				qWarning() << "IO cannot be canceled";
+			}
 		}
 
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
-			qDebug() << "TerminateProcess failed";
+			qWarning() << "TerminateProcess failed";
 		}
 		else
 		{
@@ -477,7 +442,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	DWORD tmpExitCode;
 	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
-		qDebug() << "Cannot get exit code process";
+		qWarning() << "Cannot get exit code process";
 	}
 	// Определение исключения делается через код возврата. Через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS будет надежнее
 	switch(tmpExitCode)
@@ -546,7 +511,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 				0,
 				NULL
 			);
-			qDebug() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
+			qWarning() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
 						", isRunning =" << isRunning();
 			LocalFree(cstr);
 		}

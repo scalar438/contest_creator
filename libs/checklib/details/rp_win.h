@@ -3,6 +3,7 @@
 #include "../rp_types.h"
 
 #include <memory>
+// Без этого moc-компилятор падает при попытке распарсить эти заголовочники
 #ifndef Q_MOC_RUN
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>

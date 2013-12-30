@@ -1,5 +1,7 @@
-﻿#include "test.h"
+﻿#include "RunController.h"
+#include "ParamsReader.h"
 #include "consoleUtils.h"
+#include "Runner.h"
 #include "checklib/checklib_exception.h"
 
 #include <iostream>
@@ -11,8 +13,9 @@
 #include <QDir>
 
 int main(int argc, char *argv[])
-{
-	cu::initStandard();
+{	
+	cu::ColorSaver saver;
+
 	QCoreApplication app(argc, argv);
 
 	QString settingsFileName = "test.ini";
@@ -37,20 +40,19 @@ int main(int argc, char *argv[])
 				throw std::exception(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
 			}
 		}
-		if(!QFile(settingsFileName).exists()) throw std::exception("settings file is not exists");
+		if(!QFile(settingsFileName).exists()) throw std::exception("Settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
 		Runner runner(reader.programName, reader.limits);
-		Tester tester(&reader, &runner);
+		RunController tester(&reader, &runner);
 
 		QThread thrd;
 		runner.moveToThread(&thrd);
 		thrd.start();
 
-		QObject::connect(&tester, &Tester::testCompleted, &thrd, &QThread::quit);
+		QObject::connect(&tester, &RunController::testCompleted, &thrd, &QThread::quit);
 		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
 		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
-
 		return app.exec();
 	}
 	catch(checklib::Exception &e)
