@@ -68,7 +68,7 @@ void RunController::onTestFinished(int)
 	if(normalExit)
 	{
 		if(mReader->genAnswers == ParamsReader::GenerateAlways ||
-				mReader->genAnswers == mReader->GenerateMissing && !QFile::exists(mReader->tests[mCurrentTest].answerFile))
+				mReader->genAnswers == ParamsReader::GenerateMissing && !QFile::exists(mReader->tests[mCurrentTest].answerFile))
 		{
 			QFile::remove(mReader->tests[mCurrentTest].answerFile);
 			QFile::rename(mReader->outputFile, mReader->tests[mCurrentTest].answerFile);

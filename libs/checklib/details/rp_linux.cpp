@@ -71,6 +71,7 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 // Запуск процесса
 void checklib::details::RestrictedProcessImpl::start()
 {
+	// TODO: При невозможности запуска не закрываются все пайпы, которые должны закрываться
 	if(isRunning()) return;
 
 	if(mStandardInput == ss::Interactive)
@@ -85,15 +86,22 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		pipe(mErrorPipe);
 	}
+	int checkPipe[2];
+	pipe(checkPipe);
+
+	fcntl(checkPipe[1], F_SETFD, fcntl(checkPipe[1], F_GETFD) | FD_CLOEXEC);
 
 	mChildPid = fork();
 	if(mChildPid == -1)
 	{
+		qWarning() << "Cannot be forked";
 		return;
 	}
 	if(mChildPid == 0)
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
+
+		close(checkPipe[0]);
 
 		if(mStandardInput != ss::Stdin)
 		{
@@ -107,7 +115,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			else
 			{
 				d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
-				if(d == -1) qDebug() << "File not opened";
+				if(d == -1) qWarning() << "File not opened";
 			}
 			dup2(d, 0);
 			close(d);
@@ -125,7 +133,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			{
 				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-				if(d == -1) qDebug() << "File not opened";
+				if(d == -1) qWarning() << "File not opened";
 			}
 			dup2(d, 1);
 			close(d);
@@ -143,7 +151,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			{
 				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-				if(d == -1) qDebug() << "File not opened";
+				if(d == -1) qWarning() << "File not opened";
 			}
 			dup2(d, 2);
 			close(d);
@@ -184,21 +192,29 @@ void checklib::details::RestrictedProcessImpl::start()
 		args[mParams.size() + 1] = 0;
 		execv(programPath.toLocal8Bit().data(), args);
 
+		write(checkPipe[1], "0", 1);
+
 		exit(-1);
 	}
 	else
 	{
+		close(checkPipe[1]);
 		// Родительский процесс, задаем параметры, необходимые для слежения за дочерним
 		mProcessStatus.store(psRunning);
+
+		if(mStandardInput == ss::Interactive) close(mInputPipe[0]);
+		if(mStandardOutput == ss::Interactive) close(mOutputPipe[1]);
+		if(mStandardError == ss::Interactive) close(mErrorPipe[1]);
+
+		char c;
+		int count = read(checkPipe[0], &c, 1);
+		if(count == 1) throw CannotStartProcess(mProgram);
+
 		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
 		                              boost::ref(*this), boost::lambda::_1));
 		mIsRunning.store(true);
 		mStartTime = QDateTime::currentDateTime();
-
-		if(mStandardInput == ss::Interactive) close(mInputPipe[0]);
-		if(mStandardOutput == ss::Interactive) close(mOutputPipe[1]);
-		if(mStandardError == ss::Interactive) close(mErrorPipe[1]);
 	}
 }
 
@@ -433,7 +449,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	int r = waitpid(mChildPid, &status, WNOHANG);
 	if(r < 0)
 	{
-		qDebug() << "Error";
+		qWarning() << "Waitpid error";
 	}
 	else if(r == 0)
 	{

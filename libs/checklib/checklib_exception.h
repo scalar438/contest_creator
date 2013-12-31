@@ -7,7 +7,10 @@ namespace checklib {
 class Exception : public std::exception
 {
 public:
-	Exception(const QString &str) {}
+	Exception(const QString &str)
+		: mStr(str)
+	{
+	}
 	virtual ~Exception() noexcept {}
 	virtual const char* what() const noexcept
 	{
