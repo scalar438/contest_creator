@@ -120,13 +120,13 @@ void RunController::printUsage(bool final)
 	{
 		std::cout << textColor(lightGray) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
 		          << textColor(white) << mRunner->getTime() << textColor(lightGray) << " ms "
-		          << textColor(white) << mRunner->getMemoryUsage() / 1024 << textColor(lightGray) << " KB ";
+				  << textColor(white) << mRunner->getMemoryUsage() / 1024 << textColor(lightGray) << " KB " << std::flush;
 	}
 	else
 	{
 		std::cout << textColor(darkGray) << "Test " << toString(mCurrentTest + 1, mNumberOfDigits) << ": "
 		          << mRunner->getTime() << " ms "
-		          << mRunner->getMemoryUsage() / 1024 << " KB ";
+				  << mRunner->getMemoryUsage() / 1024 << " KB " << std::flush;
 	}
 }
 
@@ -161,7 +161,6 @@ std::string RunController::toString(int n, int digits)
 void RunController::startTesting()
 {
 	mCurrentTest = 0;
-
 	beginTest();
 }
 

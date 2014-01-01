@@ -98,7 +98,7 @@ void checklib::details::RestrictedProcessImpl::start()
 
 			f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
 			               &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardInput);
+			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardInput);
 		}
 		si.hStdInput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -121,7 +121,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			std::vector<wchar_t> str(mStandardOutput.length() + 1, 0);
 			mStandardOutput.toWCharArray(&str[0]);
 			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardOutput);
+			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardOutput);
 		}
 		si.hStdOutput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -144,7 +144,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			std::vector<wchar_t> str(mStandardError.length() + 1, 0);
 			mStandardError.toWCharArray(&str[0]);
 			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw FileNotFound(mStandardError);
+			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardError);
 		}
 		si.hStdError = f;
 		handlesForAutoClose.push_back(HandleCloser(f));

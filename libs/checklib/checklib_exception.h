@@ -29,6 +29,12 @@ public:
 	{
 	}
 
+	CannotStartProcess(const QString &programName, const QString &msg)
+		: Exception("Cannot start program \"" + programName + "\": " + msg),
+		  mProgram(programName)
+	{
+	}
+
 	~CannotStartProcess() noexcept {}
 
 	QString programName() const
@@ -40,15 +46,15 @@ private:
 	QString mProgram;
 };
 
-class FileNotFound : public Exception
+class CannotOpenFile : public Exception
 {
 public:
-	FileNotFound(const QString &fileName)
+	CannotOpenFile(const QString &fileName)
 		: Exception("File not found: \"" + fileName + "\""),
 		  mFileName(fileName)
 	{
 	}
-	~FileNotFound() noexcept {}
+	~CannotOpenFile() noexcept {}
 	QString fileName() const
 	{
 		return mFileName;

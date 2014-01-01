@@ -1,6 +1,8 @@
 ﻿#include "Runner.h"
 #include "checklib/checklib_exception.h"
 
+#include <QDebug>
+
 Runner::Runner(const QString &programName, checklib::Limits limits)
 	: mProcess(new checklib::RestrictedProcess(this))
 {
@@ -38,6 +40,7 @@ void Runner::startTest(QString inputFileName, QString outputFileName)
 	}
 	catch(checklib::Exception &)
 	{
+		qDebug() << "Error";
 		emit finished(-1);
 		return;
 	}

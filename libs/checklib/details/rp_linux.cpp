@@ -71,37 +71,52 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 // Запуск процесса
 void checklib::details::RestrictedProcessImpl::start()
 {
-	// TODO: При невозможности запуска не закрываются все пайпы, которые должны закрываться
 	if(isRunning()) return;
+
+	auto createPipe = [](Pipe *p)
+	{
+		int pp[2];
+		if(pipe(pp) == -1) throw Exception("Cannot create pipe");
+		p[0] = Pipe(pp[0]);
+		p[1] = Pipe(pp[1]);
+	};
+
+	Pipe inputPipe[2], outputPipe[2], errorPipe[2];
 
 	if(mStandardInput == ss::Interactive)
 	{
-		pipe(mInputPipe);
+		createPipe(inputPipe);
 	}
 	if(mStandardOutput == ss::Interactive)
 	{
-		pipe(mOutputPipe);
+		createPipe(outputPipe);
 	}
 	if(mStandardError == ss::Interactive)
 	{
-		pipe(mErrorPipe);
+		createPipe(errorPipe);
 	}
-	int checkPipe[2];
-	pipe(checkPipe);
+	// Пайп для проверки ошибки вызова exec
+	Pipe checkPipe[2];
+	createPipe(checkPipe);
 
-	fcntl(checkPipe[1], F_SETFD, fcntl(checkPipe[1], F_GETFD) | FD_CLOEXEC);
+	// Устанавливаем флаг автоматического закрытия pipe при вызове exec
+	fcntl(checkPipe[1].pipe(), F_SETFD, fcntl(checkPipe[1].pipe(), F_GETFD) | FD_CLOEXEC);
 
 	mChildPid = fork();
-	if(mChildPid == -1)
-	{
-		qWarning() << "Cannot be forked";
-		return;
-	}
+	if(mChildPid == -1) throw CannotStartProcess(mProgram, "Cannot be forked");
 	if(mChildPid == 0)
 	{
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
+		// Деструкторы в этой ветке вызваны не будут. Поэтому вызываем очистку руками
 
-		close(checkPipe[0]);
+		auto writeMsgAndExit = [checkPipe](const QString &msg)
+		{
+			write(checkPipe[1].pipe(), msg.toLocal8Bit().data(), msg.length());
+			close(checkPipe[1].pipe());
+			exit(EXIT_FAILURE);
+		};
+
+		close(checkPipe[0].pipe());
 
 		if(mStandardInput != ss::Stdin)
 		{
@@ -109,13 +124,13 @@ void checklib::details::RestrictedProcessImpl::start()
 
 			if(mStandardInput == ss::Interactive)
 			{
-				d = mInputPipe[0];
-				close(mInputPipe[1]);
+				d = inputPipe[0].pipe();
+				close(inputPipe[1].pipe());
 			}
 			else
 			{
 				d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
-				if(d == -1) qWarning() << "File not opened";
+				if(d == -1) writeMsgAndExit("1" + mStandardInput);
 			}
 			dup2(d, 0);
 			close(d);
@@ -126,14 +141,14 @@ void checklib::details::RestrictedProcessImpl::start()
 
 			if(mStandardOutput == ss::Interactive)
 			{
-				d = mOutputPipe[1];
-				close(mOutputPipe[0]);
+				d = outputPipe[1].pipe();
+				close(outputPipe[0].pipe());
 			}
 			else
 			{
 				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-				if(d == -1) qWarning() << "File not opened";
+				if(d == -1) writeMsgAndExit("1" + mStandardOutput);
 			}
 			dup2(d, 1);
 			close(d);
@@ -144,14 +159,14 @@ void checklib::details::RestrictedProcessImpl::start()
 
 			if(mStandardError == ss::Interactive)
 			{
-				d = mErrorPipe[1];
-				close(mErrorPipe[0]);
+				d = errorPipe[1].pipe();
+				close(errorPipe[0].pipe());
 			}
 			else
 			{
 				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-				if(d == -1) qWarning() << "File not opened";
+				if(d == -1) writeMsgAndExit("1" + mStandardError);
 			}
 			dup2(d, 2);
 			close(d);
@@ -192,27 +207,42 @@ void checklib::details::RestrictedProcessImpl::start()
 		args[mParams.size() + 1] = 0;
 		execv(programPath.toLocal8Bit().data(), args);
 
-		write(checkPipe[1], "0", 1);
-
-		exit(-1);
+		writeMsgAndExit("0");
 	}
 	else
 	{
-		close(checkPipe[1]);
 		// Родительский процесс, задаем параметры, необходимые для слежения за дочерним
-		mProcessStatus.store(psRunning);
 
-		if(mStandardInput == ss::Interactive) close(mInputPipe[0]);
-		if(mStandardOutput == ss::Interactive) close(mOutputPipe[1]);
-		if(mStandardError == ss::Interactive) close(mErrorPipe[1]);
+		close(checkPipe[1].pipe());
 
-		char c;
-		int count = read(checkPipe[0], &c, 1);
-		if(count == 1) throw CannotStartProcess(mProgram);
+		if(mStandardInput == ss::Interactive) mInputPipe = inputPipe[1];
+		if(mStandardOutput == ss::Interactive) mOutputPipe = outputPipe[0];
+		if(mStandardError == ss::Interactive) mErrorPipe = errorPipe[0];
+
+		QString msg;
+		while(1)
+		{
+			char msg_c[100];
+			int count = read(checkPipe[0].pipe(), msg_c, 99);
+			if(count <= 0) break;
+			msg_c[count] = 0;
+			msg += msg_c;
+		}
+		if(!msg.isEmpty())
+		{
+			// WARNING: Без kill почему-то не работает ожидание завершения, несмотря на вызов exit в потомке
+			kill(mChildPid, SIGKILL);
+			waitpid(mChildPid, nullptr, 0);
+			if(msg[0] == '0') throw CannotStartProcess(mProgram);
+			if(msg[1] == '1') throw CannotOpenFile(msg.right(msg.length() - 1));
+			throw std::logic_error("Message from child has invalid code");
+		}
 
 		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-		                              boost::ref(*this), boost::lambda::_1));
+									  boost::ref(*this), boost::lambda::_1));
+
+		mProcessStatus.store(psRunning);
 		mIsRunning.store(true);
 		mStartTime = QDateTime::currentDateTime();
 	}
@@ -223,7 +253,7 @@ void checklib::details::RestrictedProcessImpl::terminate()
 {
 	if(isRunning())
 	{
-		kill(mChildPid, SIGTERM);
+		kill(mChildPid, SIGKILL);
 		mProcessStatus.store(psTerminated);
 	}
 }
@@ -311,12 +341,12 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 {
 	if(!isRunning() || mStandardInput != ss::Interactive) return false;
 
-	auto count = write(mInputPipe[1], data.toLocal8Bit().data(), data.length());
+	auto count = write(mInputPipe.pipe(), data.toLocal8Bit().data(), data.length());
 	if(count == -1) return false;
 	if(newLine)
 	{
 		const char c = '\n';
-		write(mInputPipe[1], &c, 1);
+		write(mInputPipe.pipe(), &c, 1);
 	}
 	return true;
 }
@@ -331,7 +361,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 		const int MAX = 100;
 		char buf[MAX];
 
-		auto count = read(mOutputPipe[0], buf, MAX - 1);
+		auto count = read(mOutputPipe.pipe(), buf, MAX - 1);
 		if(count == -1) return false;
 		buf[count] = 0;
 		data += buf;
@@ -353,6 +383,10 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mStandardOutput = ss::Stdout;
 	mStandardError = ss::Stderr;
 
+	mInputPipe.reset();
+	mOutputPipe.reset();
+	mErrorPipe.reset();
+
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);
 	mIsRunning.store(false);
@@ -365,7 +399,8 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	if(!mIsRunning.load()) return;
 
 	kill(mChildPid, SIGUSR1);
-	waitpid(mChildPid, NULL, WCONTINUED);
+	int status = 0;
+	waitpid(mChildPid, &status, WCONTINUED);
 
 	mIsRunning.store(false);
 }
@@ -462,7 +497,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		if(WIFEXITED(status))
 		{
 			mProcessStatus.store(psExited);
-			mExitCode.store(WEXITSTATUS(status));
 		}
 		if(WIFSIGNALED(status))
 		{
@@ -470,6 +504,9 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 			if(mProcessStatus.load() == psRunning) mProcessStatus.store(psRuntimeError);
 		}
 
+		mExitCode.store(WEXITSTATUS(status));
+
 		mIsRunning.store(false);
+		emit finished(mExitCode.load());
 	}
 }
