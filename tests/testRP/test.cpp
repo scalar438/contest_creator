@@ -258,7 +258,7 @@ void TestRun::testInteractive()
 	QVERIFY(runner.processStatus() == checklib::psExited);
 }
 
-void TestRun::isExceptionThrowed()
+void TestRun::exceptionWasThrew()
 {
 	checklib::RestrictedProcess runner;
 	runner.setProgram("./examples/FileNotExists");

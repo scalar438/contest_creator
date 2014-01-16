@@ -31,7 +31,7 @@ private slots:
 	void testIL();
 	void testInteractive();
 
-	void isExceptionThrowed();
+	void exceptionWasThrew();
 
 	void cleanupTestCase();
 

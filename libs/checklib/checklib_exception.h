@@ -1,4 +1,7 @@
 ﻿#pragma once
+
+#include "noexcept.h"
+
 #include <exception>
 #include <QString>
 
@@ -11,8 +14,8 @@ public:
 		: mStr(str)
 	{
 	}
-	virtual ~Exception() noexcept {}
-	virtual const char* what() const noexcept
+	virtual ~Exception() NOEXCEPT {}
+	virtual const char* what() const NOEXCEPT
 	{
 		return mStr.toLocal8Bit().data();
 	}
@@ -35,7 +38,7 @@ public:
 	{
 	}
 
-	~CannotStartProcess() noexcept {}
+	~CannotStartProcess() NOEXCEPT {}
 
 	QString programName() const
 	{
@@ -54,7 +57,7 @@ public:
 		  mFileName(fileName)
 	{
 	}
-	~CannotOpenFile() noexcept {}
+	~CannotOpenFile() NOEXCEPT {}
 	QString fileName() const
 	{
 		return mFileName;

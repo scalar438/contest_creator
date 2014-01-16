@@ -8,7 +8,8 @@ HEADERS += \
     rp_types.h \
     rp.h \  
     rp_consts.h \
-    timer_service.h
+    timer_service.h \
+    noexcept.h
 
 SOURCES += \
 	rp.cpp
