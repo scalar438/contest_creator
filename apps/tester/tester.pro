@@ -24,3 +24,5 @@ win32: LIBS += -lpsapi -L$$(BOOST_LIB_DIR)
 
 unix:QMAKE_CXXFLAGS += --std=c++0x
 unix: LIBS += -lboost_system -lboost_filesystem -lboost_thread -lboost_chrono
+
+PRE_TARGETDEPS += ../../libs/checklib

@@ -5,6 +5,7 @@
 #ifdef Q_OS_LINUX
 #include "details/rp_linux.h"
 #endif
+#include <QDebug>
 
 checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
 	: QObject(parent)
