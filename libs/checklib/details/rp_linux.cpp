@@ -234,7 +234,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			kill(mChildPid, SIGKILL);
 			waitpid(mChildPid, nullptr, 0);
 			if(msg[0] == '0') throw CannotStartProcess(mProgram);
-			if(msg[1] == '1') throw CannotOpenFile(msg.right(msg.length() - 1));
+			if(msg[0] == '1') throw CannotOpenFile(msg.right(msg.length() - 1));
 			throw std::logic_error("Message from child has invalid code");
 		}
 
