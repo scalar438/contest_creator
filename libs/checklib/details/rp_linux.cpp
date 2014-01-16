@@ -430,6 +430,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
 		doFinalize();
+		emit finished(-2);
 		return;
 	}
 
@@ -438,6 +439,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psIdlenessLimitExceeded);
 		doFinalize();
+		emit finished(-2);
 		return;
 	}
 
@@ -477,6 +479,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psMemoryLimitExceeded);
 		doFinalize();
+		emit finished(-2);
 		return;
 	}
 

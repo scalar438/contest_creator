@@ -149,4 +149,3 @@ bool checklib::RestrictedProcess::sendDataToStandardInput(const QString &data, b
 {
 	return pimpl->sendDataToStandardInput(data, newLine);
 }
-
