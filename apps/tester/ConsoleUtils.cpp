@@ -62,8 +62,25 @@ struct Initializer
 } initializer;
 
 #else
+
+// Для преобразования номера цвета в enum-e в номер цвета из ansi escape codes необходимо
+// поменять местами 1 и 3 бит
+int getIndex(int a)
+{
+	a ^= (a & 7) >> 2;
+	a ^= (a << 2) & 7;
+	a ^= (a & 7) >> 2;
+	return a;
+}
+
 std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
+	if(color.mTextColor == standard) os << "\033[0m";
+	else
+	{
+		int code = getIndex(static_cast<int>(color.mTextColor));
+		os << "\033[" << (code >> 3) << ";3" << (code & 7) << "m";
+	}
 	return os;
 }
 
@@ -80,4 +97,19 @@ cu::ColorSaver::ColorSaver()
 cu::ColorSaver::~ColorSaver()
 {
 	std::cout << mColor;
+}
+
+cu::details::Color cu::textColor(cu::TextColor textColor)
+{
+	return details::Color(textColor);
+}
+
+cu::details::Position cu::cursorPosition(int x, int y)
+{
+	return details::Position(x, y);
+}
+
+cu::details::Position cu::cursorPosition(int x)
+{
+	return details::Position(x, -1);
 }

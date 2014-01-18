@@ -30,21 +30,12 @@ public:
 }
 
 // Манипулятор потока цвета текста в консоли
-static details::Color textColor(TextColor textColor)
-{
-	return details::Color(textColor);
-}
+details::Color textColor(TextColor textColor);
 
 // Манипулятор потока для задания положения курсора
-static details::Position cursorPosition(int x, int y)
-{
-	return details::Position(x, y);
-}
+details::Position cursorPosition(int x, int y);
 
-static details::Position cursorPosition(int x)
-{
-	return details::Position(x, -1);
-}
+details::Position cursorPosition(int x);
 
 // Сохраняет, а затем автоматически восстанавливает текущий цвет шрифта консоли
 class ColorSaver
