@@ -24,6 +24,8 @@ signals:
 
 	void finished(int exitCode);
 
+	void error(QString errorDescription);
+
 private:
 
 	checklib::RestrictedProcess *mProcess;

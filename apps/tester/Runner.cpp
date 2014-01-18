@@ -38,10 +38,9 @@ void Runner::startTest(QString inputFileName, QString outputFileName)
 	{
 		mProcess->start();
 	}
-	catch(checklib::Exception &)
+	catch(checklib::Exception &e)
 	{
-		qWarning() << "Error";
-		emit finished(-1);
+		emit error(e.what());
 		return;
 	}
 }

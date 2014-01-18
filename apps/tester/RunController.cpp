@@ -18,6 +18,7 @@ RunController::RunController(const ParamsReader *reader, Runner *runner)
 {
 	QObject::connect(runner, &Runner::finished, this, &RunController::onTestFinished, Qt::QueuedConnection);
 	QObject::connect(this, &RunController::nextTest, runner, &Runner::startTest, Qt::QueuedConnection);
+	QObject::connect(runner, &Runner::error, this, &RunController::onError, Qt::QueuedConnection);
 
 	mIsRunning = false;
 	mCheckTimer = this->startTimer(400);
@@ -102,6 +103,12 @@ void RunController::onTestFinished(int)
 	{
 		emit testCompleted();
 	}
+}
+
+void RunController::onError(QString errorDescription)
+{
+	std::cout << cu::textColor(cu::red) << errorDescription.toStdString() << std::endl;
+	emit testCompleted();
 }
 
 void RunController::timerEvent(QTimerEvent *arg)

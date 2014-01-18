@@ -34,6 +34,8 @@ private slots:
 
 	void onTestFinished(int);
 
+	void onError(QString errorDescription);
+
 protected:
 
 	void timerEvent(QTimerEvent *arg) override;
