@@ -40,7 +40,7 @@ void Runner::startTest(QString inputFileName, QString outputFileName)
 	}
 	catch(checklib::Exception &)
 	{
-		qDebug() << "Error";
+		qWarning() << "Error";
 		emit finished(-1);
 		return;
 	}

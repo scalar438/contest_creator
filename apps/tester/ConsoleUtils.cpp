@@ -86,6 +86,8 @@ std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Col
 
 std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Position &p)
 {
+	if(p.my == -1) std::cout << "\033[" << p.mx + 1 << "G";
+	else std::cout << "\033[" << p.mx + 1 << ";" << p.my + 1 << "H";
 	return os;
 }
 

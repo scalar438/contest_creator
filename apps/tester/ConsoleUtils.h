@@ -34,8 +34,8 @@ details::Color textColor(TextColor textColor);
 
 // Манипулятор потока для задания положения курсора
 details::Position cursorPosition(int x, int y);
-
-details::Position cursorPosition(int x);
+// Манипулятор потока для задания положения курсора. Задает позицию в текущей строке
+details::Position cursorPosition(int y);
 
 // Сохраняет, а затем автоматически восстанавливает текущий цвет шрифта консоли
 class ColorSaver

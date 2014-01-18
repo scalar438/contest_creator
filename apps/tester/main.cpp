@@ -16,7 +16,7 @@
 
 
 int main(int argc, char *argv[])
-{	
+{
 	cu::ColorSaver saver;
 
 	QCoreApplication app(argc, argv);
