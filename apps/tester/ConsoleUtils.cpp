@@ -73,6 +73,14 @@ int getIndex(int a)
 	return a;
 }
 
+namespace cu
+{
+namespace details
+{
+cu::TextColor currentColor = cu::standard;
+}
+}
+
 std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
 	if(color.mTextColor == standard) os << "\033[0m";
@@ -81,6 +89,7 @@ std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Col
 		int code = getIndex(static_cast<int>(color.mTextColor));
 		os << "\033[" << (code >> 3) << ";3" << (code & 7) << "m";
 	}
+	cu::details::currentColor = color.mTextColor;
 	return os;
 }
 
@@ -92,6 +101,7 @@ std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Pos
 }
 
 cu::ColorSaver::ColorSaver()
+	: mColor(cu::details::currentColor)
 {
 }
 #endif
