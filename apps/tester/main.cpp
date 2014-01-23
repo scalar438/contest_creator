@@ -14,7 +14,6 @@
 #include <QFile>
 #include <QDir>
 
-
 int main(int argc, char *argv[])
 {
 	cu::ColorSaver saver;
@@ -25,22 +24,18 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		if(app.arguments().size() > 1)
+		for(int i = 1; i < app.arguments().size(); ++i)
 		{
-			if(app.arguments()[1] == "-ini")
+			if(app.arguments()[i] == "-ini")
 			{
-				if(app.arguments().size() > 2)
-				{
-					settingsFileName = app.arguments()[2];
-				}
-				else
-				{
-					throw TesterException("Wrong argument format. Usage: -ini <settings-file>");
-				}
+				++i;
+				if(app.arguments().size() == i) throw TesterException("Wrong argument format. Usage: -ini <settings-file>");
+				settingsFileName = app.arguments()[i];
 			}
-			else
+			else if(app.arguments()[i] == "-v" || app.arguments()[i] == "-version")
 			{
-				throw TesterException(("Unknown argument: " + app.arguments()[1].toStdString()).c_str());
+				std::cout << "Tester version: 1.0.0" << std::endl;
+				return 0;
 			}
 		}
 		if(!QFile(settingsFileName).exists()) throw TesterException("Settings file is not exists");
