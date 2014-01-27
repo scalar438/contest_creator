@@ -14,7 +14,7 @@ ParamsReader::ParamsReader(const QString &settingsFileName)
 	if(limits.useTimeLimit)
 	{
 		bool flag;
-		limits.timeLimit = tmpString.toInt(&flag) * 1000;
+		limits.timeLimit = static_cast<int>(tmpString.toDouble(&flag) * 1000);
 		if(!flag) throw TesterException("Time limit is invalid");
 	}
 
