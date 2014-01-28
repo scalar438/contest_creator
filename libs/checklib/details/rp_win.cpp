@@ -423,7 +423,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 
 		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
 		{
-			if(!CancelIoEx(mOutputHandle.handle(), NULL))
+			if(!CancelIo(mOutputHandle.handle()))
 			{
 				qWarning() << "IO cannot be canceled";
 			}
@@ -444,7 +444,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		qWarning() << "Cannot get exit code process";
 	}
-	// Определение исключения делается через код возврата. Через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS будет надежнее
+	// TODO: Сделать через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS - надежнее
 	switch(tmpExitCode)
 	{
 	case EXCEPTION_ACCESS_VIOLATION:
