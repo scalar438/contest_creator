@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 			}
 			else if(app.arguments()[i] == "-v" || app.arguments()[i] == "-version")
 			{
-				std::cout << "Tester version: 1.0.0" << std::endl;
+				std::cout << "Tester version: 1.0.1" << std::endl;
 				return 0;
 			}
 		}
