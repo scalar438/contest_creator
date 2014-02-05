@@ -2,19 +2,18 @@ TEMPLATE = app
 CONFIG += qt console
 QT -= gui
 
-SOURCES += \
-	main.cpp \
+SOURCES += main.cpp \
 	ParamsReader.cpp \
 	Runner.cpp \
 	RunController.cpp \
 	ConsoleUtils.cpp
 
-HEADERS += \
-	ParamsReader.h \
+HEADERS += ParamsReader.h \
 	Runner.h \
 	RunController.h \
 	ConsoleUtils.h \
-    TesterExceptions.h
+	TesterExceptions.h \
+	io_consts.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)

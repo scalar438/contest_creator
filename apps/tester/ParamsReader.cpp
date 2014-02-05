@@ -72,7 +72,7 @@ void ParamsReader::readTests()
 		while(zEnd < str.length() && str[zEnd] == '0') ++zEnd;
 	};
 
-	auto getFileName = [&zStart, &zEnd](const QString & str, int testNumber) -> QString
+	auto getFileName = [&zStart, &zEnd](const QString &str, int testNumber) -> QString
 	{
 		QString tmp = QString::number(testNumber);
 		while(tmp.length() < zEnd - zStart) tmp = "0" + tmp;
