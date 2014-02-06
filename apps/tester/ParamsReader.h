@@ -24,12 +24,12 @@ public:
 	std::vector<OneTest> tests;
 	bool interrupt;
 
-	enum GenAnswerMode
+	enum GenAnswersMode
 	{
 		NotGenerate, GenerateMissing, GenerateAlways
 	};
 
-	GenAnswerMode genAnswers;
+	GenAnswersMode genAnswers;
 private:
 
 	QSettings mSettings;
