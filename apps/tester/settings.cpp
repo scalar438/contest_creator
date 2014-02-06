@@ -1,4 +1,6 @@
 ﻿#include "settings.h"
+#include <fstream>
+#include <sstream>
 #include <boost/algorithm/string.hpp>
 using namespace std;
 
@@ -17,7 +19,37 @@ Settings::Settings(const std::string &fileName)
 		boost::algorithm::trim(value);
 		if(key.empty() || value.empty()) continue;
 
-		mValue[key] = value;
+		mValues[key] = value;
 	}
 }
 
+std::string Settings::readString(const std::string &key, const std::string &def = "") const
+{
+	auto it = mValues.find(key);
+	if(it != mValues.end()) return it->second;
+	return def;
+}
+
+int Settings::readInt(const std::string &key, int def = 0) const
+{
+	auto it = mValues.find(key);
+	if(it != mValues.end())
+	{
+		std::istringstream is(it->second);
+		int val;
+		if(is >> val) return val;
+	}
+	return def;
+}
+
+double Settings::readDouble(const std::string &key, double def = 0.0) const
+{
+	auto it = mValues.find(key);
+	if(it != mValues.end())
+	{
+		std::istringstream is(it->second);
+		double val;
+		if(is >> val) return val;
+	}
+	return def;
+}

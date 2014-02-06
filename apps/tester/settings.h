@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <ostream>
 #include <string>
 #include <map>
 
@@ -8,13 +7,11 @@ class Settings
 public:
 	Settings(const std::string &fileName);
 
-	template<class T> void param(const std::string &str)
-	{
-
-	}
+	std::string readString(const std::string &key, const std::string &def = "") const;
+	int readInt(const std::string &key, int def = 0) const;
+	double readDouble(const std::string &key, double def = 0.0) const;
 
 private:
 
 	std::map<std::string, std::string> mValues;
-
 };
