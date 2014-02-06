@@ -6,14 +6,16 @@ SOURCES += main.cpp \
 	ParamsReader.cpp \
 	Runner.cpp \
 	RunController.cpp \
-	ConsoleUtils.cpp
+	ConsoleUtils.cpp \
+	settings.cpp
 
 HEADERS += ParamsReader.h \
 	Runner.h \
 	RunController.h \
 	ConsoleUtils.h \
 	TesterExceptions.h \
-	io_consts.h
+	io_consts.h \
+	settings.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)
