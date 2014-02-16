@@ -23,14 +23,14 @@ Settings::Settings(const std::string &fileName)
 	}
 }
 
-std::string Settings::readString(const std::string &key, const std::string &def = "") const
+std::string Settings::readString(const std::string &key, const std::string &def) const
 {
 	auto it = mValues.find(key);
 	if(it != mValues.end()) return it->second;
 	return def;
 }
 
-int Settings::readInt(const std::string &key, int def = 0) const
+int Settings::readInt(const std::string &key, int def) const
 {
 	auto it = mValues.find(key);
 	if(it != mValues.end())
@@ -42,7 +42,7 @@ int Settings::readInt(const std::string &key, int def = 0) const
 	return def;
 }
 
-double Settings::readDouble(const std::string &key, double def = 0.0) const
+double Settings::readDouble(const std::string &key, double def) const
 {
 	auto it = mValues.find(key);
 	if(it != mValues.end())
@@ -53,3 +53,9 @@ double Settings::readDouble(const std::string &key, double def = 0.0) const
 	}
 	return def;
 }
+
+bool Settings::contains(const string &key) const
+{
+	return mValues.find(key) != mValues.end();
+}
+

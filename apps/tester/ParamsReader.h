@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include "checklib/rp_types.h"
+#include "settings.h"
 
 #include <QString>
-#include <QSettings>
 #include <vector>
 
 struct OneTest
@@ -32,7 +32,7 @@ public:
 	GenAnswersMode genAnswers;
 private:
 
-	QSettings mSettings;
+	Settings mSettings;
 	// Читает и парсит названия входных и выходных файлов
 	void readTests();
 };
