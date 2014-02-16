@@ -58,4 +58,3 @@ bool Settings::contains(const string &key) const
 {
 	return mValues.find(key) != mValues.end();
 }
-

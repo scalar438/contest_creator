@@ -3,19 +3,20 @@ CONFIG += qt console
 QT -= gui
 
 SOURCES += main.cpp \
-	ParamsReader.cpp \
 	Runner.cpp \
 	RunController.cpp \
 	ConsoleUtils.cpp \
-	settings.cpp
+	settings.cpp \
+    params_reader.cpp
 
-HEADERS += ParamsReader.h \
+HEADERS += \
 	Runner.h \
 	RunController.h \
 	ConsoleUtils.h \
 	TesterExceptions.h \
 	io_consts.h \
-	settings.h
+	settings.h \
+    params_reader.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)

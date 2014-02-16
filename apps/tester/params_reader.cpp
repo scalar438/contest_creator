@@ -1,4 +1,4 @@
-﻿#include "ParamsReader.h"
+﻿#include "params_reader.h"
 #include "TesterExceptions.h"
 #include <QFile>
 
