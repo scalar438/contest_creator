@@ -3,21 +3,18 @@
 #include "../rp_types.h"
 
 #include <memory>
-// Без этого moc-компилятор падает при попытке распарсить эти заголовочники
-#ifndef Q_MOC_RUN
+#include <vector>
+#include <string>
+
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/atomic.hpp>
-#endif
+#include <boost/signals2.hpp>
+#include <boost/filesystem.hpp>
 
 #include <windows.h>
 #include <psapi.h>
-
-#include <QDateTime>
-#include <QString>
-#include <QStringList>
-#include <QDebug>
 
 namespace checklib
 {
@@ -76,21 +73,20 @@ private:
 	std::shared_ptr<AutoCloser> ptr;
 };
 
-class RestrictedProcessImpl : public QObject
+class RestrictedProcessImpl
 {
-	Q_OBJECT
 public:
-	RestrictedProcessImpl(QObject *parent = nullptr);
+	RestrictedProcessImpl();
 	~RestrictedProcessImpl();
 
-	QString getProgram() const;
-	void setProgram(const QString &program);
+	std::string getProgram() const;
+	void setProgram(const std::string &program);
 
-	QStringList getParams() const;
-	void setParams(const QStringList &params);
+	std::vector<std::string> getParams() const;
+	void setParams(const std::vector<std::string> &params);
 
-	QString currentDirectory() const;
-	void setCurrentDirectory(const QString &directory);
+	std::string currentDirectory() const;
+	void setCurrentDirectory(const std::string &directory);
 
 
 	bool isRunning() const;
@@ -117,25 +113,25 @@ public:
 	Limits getLimits() const;
 	void setLimits(const Limits &limits);
 
-	void redirectStandardInput(const QString &fileName);
-	void redirectStandardOutput(const QString &fileName);
-	void redirectStandardError(const QString &fileName);
+	void redirectStandardInput(const std::string &fileName);
+	void redirectStandardOutput(const std::string &fileName);
+	void redirectStandardError(const std::string &fileName);
 
-	bool sendDataToStandardInput(const QString &data, bool newLine);
-	bool getDataFromStandardOutput(QString &data);
+	bool sendDataToStandardInput(const std::string &data, bool newLine);
+	bool getDataFromStandardOutput(std::string &data);
 
-signals:
-
-	void finished(int exitCode);
+	boost::signals2::signal<void(int)> finished;
 
 private:
-	QString mProgram;
-	QStringList mParams;
-	QString mCurrentDirectory;
+	std::string mProgram;
+	std::vector<std::string> mParams;
+	std::string mCurrentDirectory;
 
-	QDateTime mStartTime;
+	std::string mStandardInput, mStandardOutput, mStandardError;
 
-	QString mStandardInput, mStandardOutput, mStandardError;
+	// Сколько раз подряд при измерении процессорного времени оно не менялось.
+	// Если больше определенного лимита - программа не выполняется, проставляем IDLENESS_LIMIT_EXCEEDED
+	int mNotChangedTimeCount;
 
 	boost::atomic<ProcessStatus> mProcessStatus;
 	boost::atomic<int> mExitCode;

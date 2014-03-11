@@ -17,7 +17,7 @@ public:
 	ParamsReader(const QString &settingsFileName);
 
 	QString programName;
-	QString checker;
+	std::string checker;
 	QString inputFile;
 	QString outputFile;
 	checklib::Limits limits;

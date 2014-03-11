@@ -1,5 +1,5 @@
 ﻿#include "RunController.h"
-#include "ParamsReader.h"
+#include "params_reader.h"
 #include "ConsoleUtils.h"
 #include "Runner.h"
 #include "TesterExceptions.h"

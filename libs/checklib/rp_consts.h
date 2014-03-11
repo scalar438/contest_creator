@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <QString>
+#include <string>
 
 namespace checklib
 {
@@ -8,10 +8,10 @@ namespace checklib
 // Строковые константы с предопределенными названиями
 namespace ss
 {
-const QString Stdin = "stdin";
-const QString Stdout = "stdout";
-const QString Stderr = "stderr";
-const QString Interactive = "interactive";
+const std::string Stdin = "stdin";
+const std::string Stdout = "stdout";
+const std::string Stderr = "stderr";
+const std::string Interactive = "interactive";
 }
 
 }

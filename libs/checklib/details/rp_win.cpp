@@ -6,18 +6,17 @@
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/filesystem.hpp>
 
 #include <deque>
 
 #include <Windows.h>
 #include <strsafe.h>
+#include <iostream>
+#include <string>
 
-#include <QDebug>
-#include <QFileInfo>
-
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
-	: QObject(parent)
-	, mTimer(TimerService::instance()->io_service())
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
+	: mTimer(TimerService::instance()->io_service())
 {
 	reset();
 }
@@ -28,32 +27,32 @@ checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 	while(mIsRunning.load()) boost::this_thread::yield();
 }
 
-QString checklib::details::RestrictedProcessImpl::getProgram() const
+std::string checklib::details::RestrictedProcessImpl::getProgram() const
 {
 	return mProgram;
 }
 
-void checklib::details::RestrictedProcessImpl::setProgram(const QString &program)
+void checklib::details::RestrictedProcessImpl::setProgram(const std::string &program)
 {
 	mProgram = program;
 }
 
-QStringList checklib::details::RestrictedProcessImpl::getParams() const
+std::vector<std::string> checklib::details::RestrictedProcessImpl::getParams() const
 {
 	return mParams;
 }
 
-void checklib::details::RestrictedProcessImpl::setParams(const QStringList &params)
+void checklib::details::RestrictedProcessImpl::setParams(const std::vector<std::string> &params)
 {
 	mParams = params;
 }
 
-QString checklib::details::RestrictedProcessImpl::currentDirectory() const
+std::string checklib::details::RestrictedProcessImpl::currentDirectory() const
 {
 	return mCurrentDirectory;
 }
 
-void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const QString &directory)
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const std::string &directory)
 {
 	mCurrentDirectory = directory;
 }
@@ -93,10 +92,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			std::vector<wchar_t> str(mStandardInput.length() + 1, 0);
-			mStandardInput.toWCharArray(&str[0]);
-
-			f = CreateFile(&str[0], GENERIC_READ, FILE_SHARE_READ,
+			f = CreateFileA(mStandardInput.c_str(), GENERIC_READ, FILE_SHARE_READ,
 			               &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardInput);
 		}
@@ -118,9 +114,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			std::vector<wchar_t> str(mStandardOutput.length() + 1, 0);
-			mStandardOutput.toWCharArray(&str[0]);
-			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			f = CreateFileA(mStandardOutput.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardOutput);
 		}
 		si.hStdOutput = f;
@@ -141,9 +135,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			std::vector<wchar_t> str(mStandardError.length() + 1, 0);
-			mStandardError.toWCharArray(&str[0]);
-			f = CreateFile(&str[0], GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+			f = CreateFileA(mStandardError.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardError);
 		}
 		si.hStdError = f;
@@ -151,12 +143,17 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 
 	PROCESS_INFORMATION pi;
-	QString programPath = QFileInfo(mProgram).absoluteFilePath();
-	QString cmdLine = "\"" + programPath + "\"";
+
+	boost::filesystem::path programPath = boost::filesystem::absolute(mProgram);
+	std::string cmdLine;
+	{
+		auto tmp = programPath.native();
+		cmdLine = std::string(tmp.begin(), tmp.end());
+	}
 	for(int i = 0; i < mParams.size(); i++)
 	{
 		cmdLine += " ";
-		if(mParams[i].contains(' '))
+		if(std::find(mParams[i].begin(), mParams[i].end(), ' ') != mParams[i].end())
 		{
 			cmdLine += '\"';
 			cmdLine += mParams[i];
@@ -167,19 +164,21 @@ void checklib::details::RestrictedProcessImpl::start()
 
 	boost::shared_array<char> curDir;
 
-	if(!mCurrentDirectory.isEmpty())
+	if(!mCurrentDirectory.empty())
 	{
 		curDir = boost::shared_array<char>(new char[mCurrentDirectory.size() + 1]);
-		strcpy_s(curDir.get(), mCurrentDirectory.size() + 1, mCurrentDirectory.toLocal8Bit().data());
+		strcpy_s(curDir.get(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
 	}
 	else
 	{
-		QString currentDir = QFileInfo(programPath).absolutePath();
+		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой программе
+		auto tmpCurrentDir = programPath.branch_path().native();
+		std::string currentDir(tmpCurrentDir.begin(), tmpCurrentDir.end());
 		curDir = boost::shared_array<char>(new char[currentDir.size() + 1]);
-		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.toLocal8Bit().data());
+		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.c_str());
 	}
 
-	if(!CreateProcessA(NULL, cmdLine.toLocal8Bit().data(), &sa, NULL, TRUE,
+	if(!CreateProcessA(NULL, &cmdLine[0], &sa, NULL, TRUE,
 					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
@@ -190,11 +189,11 @@ void checklib::details::RestrictedProcessImpl::start()
 	ResumeThread(pi.hThread);
 	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
-	mStartTime = QDateTime::currentDateTime();
 	mutex_locker guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
 	                              boost::lambda::_1));
+	mNotChangedTimeCount = 0;
 	mIsRunning.store(true);
 }
 
@@ -305,29 +304,28 @@ void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 	mLimits = limits;
 }
 
-void checklib::details::RestrictedProcessImpl::redirectStandardInput(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardInput(const std::string &fileName)
 {
 	mStandardInput = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::redirectStandardOutput(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardOutput(const std::string &fileName)
 {
 	mStandardOutput = fileName;
 }
 
-void checklib::details::RestrictedProcessImpl::redirectStandardError(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardError(const std::string &fileName)
 {
 	mStandardError = fileName;
 }
 
-bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std::string &data, bool newLine)
 {
 	mutex_locker lock(mHandlesMutex);
 	if(!isRunning()) return false;
 	DWORD count;
-	if(!WriteFile(mInputHandle.handle(), data.toLocal8Bit().data(), data.length(), &count, NULL))
+	if(!WriteFile(mInputHandle.handle(), data.c_str(), data.length(), &count, NULL))
 	{
-		qWarning() << "WriteFile error";
 		return false;
 	}
 	if(newLine)
@@ -335,14 +333,13 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 		char c = '\n';
 		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
 		{
-			qWarning() << "WriteFile error";
 			return false;
 		}
 	}
 	return true;
 }
 
-bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::string &data)
 {
 	if(!isRunning()) return false;
 	if(mStandardOutput != ss::Interactive) return false;
@@ -355,12 +352,12 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 		DWORD count = 0;
 		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
-			qWarning() << "Readfile error";
+//			qWarning() << "Readfile error";
 			return false;
 		}
 		buf[count] = 0;
 		data += buf;
-		if(data.endsWith("\r\n"))
+		if(data.size() >= 2 && data.substr(data.size() - 2, 2) == "\r\n")
 		{
 			data.resize(data.size() - 2);
 			break;
@@ -372,6 +369,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 
 void checklib::details::RestrictedProcessImpl::doCheck()
 {
+	int oldCPUTime = mCPUTime.load();
 	int time = CPUTime();
 	if(mLimits.useTimeLimit)
 	{
@@ -379,13 +377,21 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 		{
 			mProcessStatus.store(psTimeLimitExceeded);
 			doFinalize();
+			return;
 		}
 	}
-	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
-	if(fullTime > 2000 && time * 8 < fullTime)
+	if(time == oldCPUTime)
 	{
-		mProcessStatus.store(psIdlenessLimitExceeded);
-		doFinalize();
+		if(mNotChangedTimeCount++ > 20)
+		{
+			mProcessStatus.store(psIdlenessLimitExceeded);
+			doFinalize();
+			return;
+		}
+	}
+	else
+	{
+		mNotChangedTimeCount = 1;
 	}
 	if(mLimits.useMemoryLimit)
 	{
@@ -418,20 +424,20 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		if(mProcessStatus.load() == psRunning)
 		{
-			qWarning() << "Process status is invalid";
+//			qWarning() << "Process status is invalid";
 		}
 
 		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
 		{
 			if(!CancelIo(mOutputHandle.handle()))
 			{
-				qWarning() << "IO cannot be canceled";
+//				qWarning() << "IO cannot be canceled";
 			}
 		}
 
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
-			qWarning() << "TerminateProcess failed";
+//			qWarning() << "TerminateProcess failed";
 		}
 		else
 		{
@@ -442,7 +448,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	DWORD tmpExitCode;
 	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
-		qWarning() << "Cannot get exit code process";
+//		qWarning() << "Cannot get exit code process";
 	}
 	// TODO: Сделать через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS - надежнее
 	switch(tmpExitCode)
@@ -511,8 +517,8 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 				0,
 				NULL
 			);
-			qWarning() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
-						", isRunning =" << isRunning();
+/*			qWarning() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
+						", isRunning =" << isRunning();*/
 			LocalFree(cstr);
 		}
 		break;
@@ -529,5 +535,5 @@ void checklib::details::RestrictedProcessImpl::destroyHandles()
 
 		mIsRunning.store(false);
 	}
-	emit finished(mExitCode);
+	finished(mExitCode);
 }

@@ -1,5 +1,5 @@
 ﻿#include "RunController.h"
-#include "ParamsReader.h"
+#include "params_reader.h"
 #include "Runner.h"
 #include "ConsoleUtils.h"
 #include "checklib/checklib_exception.h"
@@ -82,8 +82,13 @@ void RunController::onTestFinished(int)
 		{
 			checklib::RestrictedProcess process;
 			process.setProgram(mReader->checker);
-			process.setParams(QStringList() << mReader->inputFile <<
-							  mReader->outputFile << mReader->tests[mCurrentTest].answerFile);
+			std::vector<std::string> vs;
+			QStringList tmpList;
+			tmpList << mReader->inputFile << mReader->outputFile << mReader->tests[mCurrentTest].answerFile;
+			std::transform(tmpList.begin(), tmplist.end(), std::back_inserter(vs), [](QString arg) -> std::string {
+						 return arg.toStdString();
+			});
+			process.setParams(QStringList() << );
 			process.start();
 			process.wait();
 			needContinue = needContinue || process.exitCode() == 0;

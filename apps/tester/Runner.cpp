@@ -4,11 +4,11 @@
 #include <QDebug>
 
 Runner::Runner(const QString &programName, checklib::Limits limits)
-	: mProcess(new checklib::RestrictedProcess(this))
+	: mProcess(new checklib::RestrictedProcess())
 {
 	mLimits = limits;
 	// TODO добавить парсинг параметров
-	mProcess->setProgram(programName);
+	mProcess->setProgram(programName.toStdString());
 
 	connect(mProcess, &checklib::RestrictedProcess::finished, this, &Runner::finished);
 }

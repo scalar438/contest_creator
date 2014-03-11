@@ -3,36 +3,36 @@
 #include "noexcept.h"
 
 #include <exception>
-#include <QString>
+#include <string>
 
 namespace checklib {
 
 class Exception : public std::exception
 {
 public:
-	Exception(const QString &str)
+	Exception(const std::string &str)
 		: mStr(str)
 	{
 	}
 	virtual ~Exception() NOEXCEPT {}
 	virtual const char* what() const NOEXCEPT
 	{
-		return mStr.toLocal8Bit().data();
+		return mStr.c_str();
 	}
 private:
-	QString mStr;
+	std::string mStr;
 };
 
 class CannotStartProcess : public Exception
 {
 public:
-	CannotStartProcess(const QString &programName)
+	CannotStartProcess(const std::string &programName)
 		: Exception("Cannot start program \"" + programName + "\""),
 		  mProgram(programName)
 	{
 	}
 
-	CannotStartProcess(const QString &programName, const QString &msg)
+	CannotStartProcess(const std::string &programName, const std::string &msg)
 		: Exception("Cannot start program \"" + programName + "\": " + msg),
 		  mProgram(programName)
 	{
@@ -40,30 +40,30 @@ public:
 
 	~CannotStartProcess() NOEXCEPT {}
 
-	QString programName() const
+	std::string programName() const
 	{
 		return mProgram;
 	}
 
 private:
-	QString mProgram;
+	std::string mProgram;
 };
 
 class CannotOpenFile : public Exception
 {
 public:
-	CannotOpenFile(const QString &fileName)
+	CannotOpenFile(const std::string &fileName)
 		: Exception("File not found: \"" + fileName + "\""),
 		  mFileName(fileName)
 	{
 	}
 	~CannotOpenFile() NOEXCEPT {}
-	QString fileName() const
+	std::string fileName() const
 	{
 		return mFileName;
 	}
 private:
-	QString mFileName;
+	std::string mFileName;
 };
 
 }

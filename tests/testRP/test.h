@@ -41,4 +41,6 @@ private:
 	const std::string sum_output;
 	const std::string stderr_out_error;
 	const std::string args_output;
+
+	std::vector<std::string> toStringList(const QStringList &list);
 };

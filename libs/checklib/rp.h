@@ -3,11 +3,11 @@
 #include "rp_consts.h"
 
 #include <memory>
+#include <vector>
+#include <string>
 
-#include <QString>
-#include <QObject>
-#include <QStringList>
-#include <QTimer>
+#include <boost/signals2.hpp>
+#include <boost/filesystem.hpp>
 
 namespace checklib
 {
@@ -18,21 +18,20 @@ class RestrictedProcessImpl;
 }
 
 // Класс, запускающий процесс с ограничениями
-class RestrictedProcess : public QObject
+class RestrictedProcess
 {
-	Q_OBJECT
 public:
-	RestrictedProcess(QObject *parent = nullptr);
+	RestrictedProcess();
 	~RestrictedProcess();
 
-	QString program() const;
-	void setProgram(const QString &program);
+	std::string program() const;
+	void setProgram(const std::string &program);
 
-	QStringList params() const;
-	void setParams(const QStringList &params);
+	std::vector<std::string> params() const;
+	void setParams(const std::vector<std::string> &params);
 
-	QString currentDirectory() const;
-	void setCurrentDirectory(const QString &directory);
+	std::string currentDirectory() const;
+	void setCurrentDirectory(const std::string &directory);
 
 	bool isRunning() const;
 
@@ -73,32 +72,30 @@ public:
 	// Перенаправить стандартный поток ввода в указанный файл.
 	// Если ss::stdin, то перенаправления не происходит
 	// Если ss::interactive, то будет возможность писать в stdin процесса
-	void setStandardInput(const QString &fileName);
+	void setStandardInput(const std::string &fileName);
 
 	// Перенаправить стандартный поток вывода в указанный файл.
 	// Если ss::stdout, то перенаправления не происходит
 	// Если ss::interactive, то будет возможность читать из stdout процесса
-	void setStandardOutput(const QString &fileName);
+	void setStandardOutput(const std::string &fileName);
 
 	// Перенаправить стандартный поток ошибок в указанный файл.
 	// Если ss::stderr, то перенаправления не происходит
 	// Если ss::interactive, то будет возможность читать из stderr процесса
-	void setStandardError(const QString &fileName);
+	void setStandardError(const std::string &fileName);
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если процесс не интерактивный или программа не запущена, то ничего не произойдет
-	bool sendDataToStandardInput(const QString &data, bool newLine = false);
+	bool sendDataToStandardInput(const std::string &data, bool newLine = false);
 
 	// Получить буфер из стандартного потока вывода. Выдает целиком строку (без символа перевода строки).
-	bool getDataFromStandardOutput(QString &data);
+	bool getDataFromStandardOutput(std::string &data);
 
-signals:
-
-	void finished(int exitCode);
+	boost::signals2::signal<void(int)> finished;
 
 private:
 
-	details::RestrictedProcessImpl *pimpl;
+	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
 };
 
 }

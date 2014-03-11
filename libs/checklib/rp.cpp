@@ -1,49 +1,47 @@
 ﻿#include "rp.h"
-#ifdef Q_OS_WIN
+//#ifdef Q_OS_WIN
 #include "details/rp_win.h"
-#endif
-#ifdef Q_OS_LINUX
-#include "details/rp_linux.h"
-#endif
-#include <QDebug>
+//#endif
+//#ifdef Q_OS_LINUX
+//#include "details/rp_linux.h"
+//#endif
 
-checklib::RestrictedProcess::RestrictedProcess(QObject *parent)
-	: QObject(parent)
+checklib::RestrictedProcess::RestrictedProcess()
+	: pimpl(new details::RestrictedProcessImpl())
 {
-	pimpl = new details::RestrictedProcessImpl(this);
-	connect(pimpl, &details::RestrictedProcessImpl::finished, this, &RestrictedProcess::finished);
+	pimpl->finished.connect(this->finished);
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()
 {
 }
 
-QString checklib::RestrictedProcess::program() const
+std::string checklib::RestrictedProcess::program() const
 {
 	return pimpl->getProgram();
 }
 
-void checklib::RestrictedProcess::setProgram(const QString &program)
+void checklib::RestrictedProcess::setProgram(const std::string &program)
 {
 	pimpl->setProgram(program);
 }
 
-QStringList checklib::RestrictedProcess::params() const
+std::vector<std::string> checklib::RestrictedProcess::params() const
 {
 	return pimpl->getParams();
 }
 
-void checklib::RestrictedProcess::setParams(const QStringList &params)
+void checklib::RestrictedProcess::setParams(const std::vector<std::string> &params)
 {
 	pimpl->setParams(params);
 }
 
-QString checklib::RestrictedProcess::currentDirectory() const
+std::string checklib::RestrictedProcess::currentDirectory() const
 {
 	return pimpl->currentDirectory();
 }
 
-void checklib::RestrictedProcess::setCurrentDirectory(const QString &directory)
+void checklib::RestrictedProcess::setCurrentDirectory(const std::string &directory)
 {
 	pimpl->setCurrentDirectory(directory);
 }
@@ -119,33 +117,33 @@ void checklib::RestrictedProcess::reset()
 
 // Перенаправить стандартный поток ввода в указанный файл.
 // Если stdin, то перенаправления не происходит
-void checklib::RestrictedProcess::setStandardInput(const QString &fileName)
+void checklib::RestrictedProcess::setStandardInput(const std::string &fileName)
 {
 	pimpl->redirectStandardInput(fileName);
 }
 
 // Перенаправить стандартный поток вывода в указанный файл.
 // Если stdout, то перенаправления не происходит
-void checklib::RestrictedProcess::setStandardOutput(const QString &fileName)
+void checklib::RestrictedProcess::setStandardOutput(const std::string &fileName)
 {
 	pimpl->redirectStandardOutput(fileName);
 }
 
 // Перенаправить стандартный поток ошибок в указанный файл.
 // Если stderr, то перенаправления не происходит
-void checklib::RestrictedProcess::setStandardError(const QString &fileName)
+void checklib::RestrictedProcess::setStandardError(const std::string &fileName)
 {
 	pimpl->redirectStandardError(fileName);
 }
 
-bool checklib::RestrictedProcess::getDataFromStandardOutput(QString &data)
+bool checklib::RestrictedProcess::getDataFromStandardOutput(std::string &data)
 {
 	return pimpl->getDataFromStandardOutput(data);
 }
 
 // Отправить буфер в указанный стандартный поток.
 // Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-bool checklib::RestrictedProcess::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::RestrictedProcess::sendDataToStandardInput(const std::string &data, bool newLine)
 {
 	return pimpl->sendDataToStandardInput(data, newLine);
 }

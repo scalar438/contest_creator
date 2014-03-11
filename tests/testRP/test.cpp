@@ -20,6 +20,13 @@ void TestRun::cleanupTestCase()
 	boost::filesystem::remove(boost::filesystem::path(args_output));
 }
 
+std::vector<std::string> TestRun::toStringList(const QStringList &list)
+{
+	std::vector<std::string> res;
+	for(int i = 0; i < list.size(); ++i) res.push_back(list[i].toStdString());
+	return res;
+}
+
 void TestRun::isRunningChecking()
 {
 	checklib::RestrictedProcess runner;
@@ -62,7 +69,7 @@ void TestRun::testExitCode()
 	QVERIFY(runner.exitCode() == 42);
 
 	runner.reset();
-	runner.setParams(QStringList() << "123");
+	runner.setParams(toStringList(QStringList() << "123"));
 	runner.start();
 	runner.wait();
 	QVERIFY(runner.exitCode() == 123);
@@ -92,7 +99,7 @@ void TestRun::testArgs()
 	runner.setProgram("./examples/pArgsOut");
 	QStringList params;
 	params << "param1" << "param with space" << "param3";
-	runner.setParams(params);
+	runner.setParams(toStringList(params));
 
 	runner.start();
 	runner.wait();
@@ -137,7 +144,7 @@ void TestRun::testRE()
 {
 	checklib::RestrictedProcess runner;
 	runner.setProgram("./examples/pRE");
-	runner.setParams(QStringList() << "1");
+	runner.setParams(toStringList(QStringList() << "1"));
 
 	runner.start();
 	runner.wait();
@@ -145,7 +152,7 @@ void TestRun::testRE()
 	QVERIFY(runner.processStatus() == checklib::psRuntimeError);
 
 	runner.reset();
-	runner.setParams(QStringList() << "0");
+	runner.setParams(toStringList(QStringList() << "0"));
 
 	runner.start();
 	runner.wait();
@@ -173,8 +180,9 @@ void TestRun::testStandardStreamsRedirection()
 	os << a << " " << b << std::endl << "0 0";
 	os.close();
 
-	runner.setStandardInput(QFileInfo(QString::fromStdString(sum_input)).absoluteFilePath());
-	runner.setStandardOutput(QFileInfo(QString::fromStdString(sum_output)).absoluteFilePath());
+	// TODO: надо сделать без кучи конвертаций - напрямую через path
+	runner.setStandardInput(QFileInfo(QString::fromStdString(sum_input)).absoluteFilePath().toStdString());
+	runner.setStandardOutput(QFileInfo(QString::fromStdString(sum_output)).absoluteFilePath().toStdString());
 
 	runner.start();
 	runner.wait();
@@ -195,7 +203,7 @@ void TestRun::testStandardStreamsRedirection()
 	runner.setProgram("./examples/pStderr_out");
 
 #ifdef Q_OS_WIN
-	runner.setStandardError(QString::fromStdWString(boost::filesystem::path(stderr_out_error).native()));
+	runner.setStandardError(QString::fromStdWString(boost::filesystem::path(stderr_out_error).native()).toStdString());
 #else
 	runner.setStandardError(QString::fromLocal8Bit(boost::filesystem::path(stderr_out_error).native().c_str()));
 #endif
@@ -244,7 +252,7 @@ void TestRun::testInteractive()
 
 	runner.start();
 	runner.sendDataToStandardInput("4 5\n");
-	QString ans;
+	std::string ans;
 	if(!runner.getDataFromStandardOutput(ans)) QFAIL("getDataFromStandardOutput returned false");
 	QVERIFY(ans == "9");
 
