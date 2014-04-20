@@ -17,7 +17,7 @@ void TestRun::cleanupTestCase()
 	boost::filesystem::remove(boost::filesystem::path(sum_input));
 	boost::filesystem::remove(boost::filesystem::path(sum_output));
 	boost::filesystem::remove(boost::filesystem::path(stderr_out_error));
-//	boost::filesystem::remove(boost::filesystem::path(args_output));
+	boost::filesystem::remove(boost::filesystem::path(args_output));
 }
 
 std::vector<std::string> TestRun::toStringList(const QStringList &list)
