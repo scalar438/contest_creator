@@ -1,10 +1,10 @@
 ﻿#include "rp.h"
-//#ifdef Q_OS_WIN
+#ifdef CHECKLIB_WINDOWS
 #include "details/rp_win.h"
-//#endif
-//#ifdef Q_OS_LINUX
-//#include "details/rp_linux.h"
-//#endif
+#endif
+#ifdef CHECKLIB_UNIX
+#include "details/rp_linux.h"
+#endif
 
 checklib::RestrictedProcess::RestrictedProcess()
 	: pimpl(new details::RestrictedProcessImpl())

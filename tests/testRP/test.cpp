@@ -119,13 +119,11 @@ void TestRun::testArgs()
 	QVERIFY(is.good());
 	// Первый аргумент - путь до исполняемого файла. Сравниваем его именно как путь (из-за того,
 	// что в windows в нем могут быть как прямые, так и обратные слеши)
-	qDebug() << params[0] << str.c_str();
 	QVERIFY(boost::filesystem::path(params[0].toStdString()) == boost::filesystem::path(str));
 	for(int i = 1; i < count; ++i)
 	{
 		std::getline(is, str);
 		QVERIFY(is.good());
-		//qDebug() << i << str.c_str() << params[i];
 		QVERIFY(str == params[i].toStdString());
 	}
 }
@@ -212,7 +210,7 @@ void TestRun::testStandardStreamsRedirection()
 #ifdef Q_OS_WIN
 	runner.setStandardError(QString::fromStdWString(boost::filesystem::path(stderr_out_error).native()).toStdString());
 #else
-	runner.setStandardError(QString::fromLocal8Bit(boost::filesystem::path(stderr_out_error).native().c_str()));
+	runner.setStandardError(QString::fromLocal8Bit(boost::filesystem::path(stderr_out_error).native().c_str()).toStdString());
 #endif
 	runner.start();
 	runner.wait();
@@ -292,10 +290,10 @@ void TestRun::exceptionWasThrew()
 }
 
 TestRun::TestRun():
-	sum_input("./examples/sum_input.txt")
-	, sum_output("./examples/sum_output.txt")
-	, stderr_out_error("./examples/stderr_out_error.txt")
-	, args_output("./examples/args_out.txt")
+	sum_input("sum_input.txt")
+	, sum_output("sum_output.txt")
+	, stderr_out_error("stderr_out_error.txt")
+	, args_output("args_out.txt")
 {
 
 }

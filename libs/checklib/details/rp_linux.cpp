@@ -14,15 +14,14 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-#include <QStringList>
-#include <QDebug>
-#include <QFileInfo>
 #include <boost/lambda/lambda.hpp>
 #include <boost/chrono.hpp>
+#include <boost/filesystem.hpp>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(QObject *parent)
-	: QObject(parent),
-	  mTimer(TimerService::instance()->io_service())
+#include <errno.h>
+
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
+	: mTimer(TimerService::instance()->io_service())
 {
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
@@ -33,32 +32,32 @@ checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
 }
 
-QString checklib::details::RestrictedProcessImpl::getProgram() const
+std::string checklib::details::RestrictedProcessImpl::getProgram() const
 {
 	return mProgram;
 }
 
-void checklib::details::RestrictedProcessImpl::setProgram(const QString &program)
+void checklib::details::RestrictedProcessImpl::setProgram(const std::string &program)
 {
 	mProgram = program;
 }
 
-QStringList checklib::details::RestrictedProcessImpl::getParams() const
+const std::vector<std::string> &checklib::details::RestrictedProcessImpl::getParams() const
 {
 	return mParams;
 }
 
-void checklib::details::RestrictedProcessImpl::setParams(const QStringList &params)
+void checklib::details::RestrictedProcessImpl::setParams(const std::vector<std::string> &params)
 {
 	mParams = params;
 }
 
-QString checklib::details::RestrictedProcessImpl::currentDirectory() const
+std::string checklib::details::RestrictedProcessImpl::currentDirectory() const
 {
 	return mCurrentDirectory;
 }
 
-void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const QString &directory)
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const std::string &directory)
 {
 	mCurrentDirectory = directory;
 }
@@ -109,9 +108,9 @@ void checklib::details::RestrictedProcessImpl::start()
 		// Дочерний процесс. Перенаправляем потоки, задаем лимиты и запускаем
 		// Деструкторы в этой ветке вызваны не будут. Поэтому вызываем очистку руками
 
-		auto writeMsgAndExit = [checkPipe](const QString &msg)
+		auto writeMsgAndExit = [checkPipe](const std::string &msg)
 		{
-			write(checkPipe[1].pipe(), msg.toLocal8Bit().data(), msg.length());
+			write(checkPipe[1].pipe(), msg.c_str(), msg.length());
 			close(checkPipe[1].pipe());
 			exit(EXIT_FAILURE);
 		};
@@ -129,7 +128,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			}
 			else
 			{
-				d = open(mStandardInput.toLocal8Bit().data(), O_RDONLY);
+				d = open(mStandardInput.c_str(), O_RDONLY);
 				if(d == -1) writeMsgAndExit("1" + mStandardInput);
 			}
 			dup2(d, 0);
@@ -146,7 +145,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			}
 			else
 			{
-				d = open(mStandardOutput.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+				d = open(mStandardOutput.c_str(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 				if(d == -1) writeMsgAndExit("1" + mStandardOutput);
 			}
@@ -164,7 +163,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			}
 			else
 			{
-				d = open(mStandardError.toLocal8Bit().data(), O_TRUNC | O_CREAT | O_WRONLY,
+				d = open(mStandardError.c_str(), O_TRUNC | O_CREAT | O_WRONLY,
 				         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 				if(d == -1) writeMsgAndExit("1" + mStandardError);
 			}
@@ -185,27 +184,24 @@ void checklib::details::RestrictedProcessImpl::start()
 			setrlimit(RLIMIT_DATA, &limit);
 		}
 
-		QString programPath = QFileInfo(mProgram).absoluteFilePath();
-		if(!mCurrentDirectory.isEmpty())
+		boost::filesystem::path programPath(mProgram);
+		if(!mCurrentDirectory.empty())
 		{
-			chdir(mCurrentDirectory.toLocal8Bit().data());
-		}
-		else
-		{
-			chdir(QFileInfo(programPath).absolutePath().toLocal8Bit().data());
+			chdir(mCurrentDirectory.c_str());
 		}
 
 		char **args = new char*[mParams.size() + 2];
-		args[0] = new char[programPath.size() + 1];
-		strcpy(args[0], programPath.toLocal8Bit().data());
+		args[0] = new char[programPath.native().length() + 1];
+		strcpy(args[0], programPath.c_str());
 
-		for(int i = 0; i < mParams.size(); i++)
+		for(size_t i = 0; i != mParams.size(); i++)
 		{
 			args[i + 1] = new char[mParams[i].length() + 1];
-			strcpy(args[i + 1], mParams[i].toLocal8Bit().data());
+			strcpy(args[i + 1], mParams[i].c_str());
 		}
 		args[mParams.size() + 1] = 0;
-		execv(programPath.toLocal8Bit().data(), args);
+
+		execv(programPath.native().c_str(), args);
 
 		writeMsgAndExit("0");
 	}
@@ -219,7 +215,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		if(mStandardOutput == ss::Interactive) mOutputPipe = outputPipe[0];
 		if(mStandardError == ss::Interactive) mErrorPipe = errorPipe[0];
 
-		QString msg;
+		std::string msg;
 		while(1)
 		{
 			char msg_c[100];
@@ -228,23 +224,24 @@ void checklib::details::RestrictedProcessImpl::start()
 			msg_c[count] = 0;
 			msg += msg_c;
 		}
-		if(!msg.isEmpty())
+		if(!msg.empty())
 		{
 			// WARNING: Без kill почему-то не работает ожидание завершения, несмотря на вызов exit в потомке
 			kill(mChildPid, SIGKILL);
 			waitpid(mChildPid, nullptr, 0);
 			if(msg[0] == '0') throw CannotStartProcess(mProgram);
-			if(msg[0] == '1') throw CannotOpenFile(msg.right(msg.length() - 1));
+			if(msg[0] == '1') throw CannotOpenFile(msg.substr(msg.length() - 1));
 			throw std::logic_error("Message from child has invalid code");
 		}
 
-		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+		mTimer.expires_from_now(boost::posix_time::milliseconds(sTimerDuration));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
 									  boost::ref(*this), boost::lambda::_1));
 
+		mOldCPUTime = -1;
 		mProcessStatus.store(psRunning);
 		mIsRunning.store(true);
-		mStartTime = QDateTime::currentDateTime();
+
 	}
 }
 
@@ -265,7 +262,7 @@ void checklib::details::RestrictedProcessImpl::wait()
 }
 
 // Ждать завершения процесса не более чем @param миллисекунд.
-// @return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+// true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
 	boost::chrono::system_clock::time_point start = boost::chrono::system_clock::now();
@@ -318,30 +315,30 @@ void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 
 // Перенаправить стандартный поток ввода в указанный файл.
 // Если stdin, то перенаправления не происходит.
-void checklib::details::RestrictedProcessImpl::redirectStandardInput(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardInput(const std::string &fileName)
 {
 	mStandardInput = fileName;
 }
 
 // Перенаправить стандартный поток вывода в указанный файл.
 // Если stdout, то перенаправления не происходит.
-void checklib::details::RestrictedProcessImpl::redirectStandardOutput(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardOutput(const std::string &fileName)
 {
 	mStandardOutput = fileName;
 }
 
 // Перенаправить стандартный поток ошибок в указанный файл.
 // Если stderr, то перенаправления не происходит.
-void checklib::details::RestrictedProcessImpl::redirectStandardError(const QString &fileName)
+void checklib::details::RestrictedProcessImpl::redirectStandardError(const std::string &fileName)
 {
 	mStandardError = fileName;
 }
 
-bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QString &data, bool newLine)
+bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std::string &data, bool newLine)
 {
 	if(!isRunning() || mStandardInput != ss::Interactive) return false;
 
-	auto count = write(mInputPipe.pipe(), data.toLocal8Bit().data(), data.length());
+	auto count = write(mInputPipe.pipe(), data.c_str(), data.length());
 	if(count == -1) return false;
 	if(newLine)
 	{
@@ -351,7 +348,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const QSt
 	return true;
 }
 
-bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString &data)
+bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::string &data)
 {
 	if(!isRunning() || mStandardOutput != ss::Interactive) return false;
 
@@ -366,7 +363,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(QString
 		buf[count] = 0;
 		data += buf;
 
-		if(data.endsWith("\n"))
+		if(data.back() == '\n')
 		{
 			data.resize(data.length() - 1);
 			break;
@@ -430,20 +427,27 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
 		doFinalize();
-		emit finished(-2);
+		finished(-2);
 		return;
 	}
-
-	int fullTime = mStartTime.msecsTo(QDateTime::currentDateTime());
-	if(fullTime > 2000 && currentCPUTime * 8 < fullTime)
-	{
-		mProcessStatus.store(psIdlenessLimitExceeded);
-		doFinalize();
-		emit finished(-2);
-		return;
-	}
-
 	is.close();
+
+	if(mOldCPUTime == currentCPUTime)
+	{
+		mUnchangedTicks++;
+		if(mUnchangedTicks * sTimerDuration > 1000)
+		{
+			mProcessStatus.store(psIdlenessLimitExceeded);
+			doFinalize();
+			finished(-2);
+			return;
+		}
+	}
+	else
+	{
+		mUnchangedTicks = 0;
+		mOldCPUTime = currentCPUTime;
+	}
 
 	is.open("/proc/" + name.str() + "/status");
 	string str;
@@ -479,7 +483,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	{
 		mProcessStatus.store(psMemoryLimitExceeded);
 		doFinalize();
-		emit finished(-2);
+		finished(-2);
 		return;
 	}
 
@@ -487,11 +491,11 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	int r = waitpid(mChildPid, &status, WNOHANG);
 	if(r < 0)
 	{
-		qWarning() << "Waitpid error";
+		//qWarning() << "Waitpid error";
 	}
 	else if(r == 0)
 	{
-		mTimer.expires_from_now(boost::posix_time::millisec(100));
+		mTimer.expires_from_now(boost::posix_time::millisec(sTimerDuration));
 		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
 		                              boost::ref(*this), boost::lambda::_1));
 	}
@@ -510,6 +514,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		mExitCode.store(WEXITSTATUS(status));
 
 		mIsRunning.store(false);
-		emit finished(mExitCode.load());
+		finished(mExitCode.load());
 	}
 }

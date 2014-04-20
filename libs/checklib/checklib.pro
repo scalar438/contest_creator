@@ -1,7 +1,6 @@
-QT += core
-
 TEMPLATE = lib
 CONFIG += staticlib
+CONFIG -= qt
 
 HEADERS += \
     checklib_exception.h \
@@ -15,6 +14,7 @@ SOURCES += \
 	rp.cpp
 
 win32 {
+DEFINES += CHECKLIB_WINDOWS
 HEADERS += details/rp_win.h
 SOURCES += details/rp_win.cpp
 LIBS += -lpsapi
@@ -24,6 +24,7 @@ LIBS += -L$$(BOOST_LIB_DIR)
 }
 
 unix {
+DEFINES += CHECKLIB_UNIX
 HEADERS += details/rp_linux.h
 SOURCES += details/rp_linux.cpp
 TARGET = checklib

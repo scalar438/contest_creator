@@ -7,10 +7,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-
-#include <QDateTime>
-#include <QString>
-#include <QStringList>
+#include <boost/signals2.hpp>
 
 namespace checklib
 {
@@ -53,21 +50,20 @@ public:
 	}
 };
 
-class RestrictedProcessImpl : public QObject
+class RestrictedProcessImpl
 {
-	Q_OBJECT
 public:
-	RestrictedProcessImpl(QObject *parent);
+	RestrictedProcessImpl();
 	~RestrictedProcessImpl();
 
-	QString getProgram() const;
-	void setProgram(const QString &program);
+	std::string getProgram() const;
+	void setProgram(const std::string &program);
 
-	QStringList getParams() const;
-	void setParams(const QStringList &params);
+	const std::vector<std::string> &getParams() const;
+	void setParams(const std::vector<std::string> &params);
 
-	QString currentDirectory() const;
-	void setCurrentDirectory(const QString &directory);
+	std::string currentDirectory() const;
+	void setCurrentDirectory(const std::string &directory);
 
 	bool isRunning() const;
 
@@ -93,29 +89,27 @@ public:
 	Limits getLimits() const;
 	void setLimits(const Limits &limits);
 
-	void redirectStandardInput(const QString &fileName);
-	void redirectStandardOutput(const QString &fileName);
-	void redirectStandardError(const QString &fileName);
+	void redirectStandardInput(const std::string &fileName);
+	void redirectStandardOutput(const std::string &fileName);
+	void redirectStandardError(const std::string &fileName);
 
 	// Отправить буфер в указанный стандартный поток.
 	// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
-	bool sendDataToStandardInput(const QString &data, bool newLine);
+	bool sendDataToStandardInput(const std::string &data, bool newLine);
 
 	// Получить буфер из стандартного потока вывода
-	bool getDataFromStandardOutput(QString &data);
+	bool getDataFromStandardOutput(std::string &data);
 
-signals:
-
-	void finished(int exitCode);
+	boost::signals2::signal<void(int)> finished;
 
 private:
-	QString mProgram;
-	QStringList mParams;
-	QDateTime mStartTime, mEndTime;
+	std::string mProgram;
+	std::vector<std::string> mParams;
+	//QDateTime mStartTime, mEndTime;
 
-	QString mStandardInput, mStandardOutput, mStandardError;
+	std::string mStandardInput, mStandardOutput, mStandardError;
 
-	QString mCurrentDirectory;
+	std::string mCurrentDirectory;
 
 	std::atomic<ProcessStatus> mProcessStatus;
 	std::atomic<int> mExitCode;
@@ -130,6 +124,10 @@ private:
 	boost::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
+	// Сколько тиков таймера прошло без изменения CPU time, нужно для определения IL
+	int mUnchangedTicks;
+	int mOldCPUTime;
+
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
@@ -137,6 +135,9 @@ private:
 
 	// Количество тиков на секунду.
 	float mTicks;
+
+	// Интервал таймера проверки в миллисекундах
+	const static int sTimerDuration = 100;
 
 	void doCheck();
 
