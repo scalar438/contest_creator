@@ -17,7 +17,7 @@ void TestRun::cleanupTestCase()
 	boost::filesystem::remove(boost::filesystem::path(sum_input));
 	boost::filesystem::remove(boost::filesystem::path(sum_output));
 	boost::filesystem::remove(boost::filesystem::path(stderr_out_error));
-	boost::filesystem::remove(boost::filesystem::path(args_output));
+//	boost::filesystem::remove(boost::filesystem::path(args_output));
 }
 
 std::vector<std::string> TestRun::toStringList(const QStringList &list)
@@ -108,17 +108,24 @@ void TestRun::testArgs()
 
 	std::ifstream is(boost::filesystem::path(args_output).native());
 
-	params.prepend(QFileInfo("./examples/pArgsOut").absoluteFilePath());
+	params.prepend("./examples/pArgsOut");
 	int count;
 	is >> count;
 	std::string str;
 	std::getline(is, str);
 	QVERIFY(is.good());
 	QVERIFY(count == params.size());
-	for(int i = 0; i < count; ++i)
+	std::getline(is, str);
+	QVERIFY(is.good());
+	// Первый аргумент - путь до исполняемого файла. Сравниваем его именно как путь (из-за того,
+	// что в windows в нем могут быть как прямые, так и обратные слеши)
+	qDebug() << params[0] << str.c_str();
+	QVERIFY(boost::filesystem::path(params[0].toStdString()) == boost::filesystem::path(str));
+	for(int i = 1; i < count; ++i)
 	{
 		std::getline(is, str);
 		QVERIFY(is.good());
+		//qDebug() << i << str.c_str() << params[i];
 		QVERIFY(str == params[i].toStdString());
 	}
 }

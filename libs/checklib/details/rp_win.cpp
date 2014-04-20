@@ -144,7 +144,7 @@ void checklib::details::RestrictedProcessImpl::start()
 
 	PROCESS_INFORMATION pi;
 
-	boost::filesystem::path programPath = boost::filesystem::absolute(mProgram);
+	boost::filesystem::path programPath(mProgram);
 	std::string cmdLine;
 	{
 		auto tmp = programPath.native();
