@@ -1,84 +1,102 @@
 ﻿#include "params_reader.h"
-#include "TesterExceptions.h"
-#include <QFile>
+#include "tester_exceptions.h"
 
-ParamsReader::ParamsReader(const QString &settingsFileName)
-	: mSettings(settingsFileName.toStdString())
+#include <fstream>
+#include <boost/algorithm/string.hpp>
+
+ParamsReader::ParamsReader(const std::string &settingsFileName)
+	: mSettings(settingsFileName)
 {
 	if(!mSettings.contains("RunProgram")) throw TesterException("Program must be set");
-	programName = QString::fromStdString(mSettings.readString("RunProgram"));
+	programName = mSettings.readString("RunProgram");
 
-	QString tmpString = QString::fromStdString(mSettings.readString("TimeLimit", "1"));
+	std::string tmpString = mSettings.readString("TimeLimit", "1");
+	boost::to_lower(tmpString);
 
 	limits.useTimeLimit = !(tmpString == "no" || tmpString == "0");
 	if(limits.useTimeLimit)
 	{
 		bool flag;
-		limits.timeLimit = static_cast<int>(tmpString.toDouble(&flag) * 1000);
+		limits.timeLimit = mSettings.readDouble("TimeLimit", flag);
 		if(!flag) throw TesterException("Time limit is invalid");
 	}
 
-	tmpString = QString::fromStdString(mSettings.readString("MemoryLimit", "64")).toLower();
+	tmpString = mSettings.readString("MemoryLimit", "64");
+	boost::to_lower(tmpString);
 	limits.useMemoryLimit = !(tmpString == "no" || tmpString == "0");
 	if(limits.useMemoryLimit)
 	{
 		bool flag;
-		limits.memoryLimit = tmpString.toInt(&flag) * 1024 * 1024;
+		limits.memoryLimit = mSettings.readDouble("MemoryLimit", flag) * 1024 * 1024;
 		if(!flag) throw TesterException("Memory limit is invalid");
 	}
 
-	interrupt = QString::fromStdString(mSettings.readString("Interrupt", "YES")).toLower() == "yes" ||
+	tmpString = mSettings.readString("Interrupt", "YES");
+	boost::to_lower(tmpString);
+	interrupt = tmpString == "yes" ||
 				mSettings.readString("Interrupt", "YES") == "1";
 
 	if(!mSettings.contains("Checker")) throw TesterException("Checker must be set");
-	checker = QString::fromStdString(mSettings.readString("Checker"));
+	checker = mSettings.readString("Checker");
 
-	{
-		QString tmp = QString::fromStdString(mSettings.readString("GenAnswers", "Auto")).toLower();
-		if(tmp == "yes" || tmp == "1") genAnswers = GenerateAlways;
-		else if(tmp == "no" || tmp == "0") genAnswers = NotGenerate;
-		else genAnswers = GenerateMissing;
-	}
+	tmpString = mSettings.readString("GenAnswers", "Auto");
+	boost::to_lower(tmpString);
+	if(tmpString == "yes" || tmpString == "1") genAnswers = GenerateAlways;
+	else if(tmpString == "no" || tmpString == "0") genAnswers = NotGenerate;
+	else genAnswers = GenerateMissing;
 
 	readTests();
 
-	inputFile = QString::fromStdString(mSettings.readString("InputFile", "#STDIN"));
-	outputFile = QString::fromStdString(mSettings.readString("OutputFile", "#STDOUT"));
+	inputFile = mSettings.readString("InputFile", "#STDIN");
+	outputFile = mSettings.readString("OutputFile", "#STDOUT");
 }
 
 void ParamsReader::readTests()
 {
-	auto testNumberS = QString::fromStdString(mSettings.readString("TestNumber", "auto")).toLower();
+	auto testNumberS = mSettings.readString("TestNumber", "auto");
+	boost::to_lower(testNumberS);
 	int testNumber;
 	bool autoTestNumber = (testNumberS == "auto");
 	if(!autoTestNumber)
 	{
 		bool flag;
-		testNumber = testNumberS.toInt(&flag);
+		testNumber = mSettings.readInt("TestNumber", flag);
 		if(!flag) testNumber = 1;
 	}
 	else testNumber = 1000000000;
 
 	if(!mSettings.contains("TestInput")) throw TesterException("Input files in not exists");
-	QString testInput = QString::fromStdString(mSettings.readString("TestInput"));
+	std::string testInput = mSettings.readString("TestInput");
 	int zStart, zEnd;
 
 	// Вспомогательные функции
-	auto getZerosPos = [&zStart, &zEnd](const QString & str)
+	auto getZerosPos = [&zStart, &zEnd](const std::string & str)
 	{
-		zStart = str.indexOf('0');
+		zStart = 0;
+		while(zStart != (int)str.length() && str[zStart] != '0') ++zStart;
 		zEnd = zStart;
-		if(zStart == -1) return;
-		while(zEnd < str.length() && str[zEnd] == '0') ++zEnd;
+		if(zStart == (int)str.length()) return;
+		while(zEnd != (int)str.length() && str[zEnd] == '0') ++zEnd;
 	};
 
-	auto getFileName = [&zStart, &zEnd](const QString &str, int testNumber) -> QString
+	auto getFileName = [&zStart, &zEnd](const std::string &str, int testNumber) -> std::string
 	{
-		QString tmp = QString::number(testNumber);
+		std::string tmp;
+		while(testNumber)
+		{
+			tmp += (testNumber % 10 + '0');
+			testNumber /= 10;
+		}
+		std::reverse(tmp.begin(), tmp.end());
 		while(tmp.length() < zEnd - zStart) tmp = "0" + tmp;
-		return str.left(zStart) +
-		tmp +
-		str.right(str.length() - zEnd);
+
+		return str.substr(0, zStart) + tmp + str.substr(zEnd);
+	};
+
+	auto fileExists = [](const std::string &str) -> bool
+	{
+		std::ifstream is(str);
+		return is.good();
 	};
 
 	getZerosPos(testInput);
@@ -87,16 +105,21 @@ void ParamsReader::readTests()
 		OneTest tmp;
 
 		tmp.inputFile = getFileName(testInput, i + 1);
-		if(!QFile(tmp.inputFile).exists())
+		if(!fileExists(tmp.inputFile))
 		{
 			if(!autoTestNumber) throw TesterException("input file(s) was not found");
 			break;
 		}
+	/*	if(!QFile(tmp.inputFile).exists())
+		{
+			if(!autoTestNumber) throw TesterException("input file(s) was not found");
+			break;
+		}*/
 		tests.push_back(tmp);
 	}
 	if(tests.empty()) throw TesterException("input file(s) was not found");
 	testNumber = int(tests.size());
-	QString testOutput = QString::fromStdString(mSettings.readString("TestAnswer", "00.a"));
+	std::string testOutput = mSettings.readString("TestAnswer", "00.a");
 	getZerosPos(testOutput);
 
 	for(int i = 0; i < testNumber; ++i)

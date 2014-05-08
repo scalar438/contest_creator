@@ -1,3 +1,4 @@
 TEMPLATE = subdirs
 
-SUBDIRS += checklib
+SUBDIRS += checklib \
+   qchecklib

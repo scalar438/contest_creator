@@ -2,24 +2,23 @@
 #include "checklib/rp_types.h"
 #include "settings.h"
 
-#include <QString>
 #include <vector>
 
 struct OneTest
 {
-	QString inputFile;
-	QString answerFile;
+	std::string inputFile;
+	std::string answerFile;
 };
 
 class ParamsReader
 {
 public:
-	ParamsReader(const QString &settingsFileName);
+	ParamsReader(const std::string &settingsFileName);
 
-	QString programName;
+	std::string programName;
 	std::string checker;
-	QString inputFile;
-	QString outputFile;
+	std::string inputFile;
+	std::string outputFile;
 	checklib::Limits limits;
 	std::vector<OneTest> tests;
 	bool interrupt;

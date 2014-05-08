@@ -1,46 +1,42 @@
-﻿#include "RunController.h"
-#include "params_reader.h"
-#include "ConsoleUtils.h"
-#include "Runner.h"
-#include "TesterExceptions.h"
+﻿#include "params_reader.h"
+#include "console_utils.h"
 #include "checklib/checklib_exception.h"
+#include "tester_exceptions.h"
 
 #include <iostream>
 #include <stdexcept>
 
-#include <QCoreApplication>
-#include <QThread>
-#include <QDebug>
-#include <QFile>
-#include <QDir>
-
 int main(int argc, char *argv[])
 {
 	cu::ColorSaver saver;
-
-	QCoreApplication app(argc, argv);
-
-	QString settingsFileName = "test.ini";
+	// Delete warning
+	((void*)(&saver));
 
 	try
 	{
-		for(int i = 1; i < app.arguments().size(); ++i)
+		std::vector<std::string> arguments(argv + 1, argv + argc);
+
+		std::string settingsFileName = "test.ini";
+
+		for(int i = 1; i < argc; ++i)
 		{
-			if(app.arguments()[i] == "-ini")
+			if(arguments[i] == "-ini")
 			{
 				++i;
-				if(app.arguments().size() == i) throw TesterException("Wrong argument format. Usage: -ini <settings-file>");
-				settingsFileName = app.arguments()[i];
+				if(i > argc) throw TesterException("Wrong argument format. Usage: -ini <settings-file>");
+				settingsFileName = arguments[i];
 			}
-			else if(app.arguments()[i] == "-v" || app.arguments()[i] == "-version")
+			else if(arguments[i] == "-v" || arguments[i] == "-version")
 			{
 				std::cout << "Tester version: 1.0.1" << std::endl;
 				return 0;
 			}
 		}
-		if(!QFile(settingsFileName).exists()) throw TesterException("Settings file is not exists");
 
 		ParamsReader reader(settingsFileName);
+
+		/*
+
 		Runner runner(reader.programName, reader.limits);
 		RunController tester(&reader, &runner);
 
@@ -51,7 +47,7 @@ int main(int argc, char *argv[])
 		QObject::connect(&tester, &RunController::testCompleted, &thrd, &QThread::quit);
 		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
 		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
-		return app.exec();
+		return app.exec();*/
 	}
 	catch(checklib::Exception &e)
 	{

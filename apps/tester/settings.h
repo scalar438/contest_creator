@@ -8,7 +8,10 @@ public:
 	Settings(const std::string &fileName);
 
 	std::string readString(const std::string &key, const std::string &def = "") const;
+	int readInt(const std::string &key, bool &success);
 	int readInt(const std::string &key, int def = 0) const;
+
+	double readDouble(const std::string &key, bool &success);
 	double readDouble(const std::string &key, double def = 0.0) const;
 
 	bool contains(const std::string &key) const;

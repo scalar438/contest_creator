@@ -1,5 +1,4 @@
-﻿#include "ConsoleUtils.h"
-#include <QtCore>
+﻿#include "console_utils.h"
 #include <iostream>
 
 #ifdef Q_OS_WIN
@@ -63,6 +62,8 @@ struct Initializer
 
 #else
 
+#include <unistd.h>
+
 // Для преобразования номера цвета в enum-e в номер цвета из ansi escape codes необходимо
 // поменять местами 1 и 3 бит
 int getIndex(int a)
@@ -78,16 +79,28 @@ namespace cu
 namespace details
 {
 cu::TextColor currentColor = cu::standard;
+
+// Не придумал, как лучше передать в isatty дескриптор потока
+bool isEscapeCodesAcceptable(std::ostream &os)
+{
+	if(&os == &std::cout) return isatty(1);
+	if(&os == &std::cerr) return isatty(2);
+	return false;
+}
+
 }
 }
 
 std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Color &color)
 {
-	if(color.mTextColor == standard) os << "\033[0m";
-	else
+	if(cu::details::isEscapeCodesAcceptable(os))
 	{
-		int code = getIndex(static_cast<int>(color.mTextColor));
-		os << "\033[" << (code >> 3) << ";3" << (code & 7) << "m";
+		if(color.mTextColor == standard) os << "\033[0m";
+		else
+		{
+			int code = getIndex(static_cast<int>(color.mTextColor));
+			os << "\033[" << (code >> 3) << ";3" << (code & 7) << "m";
+		}
 	}
 	cu::details::currentColor = color.mTextColor;
 	return os;
@@ -95,8 +108,11 @@ std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Col
 
 std::ostream &cu::details::operator << (std::ostream &os, const cu::details::Position &p)
 {
-	if(p.my == -1) std::cout << "\033[" << p.mx + 1 << "G";
-	else std::cout << "\033[" << p.mx + 1 << ";" << p.my + 1 << "H";
+	if(cu::details::isEscapeCodesAcceptable(os))
+	{
+		if(p.my == -1) std::cout << "\033[" << p.mx + 1 << "G";
+		else std::cout << "\033[" << p.mx + 1 << ";" << p.my + 1 << "H";
+	}
 	return os;
 }
 

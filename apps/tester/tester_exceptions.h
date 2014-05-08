@@ -1,19 +1,18 @@
 ﻿#pragma once
 #include "checklib/noexcept.h"
+#include <string>
 #include <stdexcept>
 #include <exception>
-
-#include <QString>
 
 class TesterException : public std::exception
 {
 public:
-	TesterException(const QString &msg) : mMsg(msg) {}
+	TesterException(const std::string &msg) : mMsg(msg) {}
 	~TesterException() NOEXCEPT {}
 	const char * what() const NOEXCEPT
 	{
-		return mMsg.toLocal8Bit().data();
+		return mMsg.c_str();
 	}
 private:
-	QString mMsg;
+	std::string mMsg;
 };
