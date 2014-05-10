@@ -121,10 +121,5 @@ void ParamsReader::readTests()
 	for(int i = 0; i < testNumber; ++i)
 	{
 		tests[i].answerFile = getFileName(testOutput, i + 1);
-		if(!fileExists(tmp.inputFile))
-		{
-			if(!autoTestNumber) throw TesterException("some input file(s) was not found");
-			break;
-		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿#include "run_controller.h"
+#include "console_utils.h"
 #include <functional>
 
 RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
@@ -38,5 +39,7 @@ void RunController::onProgramFinished(int exitCode)
 
 void RunController::printUsage(bool final)
 {
-
+	using namespace cu;
+	ColorSaver saver;
+	std::cout << cursorPosition(0) << "Test " << mCurrentTest << ": ";
 }
