@@ -2,9 +2,12 @@
 #include "console_utils.h"
 #include "checklib/checklib_exception.h"
 #include "tester_exceptions.h"
+#include "run_controller.h"
 
 #include <iostream>
 #include <stdexcept>
+
+#include <boost/asio.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -34,20 +37,11 @@ int main(int argc, char *argv[])
 		}
 
 		ParamsReader reader(settingsFileName);
-
-		/*
-
-		Runner runner(reader.programName, reader.limits);
-		RunController tester(&reader, &runner);
-
-		QThread thrd;
-		runner.moveToThread(&thrd);
-		thrd.start();
-
-		QObject::connect(&tester, &RunController::testCompleted, &thrd, &QThread::quit);
-		QObject::connect(&thrd, &QThread::finished, &QCoreApplication::quit);
-		QMetaObject::invokeMethod(&tester, "startTesting", Qt::QueuedConnection);
-		return app.exec();*/
+		boost::asio::io_service io;
+		RunController runController(io, reader);
+		runController.startTesting();
+		io.run();
+		return 0;
 	}
 	catch(checklib::Exception &e)
 	{

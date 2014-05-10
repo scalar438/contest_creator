@@ -3,20 +3,18 @@ CONFIG += console
 CONFIG -= qt
 
 SOURCES += main.cpp \
-#	Runner.cpp \
 	settings.cpp \
-    params_reader.cpp \
-    run_controller.cpp \
-    console_utils.cpp
+	params_reader.cpp \
+	run_controller.cpp \
+	console_utils.cpp
 
 HEADERS += \
-#	Runner.h \
 	io_consts.h \
 	settings.h \
-    params_reader.h \
-    console_utils.h \
-    run_controller.h \
-    tester_exceptions.h
+	params_reader.h \
+	console_utils.h \
+	run_controller.h \
+	tester_exceptions.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)

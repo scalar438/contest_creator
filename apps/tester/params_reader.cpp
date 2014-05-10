@@ -1,5 +1,6 @@
 ﻿#include "params_reader.h"
 #include "tester_exceptions.h"
+#include "io_consts.h"
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
@@ -47,8 +48,8 @@ ParamsReader::ParamsReader(const std::string &settingsFileName)
 
 	readTests();
 
-	inputFile = mSettings.readString("InputFile", "#STDIN");
-	outputFile = mSettings.readString("OutputFile", "#STDOUT");
+	inputFile = mSettings.readString("InputFile", Stdin);
+	outputFile = mSettings.readString("OutputFile", Stdout);
 }
 
 void ParamsReader::readTests()
@@ -88,7 +89,7 @@ void ParamsReader::readTests()
 			testNumber /= 10;
 		}
 		std::reverse(tmp.begin(), tmp.end());
-		while(tmp.length() < zEnd - zStart) tmp = "0" + tmp;
+		while(int(tmp.length()) < zEnd - zStart) tmp = "0" + tmp;
 
 		return str.substr(0, zStart) + tmp + str.substr(zEnd);
 	};
@@ -110,11 +111,6 @@ void ParamsReader::readTests()
 			if(!autoTestNumber) throw TesterException("input file(s) was not found");
 			break;
 		}
-	/*	if(!QFile(tmp.inputFile).exists())
-		{
-			if(!autoTestNumber) throw TesterException("input file(s) was not found");
-			break;
-		}*/
 		tests.push_back(tmp);
 	}
 	if(tests.empty()) throw TesterException("input file(s) was not found");
@@ -125,5 +121,10 @@ void ParamsReader::readTests()
 	for(int i = 0; i < testNumber; ++i)
 	{
 		tests[i].answerFile = getFileName(testOutput, i + 1);
+		if(!fileExists(tmp.inputFile))
+		{
+			if(!autoTestNumber) throw TesterException("some input file(s) was not found");
+			break;
+		}
 	}
 }

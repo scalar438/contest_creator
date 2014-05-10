@@ -241,7 +241,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		mOldCPUTime = -1;
 		mProcessStatus.store(psRunning);
 		mIsRunning.store(true);
-
 	}
 }
 
@@ -435,7 +434,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(mOldCPUTime == currentCPUTime)
 	{
 		mUnchangedTicks++;
-		if(mUnchangedTicks * sTimerDuration > 1000)
+		if(mUnchangedTicks * sTimerDuration > 2000)
 		{
 			mProcessStatus.store(psIdlenessLimitExceeded);
 			doFinalize();
