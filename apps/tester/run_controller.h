@@ -23,11 +23,11 @@ private:
 	void nextTest();
 
 	// Запускает чекер ответов
-	void checkResults();
+	void endCurrrentTest();
 
 	void printUsageTimerHandler(boost::system::error_code err);
 
-	void onProgramFinished(int exitCode);
+	void onProgramFinished(int);
 
 	// Выводит использование процессорного времени/памяти тестируемой программы.
 	// Если final == true, то выводит более ярко
