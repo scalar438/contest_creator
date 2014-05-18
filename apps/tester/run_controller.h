@@ -13,6 +13,8 @@ public:
 private:
 	boost::asio::io_service &mIo;
 
+	boost::asio::deadline_timer mTimer;
+
 	ParamsReader &mReader;
 
 	checklib::RestrictedProcess mProcess;
@@ -32,4 +34,6 @@ private:
 	// Выводит использование процессорного времени/памяти тестируемой программы.
 	// Если final == true, то выводит более ярко
 	void printUsage(bool final);
+
+	void endTesting();
 };

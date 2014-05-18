@@ -7,8 +7,10 @@ using namespace checklib;
 RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
 	: mIo(io)
 	, mReader(reader)
+	, mTimer(mIo)
 {
 	mProcess.setProgram(reader.programName);
+	mProcess.setLimits(mReader.limits);
 
 	mProcess.finished.connect(std::bind(&RunController::onProgramFinished, this, std::placeholders::_1));
 }
@@ -17,12 +19,14 @@ void RunController::startTesting()
 {
 	mCurrentTest = 0;
 	mIo.post(std::bind(&RunController::nextTest, this));
+	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
+	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
 }
 
 void RunController::nextTest()
 {
 	mCurrentTest++;
-	if(mCurrentTest == int(mReader.tests.size())) return;
+	if(mCurrentTest > int(mReader.tests.size())) endTesting();
 
 	mProcess.reset();
 	mProcess.start();
@@ -39,7 +43,7 @@ void RunController::endCurrrentTest()
 	{
 	case psTimeLimitExceeded:
 		{
-			std::cout << textColor(red) << "Time limit exceeped";
+			std::cout << textColor(red) << "Time limit exceeded";
 		}
 		break;
 
@@ -78,13 +82,25 @@ void RunController::endCurrrentTest()
 	}
 
 	std::cout << std::endl;
-	if(!failed || !mReader.interrupt) mIo.post(std::bind(&RunController::nextTest, this));
+	if(!failed || !mReader.interrupt)
+	{
+		mIo.post(std::bind(&RunController::nextTest, this));
+	}
+	else
+	{
+		endTesting();
+	}
 }
 
 void RunController::printUsageTimerHandler(boost::system::error_code err)
 {
-	if(!err) printUsage(false);
+	if(err) return;
+	std::cout << cursorPosition(0);
+	printUsage(false);
+	std::cout.flush();
 
+	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
+	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
 }
 
 void RunController::onProgramFinished(int)
@@ -99,4 +115,9 @@ void RunController::printUsage(bool final)
 	std::cout << cursorPosition(0) << "Test " << mCurrentTest << ": ";
 	std::cout << mProcess.CPUTime() << " ms ";
 	std::cout << mProcess.peakMemoryUsage() / 1024 << " kB ";
+}
+
+void RunController::endTesting()
+{
+	mTimer.cancel();
 }
