@@ -8,6 +8,8 @@
 #include <boost/filesystem.hpp>
 #include <QDebug>
 
+using namespace checklib;
+
 void TestRun::initTestCase()
 {
 }
@@ -29,9 +31,9 @@ std::vector<std::string> TestRun::toStringList(const QStringList &list)
 
 void TestRun::isRunningChecking()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
-	checklib::Limits limits;
+	Limits limits;
 	limits.useTimeLimit = true;
 	limits.timeLimit = 1000;
 	runner.setLimits(limits);
@@ -47,7 +49,7 @@ void TestRun::isRunningChecking()
 
 void TestRun::testTerminate()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
 	runner.setProgram("./examples/pTL");
 	runner.start();
@@ -61,7 +63,7 @@ void TestRun::testTerminate()
 
 void TestRun::testExitCode()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 	runner.setProgram("./examples/pArgsExitCode");
 	runner.start();
 
@@ -77,9 +79,9 @@ void TestRun::testExitCode()
 
 void TestRun::testTL()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
-	checklib::Limits limits;
+	Limits limits;
 	limits.useTimeLimit = true;
 	limits.timeLimit = 2000;
 	runner.setLimits(limits);
@@ -95,7 +97,7 @@ void TestRun::testTL()
 
 void TestRun::testArgs()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 	runner.setProgram("./examples/pArgsOut");
 	QStringList params;
 	params << "param1" << "param with space" << "param3";
@@ -130,9 +132,9 @@ void TestRun::testArgs()
 
 void TestRun::testML()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
-	checklib::Limits limits;
+	Limits limits;
 	limits.useMemoryLimit = true;
 	limits.memoryLimit = 64 * 1000 * 1000;
 	runner.setLimits(limits);
@@ -147,7 +149,7 @@ void TestRun::testML()
 
 void TestRun::testRE()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 	runner.setProgram("./examples/pRE");
 	runner.setParams(toStringList(QStringList() << "1"));
 
@@ -167,9 +169,9 @@ void TestRun::testRE()
 
 void TestRun::testStandardStreamsRedirection()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
-	checklib::Limits limits;
+	Limits limits;
 	limits.useMemoryLimit = true;
 	limits.memoryLimit = 65536 * 1024;
 	limits.useTimeLimit = true;
@@ -230,7 +232,7 @@ void TestRun::testStandardStreamsRedirection()
 
 void TestRun::testIL()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
 	runner.setProgram("./examples/pIL");
 	runner.start();
@@ -241,9 +243,9 @@ void TestRun::testIL()
 
 void TestRun::testInteractive()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 
-	checklib::Limits limits;
+	Limits limits;
 	limits.useMemoryLimit = true;
 	limits.memoryLimit = 65536 * 1024;
 	limits.useTimeLimit = true;
@@ -271,9 +273,9 @@ void TestRun::testInteractive()
 	QVERIFY(runner.processStatus() == checklib::psExited);
 }
 
-void TestRun::exceptionWasThrew()
+void TestRun::testException()
 {
-	checklib::RestrictedProcess runner;
+	RestrictedProcess runner;
 	runner.setProgram("./examples/FileNotExists");
 	bool exceptionFlag = false;
 	try
@@ -281,7 +283,7 @@ void TestRun::exceptionWasThrew()
 		runner.start();
 		runner.wait();
 	}
-	catch(checklib::Exception &)
+	catch(Exception &)
 	{
 		exceptionFlag = true;
 	}

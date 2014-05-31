@@ -81,7 +81,6 @@ void RunController::endCurrrentTest()
 
 	case psExited:
 		{
-			std::cout << std::endl;
 			if(mReader.genAnswers == ParamsReader::GenerateAlways ||
 					mReader.genAnswers == ParamsReader::GenerateMissing &&
 					!boost::filesystem::exists(mReader.tests[mCurrentTest].answerFile))

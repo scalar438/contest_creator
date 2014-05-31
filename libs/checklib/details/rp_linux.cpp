@@ -375,10 +375,6 @@ void checklib::details::RestrictedProcessImpl::reset()
 {
 	doFinalize();
 
-	mStandardInput = ss::Stdin;
-	mStandardOutput = ss::Stdout;
-	mStandardError = ss::Stderr;
-
 	mInputPipe.reset();
 	mOutputPipe.reset();
 	mErrorPipe.reset();
@@ -386,6 +382,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);
 	mIsRunning.store(false);
+	mProcessStatus.store(psNotRunning);
 }
 
 void checklib::details::RestrictedProcessImpl::doFinalize()

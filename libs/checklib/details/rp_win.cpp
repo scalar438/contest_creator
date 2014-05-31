@@ -18,6 +18,9 @@
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(TimerService::instance()->io_service())
 {
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
 	reset();
 }
 
@@ -280,17 +283,14 @@ void checklib::details::RestrictedProcessImpl::reset()
 	terminate();
 	wait();
 
-	mStandardInput = ss::Stdin;
-	mStandardOutput = ss::Stdout;
-	mStandardError = ss::Stderr;
-	mParams.clear();
+	mInputHandle.reset();
+	mOutputHandle.reset();
+	mErrorHandle.reset();
 
 	mCPUTime.store(0);
 	mPeakMemoryUsage.store(0);
 	mProcessStatus.store(psNotRunning);
-	mLimits = Limits();
 	mIsRunning.store(false);
-	mCurrentDirectory = "";
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const

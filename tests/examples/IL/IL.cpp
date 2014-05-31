@@ -1,16 +1,11 @@
-﻿#include <QThread>
-
-class Sleeper : QThread
-{
-public:
-	static void sleep(unsigned long a)
-	{
-		QThread::sleep(a);
-	}
-};
+﻿#ifdef OS_WIN32
+#include <Windows.h>
+#define sleep(x) Sleep((x) * 1000)
+#else
+#include <unistd.h>
+#endif
 
 int main()
 {
-	Sleeper::sleep(10);
-	return 0;
+	sleep(15);
 }
