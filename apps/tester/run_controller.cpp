@@ -1,13 +1,15 @@
 ﻿#include "run_controller.h"
 #include "console_utils.h"
+#include "io_consts.h"
+#include <boost/filesystem.hpp>
 #include <functional>
 using namespace cu;
 using namespace checklib;
 
 RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
 	: mIo(io)
-	, mReader(reader)
 	, mTimer(mIo)
+	, mReader(reader)
 {
 	mProcess.setProgram(reader.programName);
 	mProcess.setLimits(mReader.limits);
@@ -17,18 +19,30 @@ RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
 
 void RunController::startTesting()
 {
-	mCurrentTest = 0;
+	mCurrentTest = -1;
 	mIo.post(std::bind(&RunController::nextTest, this));
 	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
 	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
+
+	// На случай, если этот файл уже существует
+	boost::filesystem::remove(mReader.inputFile);
 }
 
 void RunController::nextTest()
 {
 	mCurrentTest++;
-	if(mCurrentTest > int(mReader.tests.size())) endTesting();
+	if(mCurrentTest == int(mReader.tests.size()))
+	{
+		endTesting();
+		return;
+	}
 
 	mProcess.reset();
+
+	boost::filesystem::copy(mReader.tests[mCurrentTest].inputFile, mReader.inputFile);
+	if(mReader.inputFile == Stdin) mProcess.setStandardInput(mReader.inputFile);
+	if(mReader.outputFile == Stdout) mProcess.setStandardOutput(mReader.outputFile);
+
 	mProcess.start();
 }
 
@@ -43,30 +57,38 @@ void RunController::endCurrrentTest()
 	{
 	case psTimeLimitExceeded:
 		{
-			std::cout << textColor(red) << "Time limit exceeded";
+			std::cout << textColor(red) << "Time limit exceeded" << std::endl;
 		}
 		break;
 
 	case psMemoryLimitExceeded:
 		{
-			std::cout << textColor(red) << "Memory limit exceeded";
+			std::cout << textColor(red) << "Memory limit exceeded" << std::endl;
 		}
 		break;
 
 	case psIdlenessLimitExceeded:
 		{
-			std::cout << textColor(red) << "Idleness limit exceeded";
+			std::cout << textColor(cyan) << "Idleness limit exceeded" << std::endl;
 		}
 		break;
 
 	case psRuntimeError:
 		{
-			std::cout << textColor(red) << "Runtime error";
+			std::cout << textColor(red) << "Runtime error" << std::endl;
 		}
 		break;
 
 	case psExited:
 		{
+			std::cout << std::endl;
+			if(mReader.genAnswers == ParamsReader::GenerateAlways ||
+					mReader.genAnswers == ParamsReader::GenerateMissing &&
+					!boost::filesystem::exists(mReader.tests[mCurrentTest].answerFile))
+			{
+				boost::filesystem::copy(mReader.outputFile, mReader.tests[mCurrentTest].answerFile);
+			}
+
 			checklib::RestrictedProcess checker;
 			checker.setProgram(mReader.checker);
 			checker.setParams(
@@ -81,7 +103,9 @@ void RunController::endCurrrentTest()
 		throw std::logic_error("Unexpected exit type of the process");
 	}
 
-	std::cout << std::endl;
+	boost::filesystem::remove(mReader.inputFile);
+	boost::filesystem::remove(mReader.outputFile);
+
 	if(!failed || !mReader.interrupt)
 	{
 		mIo.post(std::bind(&RunController::nextTest, this));
@@ -112,9 +136,19 @@ void RunController::printUsage(bool final)
 {
 	using namespace cu;
 	ColorSaver saver;
-	std::cout << cursorPosition(0) << "Test " << mCurrentTest << ": ";
-	std::cout << mProcess.CPUTime() << " ms ";
-	std::cout << mProcess.peakMemoryUsage() / 1024 << " kB ";
+
+	if(final)
+	{
+		std::cout << textColor(yellow) << cursorPosition(0) << "Test " << mCurrentTest + 1 << ": ";
+		std::cout << textColor(white) << mProcess.CPUTime() << textColor(lightGray) << " ms ";
+		std::cout << textColor(white) << mProcess.peakMemoryUsage() / 1024 << textColor(lightGray) << " kB ";
+	}
+	else
+	{
+		std::cout << textColor(olive) << cursorPosition(0) << "Test " << mCurrentTest + 1 << ": ";
+		std::cout << textColor(lightGray) << mProcess.CPUTime() << " ms ";
+		std::cout << mProcess.peakMemoryUsage() / 1024 << " kB ";
+	}
 }
 
 void RunController::endTesting()

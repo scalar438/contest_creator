@@ -21,6 +21,7 @@ Settings::Settings(const std::string &fileName)
 		boost::algorithm::trim(key);
 		boost::algorithm::trim(value);
 		if(key.empty() || value.empty()) continue;
+		// Comment in settings file
 		if(key[0] == '#') continue;
 
 		mValues[key] = value;

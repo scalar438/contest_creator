@@ -27,6 +27,7 @@ private:
 	// Запускает чекер ответов
 	void endCurrrentTest();
 
+	// Пишет использование программой процессорного времени и памяти
 	void printUsageTimerHandler(boost::system::error_code err);
 
 	void onProgramFinished(int);

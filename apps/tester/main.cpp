@@ -58,4 +58,9 @@ int main(int argc, char *argv[])
 		std::cout << cu::textColor(cu::red) << "Error: " << cu::textColor(cu::lightGray) << e.what() << std::endl;
 		return -1;
 	}
+	catch(std::exception &e)
+	{
+		std::cout << "Uknown error: " << e.what() << std::endl;
+		return -1;
+	}
 }
