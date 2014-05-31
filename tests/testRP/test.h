@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <QtTest/QtTest>
+#ifndef Q_MOC_RUN
 #include "checklib/rp.h"
+#endif
 
 // Класс, тестирующий работу библиотеки
 class TestRun: public QObject

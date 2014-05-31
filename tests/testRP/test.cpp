@@ -200,7 +200,7 @@ void TestRun::testStandardStreamsRedirection()
 		int val = a + b + 1;
 
 		QVERIFY(is.good());
-		QVERIFY(is >> val);
+		QVERIFY(bool(is >> val));
 		QVERIFY(val == a + b);
 	}
 
@@ -221,9 +221,9 @@ void TestRun::testStandardStreamsRedirection()
 		std::ifstream is(boost::filesystem::path(stderr_out_error).native());
 		std::string str;
 		QVERIFY(is.good());
-		QVERIFY(std::getline(is, str));
+		QVERIFY(bool(std::getline(is, str)));
 		QVERIFY(str == "Test printing to stderr");
-		QVERIFY(std::getline(is, str));
+		QVERIFY(bool(std::getline(is, str)));
 		QVERIFY(str == "Line2");
 	}
 }

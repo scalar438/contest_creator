@@ -1,7 +1,7 @@
 ﻿#include "console_utils.h"
 #include <iostream>
 
-#ifdef Q_OS_WIN
+#ifdef OS_WIN32
 
 #include "Windows.h"
 
