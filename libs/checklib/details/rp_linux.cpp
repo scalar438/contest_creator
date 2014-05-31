@@ -25,6 +25,10 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 {
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
+
 	reset();
 }
 
