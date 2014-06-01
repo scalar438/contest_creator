@@ -3,6 +3,7 @@
 #include "io_consts.h"
 #include <boost/filesystem.hpp>
 #include <functional>
+#include <iostream>
 using namespace cu;
 using namespace checklib;
 
@@ -19,8 +20,8 @@ RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
 
 void RunController::startTesting()
 {
-	mCurrentTest = -1;
-	mIo.post(std::bind(&RunController::nextTest, this));
+	mCurrentTest = 0;
+	mIo.post(std::bind(&RunController::startCurrentTest, this));
 	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
 	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
 
@@ -28,13 +29,11 @@ void RunController::startTesting()
 	boost::filesystem::remove(mReader.inputFile);
 }
 
-void RunController::nextTest()
+void RunController::startCurrentTest()
 {
-	mCurrentTest++;
-	if(mCurrentTest == int(mReader.tests.size()))
+	if(mCurrentTest < 0 || mCurrentTest >= int(mReader.tests.size()))
 	{
-		endTesting();
-		return;
+		throw std::logic_error("Attempting to start non-exit test");
 	}
 
 	mProcess.reset();
@@ -109,9 +108,11 @@ void RunController::endCurrrentTest()
 	boost::filesystem::remove(mReader.inputFile);
 	boost::filesystem::remove(mReader.outputFile);
 
-	if(!failed || !mReader.interrupt)
+	mCurrentTest++;
+
+	if(mCurrentTest != int(mReader.tests.size()) && (!failed || !mReader.interrupt))
 	{
-		mIo.post(std::bind(&RunController::nextTest, this));
+		mIo.post(std::bind(&RunController::startCurrentTest, this));
 	}
 	else
 	{
@@ -121,7 +122,7 @@ void RunController::endCurrrentTest()
 
 void RunController::printUsageTimerHandler(boost::system::error_code err)
 {
-	if(err) return;
+	if(err || mCurrentTest == mReader.tests.size()) return;
 	std::cout << cursorPosition(0);
 	printUsage(false);
 	std::cout.flush();
