@@ -17,10 +17,9 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		std::vector<std::string> arguments(argv + 1, argv + argc);
+		std::vector<std::string> arguments(argv, argv + argc);
 
 		std::string settingsFileName = "test.ini";
-
 		for(int i = 1; i < argc; ++i)
 		{
 			if(arguments[i] == "-ini")
@@ -31,7 +30,7 @@ int main(int argc, char *argv[])
 			}
 			else if(arguments[i] == "-v" || arguments[i] == "-version")
 			{
-				std::cout << "Tester version: 1.0.1" << std::endl;
+				std::cout << "Tester version: 1.0.2" << std::endl;
 				return 0;
 			}
 		}

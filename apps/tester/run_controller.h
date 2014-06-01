@@ -22,7 +22,7 @@ private:
 	int mCurrentTest;
 
 	// Запускает на запуск очередной тест или выходит
-	void nextTest();
+	void startCurrentTest();
 
 	// Запускает чекер ответов
 	void endCurrrentTest();
