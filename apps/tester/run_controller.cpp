@@ -81,20 +81,24 @@ void RunController::endCurrrentTest()
 
 	case psExited:
 		{
-			if(mReader.genAnswers == ParamsReader::GenerateAlways ||
-					mReader.genAnswers == ParamsReader::GenerateMissing &&
-					!boost::filesystem::exists(mReader.tests[mCurrentTest].answerFile))
+			if((mReader.genAnswers == ParamsReader::GenerateMissing &&
+			        !boost::filesystem::exists(mReader.tests[mCurrentTest].answerFile)) ||
+			        mReader.genAnswers == ParamsReader::GenerateAlways)
 			{
+				boost::filesystem::remove(mReader.tests[mCurrentTest].answerFile);
 				boost::filesystem::copy(mReader.outputFile, mReader.tests[mCurrentTest].answerFile);
+				std::cout << "Answer file was created" << std::endl;
 			}
-
-			checklib::RestrictedProcess checker;
-			checker.setProgram(mReader.checker);
-			checker.setParams(
+			else
+			{
+				checklib::RestrictedProcess checker;
+				checker.setProgram(mReader.checker);
+				checker.setParams(
 				{mReader.tests[mCurrentTest].inputFile, mReader.outputFile, mReader.tests[mCurrentTest].answerFile});
-			checker.start();
-			checker.wait();
-			failed = checker.exitCode() != 0;
+				checker.start();
+				checker.wait();
+				failed = checker.exitCode() != 0;
+			}
 		}
 		break;
 
@@ -148,6 +152,7 @@ void RunController::printUsage(bool final)
 		std::cout << textColor(lightGray) << mProcess.CPUTime() << " ms ";
 		std::cout << mProcess.peakMemoryUsage() / 1024 << " kB ";
 	}
+	std::cout << std::flush;
 }
 
 void RunController::endTesting()
