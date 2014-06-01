@@ -25,6 +25,10 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 {
 	mTicks = static_cast<float>(sysconf(_SC_CLK_TCK));
 
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
+
 	reset();
 }
 
@@ -241,7 +245,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		mOldCPUTime = -1;
 		mProcessStatus.store(psRunning);
 		mIsRunning.store(true);
-
 	}
 }
 
@@ -376,10 +379,6 @@ void checklib::details::RestrictedProcessImpl::reset()
 {
 	doFinalize();
 
-	mStandardInput = ss::Stdin;
-	mStandardOutput = ss::Stdout;
-	mStandardError = ss::Stderr;
-
 	mInputPipe.reset();
 	mOutputPipe.reset();
 	mErrorPipe.reset();
@@ -387,6 +386,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mPeakMemoryUsage.store(0);
 	mCPUTime.store(0);
 	mIsRunning.store(false);
+	mProcessStatus.store(psNotRunning);
 }
 
 void checklib::details::RestrictedProcessImpl::doFinalize()
@@ -435,7 +435,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	if(mOldCPUTime == currentCPUTime)
 	{
 		mUnchangedTicks++;
-		if(mUnchangedTicks * sTimerDuration > 1000)
+		if(mUnchangedTicks * sTimerDuration > 2000)
 		{
 			mProcessStatus.store(psIdlenessLimitExceeded);
 			doFinalize();

@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
 SUBDIRS += libs \
-  tests
+  tests \
+  apps

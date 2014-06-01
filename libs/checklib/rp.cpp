@@ -116,21 +116,24 @@ void checklib::RestrictedProcess::reset()
 }
 
 // Перенаправить стандартный поток ввода в указанный файл.
-// Если stdin, то перенаправления не происходит
+// Если ss::stdin, то перенаправления не происходит
+// Если ss::interactive, то будет возможность писать в stdin процесса
 void checklib::RestrictedProcess::setStandardInput(const std::string &fileName)
 {
 	pimpl->redirectStandardInput(fileName);
 }
 
 // Перенаправить стандартный поток вывода в указанный файл.
-// Если stdout, то перенаправления не происходит
+// Если ss::stdout, то перенаправления не происходит
+// Если ss::interactive, то будет возможность читать из stdout процесса
 void checklib::RestrictedProcess::setStandardOutput(const std::string &fileName)
 {
 	pimpl->redirectStandardOutput(fileName);
 }
 
 // Перенаправить стандартный поток ошибок в указанный файл.
-// Если stderr, то перенаправления не происходит
+// Если ss::stderr, то перенаправления не происходит
+// Если ss::interactive, то будет возможность читать из stderr процесса
 void checklib::RestrictedProcess::setStandardError(const std::string &fileName)
 {
 	pimpl->redirectStandardError(fileName);

@@ -18,6 +18,9 @@
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(TimerService::instance()->io_service())
 {
+	mStandardInput = ss::Stdin;
+	mStandardOutput = ss::Stdout;
+	mStandardError = ss::Stderr;
 	reset();
 }
 
@@ -280,17 +283,14 @@ void checklib::details::RestrictedProcessImpl::reset()
 	terminate();
 	wait();
 
-	mStandardInput = ss::Stdin;
-	mStandardOutput = ss::Stdout;
-	mStandardError = ss::Stderr;
-	mParams.clear();
+	mInputHandle.reset();
+	mOutputHandle.reset();
+	mErrorHandle.reset();
 
 	mCPUTime.store(0);
 	mPeakMemoryUsage.store(0);
 	mProcessStatus.store(psNotRunning);
-	mLimits = Limits();
 	mIsRunning.store(false);
-	mCurrentDirectory = "";
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -424,20 +424,20 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	{
 		if(mProcessStatus.load() == psRunning)
 		{
-//			qWarning() << "Process status is invalid";
+			throw std::logic_error("Process status is invalid");
 		}
 
 		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
 		{
 			if(!CancelIo(mOutputHandle.handle()))
 			{
-//				qWarning() << "IO cannot be canceled";
+				throw Exception("Cannot cancel IO");
 			}
 		}
 
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
-//			qWarning() << "TerminateProcess failed";
+			throw Exception("Cannot terminate process");
 		}
 		else
 		{
@@ -448,7 +448,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	DWORD tmpExitCode;
 	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
-//		qWarning() << "Cannot get exit code process";
+		throw std::logic_error("Cannot get exit code");
 	}
 	// TODO: Сделать через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS - надежнее
 	switch(tmpExitCode)

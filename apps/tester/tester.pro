@@ -1,30 +1,29 @@
 TEMPLATE = app
-CONFIG += qt console
-QT -= gui
+CONFIG += console
+CONFIG -= qt
 
 SOURCES += main.cpp \
-	Runner.cpp \
-	RunController.cpp \
-	ConsoleUtils.cpp \
 	settings.cpp \
-    params_reader.cpp
+	params_reader.cpp \
+	run_controller.cpp \
+	console_utils.cpp
 
 HEADERS += \
-	Runner.h \
-	RunController.h \
-	ConsoleUtils.h \
-	TesterExceptions.h \
 	io_consts.h \
 	settings.h \
-    params_reader.h
+	params_reader.h \
+	console_utils.h \
+	run_controller.h \
+	tester_exceptions.h
 
 INCLUDEPATH += ../../libs
 win32: INCLUDEPATH += $$(BOOST_INCLUDE_DIR)
 
 LIBS += -L"../../libs/checklib" -lchecklib
 win32: LIBS += -lpsapi -L$$(BOOST_LIB_DIR)
+win32: DEFINES += OS_WIN32
 
 unix:QMAKE_CXXFLAGS += --std=c++0x
-unix: LIBS += -lboost_system -lboost_filesystem -lboost_thread -lboost_chrono
+unix: LIBS += -lboost_system -lboost_filesystem -lboost_thread -lboost_chrono -pthread
 
 PRE_TARGETDEPS += ../../libs/checklib

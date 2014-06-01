@@ -1,6 +1,7 @@
 ﻿#include <cstdlib>
 #include <iostream>
 #include <cstring>
+#include <algorithm>
 using namespace std;
 
 int f(int a)

@@ -3,12 +3,13 @@ CONFIG += staticlib
 CONFIG -= qt
 
 HEADERS += \
-    checklib_exception.h \
-    rp_types.h \
-    rp.h \  
-    rp_consts.h \
-    timer_service.h \
-    noexcept.h
+	checklib_exception.h \
+	rp_types.h \
+	rp.h \
+	rp_consts.h \
+	timer_service.h \
+	noexcept.h \
+	checklib.h
 
 SOURCES += \
 	rp.cpp
