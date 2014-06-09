@@ -5,7 +5,8 @@ CONFIG -= qt
 SOURCES += main.cpp \
 	settings.cpp \
 	params_reader.cpp \
-	run_controller.cpp \
+	run_controller_simple.cpp \
+	run_controller_abstract.cpp \
 	console_utils.cpp
 
 HEADERS += \
@@ -13,7 +14,8 @@ HEADERS += \
 	settings.h \
 	params_reader.h \
 	console_utils.h \
-	run_controller.h \
+	run_controller_simple.h \
+	run_controller_abstract.h \
 	tester_exceptions.h
 
 INCLUDEPATH += ../../libs

@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 
 		ParamsReader reader(settingsFileName);
 		boost::asio::io_service io;
-		RunController runController(io, reader);
-		runController.startTesting();
+		auto runController = RunControllerAbstract::create(io, reader);
+		runController->startTesting();
 		io.run();
 		return 0;
 	}

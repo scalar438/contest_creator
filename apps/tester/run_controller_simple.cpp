@@ -1,4 +1,4 @@
-﻿#include "run_controller.h"
+﻿#include "run_controller_simple.h"
 #include "console_utils.h"
 #include "io_consts.h"
 #include <boost/filesystem.hpp>
@@ -7,7 +7,7 @@
 using namespace cu;
 using namespace checklib;
 
-RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
+RunControllerSimple::RunControllerSimple(boost::asio::io_service &io, ParamsReader &reader)
 	: mIo(io)
 	, mTimer(mIo)
 	, mReader(reader)
@@ -15,21 +15,21 @@ RunController::RunController(boost::asio::io_service &io, ParamsReader &reader)
 	mProcess.setProgram(reader.programName);
 	mProcess.setLimits(mReader.limits);
 
-	mProcess.finished.connect(std::bind(&RunController::onProgramFinished, this, std::placeholders::_1));
+	mProcess.finished.connect(std::bind(&RunControllerSimple::onProgramFinished, this, std::placeholders::_1));
 }
 
-void RunController::startTesting()
+void RunControllerSimple::startTesting()
 {
 	mCurrentTest = 0;
-	mIo.post(std::bind(&RunController::startCurrentTest, this));
+	mIo.post(std::bind(&RunControllerSimple::startCurrentTest, this));
 	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
-	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
+	mTimer.async_wait(std::bind(&RunControllerSimple::printUsageTimerHandler, this, std::placeholders::_1));
 
 	// На случай, если этот файл уже существует
 	boost::filesystem::remove(mReader.inputFile);
 }
 
-void RunController::startCurrentTest()
+void RunControllerSimple::startCurrentTest()
 {
 	if(mCurrentTest < 0 || mCurrentTest >= int(mReader.tests.size()))
 	{
@@ -45,7 +45,7 @@ void RunController::startCurrentTest()
 	mProcess.start();
 }
 
-void RunController::endCurrrentTest()
+void RunControllerSimple::endCurrrentTest()
 {
 	ColorSaver saver;
 	printUsage(true);
@@ -112,7 +112,7 @@ void RunController::endCurrrentTest()
 
 	if(mCurrentTest != int(mReader.tests.size()) && (!failed || !mReader.interrupt))
 	{
-		mIo.post(std::bind(&RunController::startCurrentTest, this));
+		mIo.post(std::bind(&RunControllerSimple::startCurrentTest, this));
 	}
 	else
 	{
@@ -120,7 +120,7 @@ void RunController::endCurrrentTest()
 	}
 }
 
-void RunController::printUsageTimerHandler(boost::system::error_code err)
+void RunControllerSimple::printUsageTimerHandler(boost::system::error_code err)
 {
 	if(err || mCurrentTest == mReader.tests.size()) return;
 	std::cout << cursorPosition(0);
@@ -128,15 +128,15 @@ void RunController::printUsageTimerHandler(boost::system::error_code err)
 	std::cout.flush();
 
 	mTimer.expires_from_now(boost::posix_time::milliseconds(500));
-	mTimer.async_wait(std::bind(&RunController::printUsageTimerHandler, this, std::placeholders::_1));
+	mTimer.async_wait(std::bind(&RunControllerSimple::printUsageTimerHandler, this, std::placeholders::_1));
 }
 
-void RunController::onProgramFinished(int)
+void RunControllerSimple::onProgramFinished(int)
 {
-	mIo.post(std::bind(&RunController::endCurrrentTest, this));
+	mIo.post(std::bind(&RunControllerSimple::endCurrrentTest, this));
 }
 
-void RunController::printUsage(bool final)
+void RunControllerSimple::printUsage(bool final)
 {
 	using namespace cu;
 	ColorSaver saver;
@@ -156,7 +156,7 @@ void RunController::printUsage(bool final)
 	std::cout << std::flush;
 }
 
-void RunController::endTesting()
+void RunControllerSimple::endTesting()
 {
 	mTimer.cancel();
 }

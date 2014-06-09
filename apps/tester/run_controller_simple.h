@@ -1,14 +1,15 @@
 ﻿#pragma once
 #include "checklib/rp.h"
 #include "params_reader.h"
+#include "run_controller_abstract.h"
 
 #include <memory>
 #include <boost/asio.hpp>
 
-class RunController
+class RunControllerSimple : public RunControllerAbstract
 {
 public:
-	RunController(boost::asio::io_service &io, ParamsReader &reader);
+	RunControllerSimple(boost::asio::io_service &io, ParamsReader &reader);
 	void startTesting();
 private:
 	boost::asio::io_service &mIo;
