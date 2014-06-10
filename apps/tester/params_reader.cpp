@@ -50,6 +50,11 @@ ParamsReader::ParamsReader(const std::string &settingsFileName)
 
 	inputFile = mSettings.readString("InputFile", Stdin);
 	outputFile = mSettings.readString("OutputFile", Stdout);
+
+	tmpString = mSettings.readString("Interactive", "NO");
+	boost::to_lower(tmpString);
+	isInteractive = tmpString == "yes" || tmpString == "1";
+	if(isInteractive) interactorName = mSettings.readString("Interactor");
 }
 
 void ParamsReader::readTests()

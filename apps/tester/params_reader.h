@@ -22,6 +22,8 @@ public:
 	checklib::Limits limits;
 	std::vector<OneTest> tests;
 	bool interrupt;
+	bool isInteractive;
+	std::string interactorName;
 
 	enum GenAnswersMode
 	{
