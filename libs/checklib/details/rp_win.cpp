@@ -27,7 +27,7 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
 	doFinalize();
-	while(mIsRunning.load()) boost::this_thread::yield();
+	while(mIsRunning.load()) Sleep(0);
 }
 
 std::string checklib::details::RestrictedProcessImpl::getProgram() const
