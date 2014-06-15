@@ -8,7 +8,7 @@ class RunControllerAbstract
 {
 public:
 	typedef std::shared_ptr<RunControllerAbstract> RunControllerPtr;
-	static RunControllerPtr create(boost::asio::io_service &io, ParamsReader &reader);
+	static RunControllerPtr create(boost::asio::io_service &timerService, ParamsReader &reader);
 
 	virtual ~RunControllerAbstract(){}
 

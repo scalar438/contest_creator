@@ -35,7 +35,7 @@ std::string Settings::readString(const std::string &key, const std::string &def)
 	return def;
 }
 
-int Settings::readInt(const string &key, bool &success)
+int Settings::readInt(const string &key, bool &success) const
 {
 	auto it = mValues.find(key);
 	if(it != mValues.end())
@@ -55,7 +55,7 @@ int Settings::readInt(const std::string &key, int def) const
 	return success ? val : def;
 }
 
-double Settings::readDouble(const string &key, bool &success)
+double Settings::readDouble(const string &key, bool &success) const
 {
 	auto it = mValues.find(key);
 	if(it != mValues.end())

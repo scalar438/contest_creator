@@ -12,7 +12,7 @@ RunControllerSimple::RunControllerSimple(boost::asio::io_service &io, ParamsRead
 	, mTimer(mIo)
 	, mReader(reader)
 {
-	mProcess.setProgram(reader.programName);
+	mProcess.setProgram(mReader.programName);
 	mProcess.setLimits(mReader.limits);
 
 	mProcess.finished.connect(std::bind(&RunControllerSimple::onProgramFinished, this, std::placeholders::_1));

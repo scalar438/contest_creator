@@ -1,5 +1,8 @@
 ﻿#pragma once
 #include "run_controller_abstract.h"
+#include <checklib/checklib.h>
+#include <thread>
+#include <boost/asio/deadline_timer.hpp>
 
 class RunControllerInteractive : public RunControllerAbstract
 {
@@ -8,4 +11,24 @@ public:
 	~RunControllerInteractive();
 
 	void startTesting();
+
+private:
+
+	boost::asio::io_service &mIo;
+
+	std::thread mProgramReaderThread, mProgramWriterThread;
+
+	checklib::RestrictedProcess mProgram, mInteractor;
+
+	boost::asio::deadline_timer mTimer;
+
+	ParamsReader &mReader;
+
+	int mCurrentTest;
+
+	void printUsageTimerHandler(boost::system::error_code err);
+
+	void printUsage(bool final);
+
+	void startCurrentTest();
 };
