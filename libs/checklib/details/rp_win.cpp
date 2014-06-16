@@ -5,7 +5,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/shared_array.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/filesystem.hpp>
 
 #include <deque>
@@ -144,7 +144,6 @@ void checklib::details::RestrictedProcessImpl::start()
 		si.hStdError = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
 	}
-
 	PROCESS_INFORMATION pi;
 
 	boost::filesystem::path programPath(mProgram);
@@ -164,12 +163,15 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else cmdLine += mParams[i];
 	}
+	boost::scoped_array<char> cmdLineVector(new char[cmdLine.length() + 1]);
+	std::copy(cmdLine.begin(), cmdLine.end(), cmdLineVector.get());
+	cmdLineVector[cmdLine.length()] = 0;
 
-	boost::shared_array<char> curDir;
+	boost::scoped_array<char> curDir;
 
 	if(!mCurrentDirectory.empty())
 	{
-		curDir = boost::shared_array<char>(new char[mCurrentDirectory.size() + 1]);
+		curDir.swap(boost::scoped_array<char>(new char[mCurrentDirectory.size() + 1]));
 		strcpy_s(curDir.get(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
 	}
 	else
@@ -177,11 +179,11 @@ void checklib::details::RestrictedProcessImpl::start()
 		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой программе
 		auto tmpCurrentDir = programPath.branch_path().native();
 		std::string currentDir(tmpCurrentDir.begin(), tmpCurrentDir.end());
-		curDir = boost::shared_array<char>(new char[currentDir.size() + 1]);
+		curDir.swap(boost::scoped_array<char>(new char[currentDir.size() + 1]));
 		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.c_str());
 	}
 
-	if(!CreateProcessA(NULL, &cmdLine[0], &sa, NULL, TRUE,
+	if(!CreateProcessA(NULL, &cmdLineVector[0], &sa, NULL, TRUE,
 					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};

@@ -18,7 +18,6 @@ public:
 		std::string str;
 		while(mReadProgram.getDataFromStandardOutput(str))
 		{
-			std::cerr << "Program: " << mReadProgram.program() << ", data: " << str << std::endl;
 			mWriteProgram.sendDataToStandardInput(str, true);
 		}
 	}
@@ -34,9 +33,9 @@ RunControllerInteractive::RunControllerInteractive(boost::asio::io_service &io, 
 {
 	mProgram.setProgram(mReader.programName);
 	mProgram.setLimits(mReader.limits);
+	mProgram.finished.connect(std::bind(&RunControllerInteractive::onProgramFinished, this, std::placeholders::_1));
 
 	mInteractor.setProgram(mReader.interactorName);
-	std::cerr << "InteractorName: " << mReader.interactorName << std::endl;
 	checklib::Limits limits;
 	limits.useTimeLimit = true;
 	limits.useMemoryLimit = true;
@@ -62,7 +61,7 @@ void RunControllerInteractive::startTesting()
 
 void RunControllerInteractive::printUsageTimerHandler(boost::system::error_code err)
 {
-	if(err) return;
+	if(err || mCurrentTest >= mReader.tests.size()) return;
 	std::cout << cu::cursorPosition(0);
 	printUsage(false);
 	std::cout.flush();
@@ -73,6 +72,7 @@ void RunControllerInteractive::printUsageTimerHandler(boost::system::error_code 
 
 void RunControllerInteractive::printUsage(bool final)
 {
+	std::cout << std::endl << std::this_thread::get_id().hash() << std::endl;
 	using namespace cu;
 	ColorSaver saver;
 
@@ -106,14 +106,105 @@ void RunControllerInteractive::startCurrentTest()
 
 	mInteractor.setStandardInput(checklib::ss::Interactive);
 	mInteractor.setStandardOutput(checklib::ss::Interactive);
-	std::vector<std::string> vs = {
-		mReader.tests[mCurrentTest].inputFile,
-		mReader.outputFile
-	};
-	mInteractor.setParams(vs);
+	mInteractor.setParams({mReader.tests[mCurrentTest].inputFile,
+	                       mReader.outputFile
+	                      });
 
 	mProgram.start();
 	mInteractor.start();
-	mProgramReaderThread.swap(std::thread(PipeThread(mProgram, mInteractor)));
-	mProgramWriterThread.swap(std::thread(PipeThread(mInteractor, mProgram)));
+#ifdef _DEBUG
+	// Для проверки на зависание потока
+	if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
+	if(mProgramWriterThread.joinable()) mProgramWriterThread.join();
+#else
+	if(mProgramReaderThread.joinable()) mProgramReaderThread.detach();
+	if(mProgramWriterThread.joinable()) mProgramWriterThread.detach();
+#endif
+	mProgramReaderThread = std::thread(PipeThread(mProgram, mInteractor));
+	mProgramWriterThread = std::thread(PipeThread(mInteractor, mProgram));
+}
+
+void RunControllerInteractive::programFinished()
+{
+	using namespace checklib;
+	using namespace cu;
+
+	printUsage(true);
+	bool failed = true;
+	if(!mInteractor.isRunning())
+	{
+		{
+			ColorSaver saver;
+			std::cout << textColor(red) << "Wrong answer";
+		}
+		std::cout << ": interactor was ended before program" << std::endl;
+	}
+	else
+	{
+		switch(mProgram.processStatus())
+		{
+			case psExited:
+			{
+				checklib::RestrictedProcess rp;
+				rp.setProgram(mReader.checker);
+				rp.setParams({mReader.tests[mCurrentTest].inputFile,
+							  mReader.outputFile,
+							  mReader.tests[mCurrentTest].answerFile
+							 });
+				rp.start();
+				rp.wait();
+
+				if(rp.exitCode() == 0)
+				{
+					failed = false;
+				}
+			}
+			break;
+
+		case psTimeLimitExceeded:
+			{
+				std::cout << textColor(red) << "Time limit exceeded" << std::endl;
+			}
+			break;
+
+		case psMemoryLimitExceeded:
+			{
+				std::cout << textColor(red) << "Memory limit exceeded" << std::endl;
+			}
+			break;
+
+		case psIdlenessLimitExceeded:
+			{
+				std::cout << textColor(cyan) << "Idleness limit exceeded" << std::endl;
+			}
+			break;
+
+		case psRuntimeError:
+			{
+				std::cout << textColor(red) << "Runtime error" << std::endl;
+			}
+			break;
+		}
+	}
+
+	++mCurrentTest;
+	if(mCurrentTest != mReader.tests.size() &&
+			(mReader.interrupt || !failed))
+	{
+		mIo.post(std::bind(&RunControllerInteractive::startCurrentTest, this));
+	}
+	else
+	{
+		endTesting();
+	}
+}
+
+void RunControllerInteractive::onProgramFinished(int exitCode)
+{
+	mIo.post(std::bind(&RunControllerInteractive::programFinished, this));
+}
+
+void RunControllerInteractive::endTesting()
+{
+	mTimer.cancel();
 }

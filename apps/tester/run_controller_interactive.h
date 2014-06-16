@@ -31,4 +31,12 @@ private:
 	void printUsage(bool final);
 
 	void startCurrentTest();
+
+	void programFinished();
+
+	// Функции, запускаемые объектами checklib
+	void onInteractorFinished(int exitCode);
+	void onProgramFinished(int exitCode);
+
+	void endTesting();
 };
