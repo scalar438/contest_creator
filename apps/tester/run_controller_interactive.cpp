@@ -46,8 +46,8 @@ RunControllerInteractive::RunControllerInteractive(boost::asio::io_service &io, 
 
 RunControllerInteractive::~RunControllerInteractive()
 {
-	mProgramReaderThread.join();
-	mProgramWriterThread.join();
+	if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
+	if(mProgramWriterThread.joinable()) mProgramWriterThread.join();
 }
 
 void RunControllerInteractive::startTesting()
@@ -72,7 +72,6 @@ void RunControllerInteractive::printUsageTimerHandler(boost::system::error_code 
 
 void RunControllerInteractive::printUsage(bool final)
 {
-	std::cout << std::endl << std::this_thread::get_id().hash() << std::endl;
 	using namespace cu;
 	ColorSaver saver;
 
