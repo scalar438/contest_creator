@@ -369,6 +369,11 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::st
 	return true;
 }
 
+bool checklib::details::RestrictedProcessImpl::closeStandardInput()
+{
+	return mStandardInput == ss::Interactive && CloseHandle(mInputHandle.handle());
+}
+
 void checklib::details::RestrictedProcessImpl::doCheck()
 {
 	int oldCPUTime = mCPUTime.load();

@@ -103,6 +103,10 @@ public:
 	/// Выдает полную строку, без символа перевода строки
 	bool getDataFromStandardOutput(std::string &data);
 
+	/// Закрывает стандартный поток ввода в интерактивный процесс.
+	/// Если поток ввода закрыть не удалось, или поток ввода не интерактивный, возвращает true, иначе false
+	bool closeStandardInput();
+
 	boost::signals2::signal<void(int)> finished;
 
 private:

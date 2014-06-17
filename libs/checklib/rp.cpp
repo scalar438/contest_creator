@@ -144,8 +144,11 @@ bool checklib::RestrictedProcess::getDataFromStandardOutput(std::string &data)
 	return pimpl->getDataFromStandardOutput(data);
 }
 
-// Отправить буфер в указанный стандартный поток.
-// Если этот поток направлен в файл, или программа не запущена, то ничего не произойдет
+bool checklib::RestrictedProcess::closeStandardInput()
+{
+	return pimpl->closeStandardInput();
+}
+
 bool checklib::RestrictedProcess::sendDataToStandardInput(const std::string &data, bool newLine)
 {
 	return pimpl->sendDataToStandardInput(data, newLine);

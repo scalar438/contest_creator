@@ -18,6 +18,7 @@ public:
 		std::string str;
 		while(mReadProgram.getDataFromStandardOutput(str))
 		{
+			std::cout << str << " " << mReadProgram.program() << std::endl;
 			mWriteProgram.sendDataToStandardInput(str, true);
 		}
 	}
@@ -140,49 +141,60 @@ void RunControllerInteractive::programFinished()
 	}
 	else
 	{
-		switch(mProgram.processStatus())
+		std::cout << mInteractor.closeStandardInput() << std::endl;
+		std::cout << "Before wait" << std::endl;
+		mInteractor.wait();
+		std::cout << "After wait" << std::endl;
+		if(mInteractor.exitCode() != 0)
 		{
-			case psExited:
+			std::cout << "Wrong answer: interactor has a non-zero exit code" << std::endl;
+		}
+		else
+		{
+			switch(mProgram.processStatus())
 			{
-				checklib::RestrictedProcess rp;
-				rp.setProgram(mReader.checker);
-				rp.setParams({mReader.tests[mCurrentTest].inputFile,
-							  mReader.outputFile,
-							  mReader.tests[mCurrentTest].answerFile
-							 });
-				rp.start();
-				rp.wait();
-
-				if(rp.exitCode() == 0)
+				case psExited:
 				{
-					failed = false;
+					checklib::RestrictedProcess rp;
+					rp.setProgram(mReader.checker);
+					rp.setParams({mReader.tests[mCurrentTest].inputFile,
+								  mReader.outputFile,
+								  mReader.tests[mCurrentTest].answerFile
+								 });
+					rp.start();
+					rp.wait();
+
+					if(rp.exitCode() == 0)
+					{
+						failed = false;
+					}
 				}
-			}
-			break;
+				break;
 
-		case psTimeLimitExceeded:
-			{
-				std::cout << textColor(red) << "Time limit exceeded" << std::endl;
-			}
-			break;
+			case psTimeLimitExceeded:
+				{
+					std::cout << textColor(red) << "Time limit exceeded" << std::endl;
+				}
+				break;
 
-		case psMemoryLimitExceeded:
-			{
-				std::cout << textColor(red) << "Memory limit exceeded" << std::endl;
-			}
-			break;
+			case psMemoryLimitExceeded:
+				{
+					std::cout << textColor(red) << "Memory limit exceeded" << std::endl;
+				}
+				break;
 
-		case psIdlenessLimitExceeded:
-			{
-				std::cout << textColor(cyan) << "Idleness limit exceeded" << std::endl;
-			}
-			break;
+			case psIdlenessLimitExceeded:
+				{
+					std::cout << textColor(cyan) << "Idleness limit exceeded" << std::endl;
+				}
+				break;
 
-		case psRuntimeError:
-			{
-				std::cout << textColor(red) << "Runtime error" << std::endl;
+			case psRuntimeError:
+				{
+					std::cout << textColor(red) << "Runtime error" << std::endl;
+				}
+				break;
 			}
-			break;
 		}
 	}
 
