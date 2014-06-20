@@ -18,7 +18,7 @@ public:
 		std::string str;
 		while(mReadProgram.getDataFromStandardOutput(str))
 		{
-			std::cout << str << " " << mReadProgram.program() << std::endl;
+	//		std::cout << str << " " << mReadProgram.program() << std::endl;
 			mWriteProgram.sendDataToStandardInput(str, true);
 		}
 	}
@@ -141,10 +141,8 @@ void RunControllerInteractive::programFinished()
 	}
 	else
 	{
-		std::cout << mInteractor.closeStandardInput() << std::endl;
-		std::cout << "Before wait" << std::endl;
+		mInteractor.closeStandardInput();
 		mInteractor.wait();
-		std::cout << "After wait" << std::endl;
 		if(mInteractor.exitCode() != 0)
 		{
 			std::cout << "Wrong answer: interactor has a non-zero exit code" << std::endl;
@@ -200,7 +198,7 @@ void RunControllerInteractive::programFinished()
 
 	++mCurrentTest;
 	if(mCurrentTest != mReader.tests.size() &&
-			(mReader.interrupt || !failed))
+			(!mReader.interrupt || !failed))
 	{
 		mIo.post(std::bind(&RunControllerInteractive::startCurrentTest, this));
 	}

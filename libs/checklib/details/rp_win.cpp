@@ -90,6 +90,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
+			SetHandleInformation(writePipe, HANDLE_FLAG_INHERIT, 0);
 			f = readPipe;
 			tmpHandles.push_back(HandleCloser(writePipe));
 		}
@@ -112,6 +113,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
+			SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 			f = writePipe;
 			tmpHandles.push_back(HandleCloser(readPipe));
 		}
@@ -133,6 +135,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
+			SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 			f = writePipe;
 			tmpHandles.push_back(HandleCloser(readPipe));
 		}
@@ -354,7 +357,6 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::st
 		DWORD count = 0;
 		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
-//			qWarning() << "Readfile error";
 			return false;
 		}
 		buf[count] = 0;
@@ -371,7 +373,13 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::st
 
 bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 {
-	return mStandardInput == ss::Interactive && CloseHandle(mInputHandle.handle());
+	if(mStandardInput == ss::Interactive && mInputHandle.handle() != INVALID_HANDLE_VALUE)
+	{
+		bool res = CloseHandle(mInputHandle.handle());
+		mInputHandle.reset();
+		return res;
+	}
+	return false;
 }
 
 void checklib::details::RestrictedProcessImpl::doCheck()
@@ -432,14 +440,6 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 		if(mProcessStatus.load() == psRunning)
 		{
 			throw std::logic_error("Process status is invalid");
-		}
-
-		if(mOutputHandle.handle() != INVALID_HANDLE_VALUE)
-		{
-			if(!CancelIo(mOutputHandle.handle()))
-			{
-				throw Exception("Cannot cancel IO");
-			}
 		}
 
 		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
@@ -524,8 +524,6 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 				0,
 				NULL
 			);
-/*			qWarning() << "Wait failed: " << QString::fromLocal8Bit((char*)cstr) <<
-						", isRunning =" << isRunning();*/
 			LocalFree(cstr);
 		}
 		break;
