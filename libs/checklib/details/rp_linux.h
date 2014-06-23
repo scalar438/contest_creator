@@ -100,6 +100,8 @@ public:
 	// Получить буфер из стандартного потока вывода
 	bool getDataFromStandardOutput(std::string &data);
 
+	bool closeStandardInput();
+
 	boost::signals2::signal<void(int)> finished;
 
 private:

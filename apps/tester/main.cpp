@@ -3,7 +3,6 @@
 #include "checklib/checklib_exception.h"
 #include "tester_exceptions.h"
 #include "run_controller_abstract.h"
-
 #include <iostream>
 #include <stdexcept>
 

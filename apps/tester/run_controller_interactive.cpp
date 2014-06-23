@@ -18,7 +18,7 @@ public:
 		std::string str;
 		while(mReadProgram.getDataFromStandardOutput(str))
 		{
-	//		std::cout << str << " " << mReadProgram.program() << std::endl;
+//			std::cout << str << " " << mReadProgram.program() << std::endl;
 			mWriteProgram.sendDataToStandardInput(str, true);
 		}
 	}

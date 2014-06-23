@@ -517,3 +517,12 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 		finished(mExitCode.load());
 	}
 }
+
+bool checklib::details::RestrictedProcessImpl::closeStandardInput()
+{
+	if(mStandardInput == ss::Interactive && mInputPipe.pipe() != -1)
+	{
+		return close(mInputPipe.pipe()) == 0;
+	}
+	return false;
+}
