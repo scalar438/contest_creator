@@ -34,6 +34,7 @@ checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
+	doFinalize();
 }
 
 std::string checklib::details::RestrictedProcessImpl::getProgram() const
@@ -400,6 +401,10 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	waitpid(mChildPid, &status, WCONTINUED);
 
 	mIsRunning.store(false);
+
+	mInputPipe.reset();
+	mOutputPipe.reset();
+	mErrorPipe.reset();
 }
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)

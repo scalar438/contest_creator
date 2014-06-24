@@ -47,6 +47,8 @@ RunControllerInteractive::RunControllerInteractive(boost::asio::io_service &io, 
 
 RunControllerInteractive::~RunControllerInteractive()
 {
+	mProgram.reset();
+	mInteractor.reset();
 	if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
 	if(mProgramWriterThread.joinable()) mProgramWriterThread.join();
 }
@@ -161,7 +163,6 @@ void RunControllerInteractive::programFinished()
 								 });
 					rp.start();
 					rp.wait();
-
 					if(rp.exitCode() == 0)
 					{
 						failed = false;
