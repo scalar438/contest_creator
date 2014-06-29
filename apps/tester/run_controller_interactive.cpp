@@ -1,5 +1,6 @@
 ﻿#include "run_controller_interactive.h"
 #include "console_utils.h"
+#include "tester_exceptions.h"
 #include <functional>
 
 // Поток, читающий выходные данные одной программы и подающий считанные данные другой
@@ -18,7 +19,6 @@ public:
 		std::string str;
 		while(mReadProgram.getDataFromStandardOutput(str))
 		{
-//			std::cout << str << " " << mReadProgram.program() << std::endl;
 			mWriteProgram.sendDataToStandardInput(str, true);
 		}
 	}
@@ -50,7 +50,7 @@ RunControllerInteractive::~RunControllerInteractive()
 	mProgram.reset();
 	mInteractor.reset();
 	if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
-	if(mProgramWriterThread.joinable()) mProgramWriterThread.join();
+	if(mInteractorReaderThread.joinable()) mInteractorReaderThread.join();
 }
 
 void RunControllerInteractive::startTesting()
@@ -114,16 +114,8 @@ void RunControllerInteractive::startCurrentTest()
 
 	mProgram.start();
 	mInteractor.start();
-#ifdef _DEBUG
-	// Для проверки на зависание потока
-	if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
-	if(mProgramWriterThread.joinable()) mProgramWriterThread.join();
-#else
-	if(mProgramReaderThread.joinable()) mProgramReaderThread.detach();
-	if(mProgramWriterThread.joinable()) mProgramWriterThread.detach();
-#endif
 	mProgramReaderThread = std::thread(PipeThread(mProgram, mInteractor));
-	mProgramWriterThread = std::thread(PipeThread(mInteractor, mProgram));
+	mInteractorReaderThread = std::thread(PipeThread(mInteractor, mProgram));
 }
 
 void RunControllerInteractive::programFinished()
@@ -143,8 +135,12 @@ void RunControllerInteractive::programFinished()
 	}
 	else
 	{
+		if(mProgramReaderThread.joinable()) mProgramReaderThread.join();
 		mInteractor.closeStandardInput();
 		mInteractor.wait();
+		if(mInteractorReaderThread.joinable()) mInteractorReaderThread.join();
+
+		if(mInteractor.processStatus() != checklib::psExited) throw TesterException("Unexpected status of interactor");
 		if(mInteractor.exitCode() != 0)
 		{
 			std::cout << "Wrong answer: interactor has a non-zero exit code" << std::endl;

@@ -16,7 +16,7 @@ private:
 
 	boost::asio::io_service &mIo;
 
-	std::thread mProgramReaderThread, mProgramWriterThread;
+	std::thread mProgramReaderThread, mInteractorReaderThread;
 
 	checklib::RestrictedProcess mProgram, mInteractor;
 

@@ -75,6 +75,7 @@ void TestRun::testExitCode()
 	runner.start();
 	runner.wait();
 	QVERIFY(runner.exitCode() == 123);
+	QVERIFY(!runner.isRunning());
 }
 
 void TestRun::testTL()
@@ -93,6 +94,7 @@ void TestRun::testTL()
 
 	qDebug() << "pTL time:" << runner.CPUTime();
 	QVERIFY(runner.processStatus() == checklib::psTimeLimitExceeded);
+	QVERIFY(!runner.isRunning());
 }
 
 void TestRun::testArgs()
@@ -107,6 +109,7 @@ void TestRun::testArgs()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psExited);
+	QVERIFY(!runner.isRunning());
 
 	std::ifstream is(boost::filesystem::path(args_output).native());
 
@@ -145,6 +148,7 @@ void TestRun::testML()
 
 	qDebug() << "pML memory:" << runner.peakMemoryUsage();
 	QVERIFY(runner.processStatus() == checklib::psMemoryLimitExceeded);
+	QVERIFY(!runner.isRunning());
 }
 
 void TestRun::testRE()
@@ -165,6 +169,7 @@ void TestRun::testRE()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psRuntimeError);
+	QVERIFY(!runner.isRunning());
 }
 
 void TestRun::testStandardStreamsRedirection()
@@ -239,6 +244,7 @@ void TestRun::testIL()
 	runner.wait();
 
 	QVERIFY(runner.processStatus() == checklib::psIdlenessLimitExceeded);
+	QVERIFY(!runner.isRunning());
 }
 
 void TestRun::testInteractive()

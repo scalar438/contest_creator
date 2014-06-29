@@ -516,6 +516,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 			if(mProcessStatus.load() == psRunning) mProcessStatus.store(psRuntimeError);
 		}
 
+		doFinalize();
 		mExitCode.store(WEXITSTATUS(status));
 
 		mIsRunning.store(false);
