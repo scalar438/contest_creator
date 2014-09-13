@@ -9,7 +9,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/atomic.hpp>
+#include <atomic>
 #include <boost/signals2.hpp>
 #include <boost/filesystem.hpp>
 
@@ -135,8 +135,8 @@ private:
 	// Если больше определенного лимита - программа не выполняется, проставляем IDLENESS_LIMIT_EXCEEDED
 	int mNotChangedTimeCount;
 
-	boost::atomic<ProcessStatus> mProcessStatus;
-	boost::atomic<int> mExitCode;
+	std::atomic<ProcessStatus> mProcessStatus;
+	std::atomic<int> mExitCode;
 
 	Limits mLimits;
 
@@ -148,8 +148,8 @@ private:
 	boost::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
-	mutable boost::atomic<int> mCPUTime, mPeakMemoryUsage;
-	boost::atomic<bool> mIsRunning;
+	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
+	std::atomic<bool> mIsRunning;
 
 	HandleCloser mInputHandle, mOutputHandle, mErrorHandle;
 

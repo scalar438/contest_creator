@@ -2,6 +2,7 @@
 #include "console_utils.h"
 #include "tester_exceptions.h"
 #include <functional>
+#include <iostream>
 
 // Поток, читающий выходные данные одной программы и подающий считанные данные другой
 class PipeThread
