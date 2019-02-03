@@ -1,11 +1,7 @@
-﻿#ifdef OS_WIN32
-#include <Windows.h>
-#define sleep(x) Sleep((x) * 1000)
-#else
-#include <unistd.h>
-#endif
+﻿#include <thread>
+#include <chrono>
 
 int main()
 {
-	sleep(15);
+	std::this_thread::sleep_for(std::chrono::seconds(100500));
 }
