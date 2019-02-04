@@ -13,8 +13,8 @@
 #include <boost/signals2.hpp>
 #include <boost/filesystem.hpp>
 
-#include <windows.h>
-#include <psapi.h>
+#include <Windows.h>
+#include <Psapi.h>
 
 namespace checklib
 {
@@ -25,7 +25,10 @@ class HandleCloser
 {
 private:
 	struct AutoCloser
-	{
+	{		
+		AutoCloser(const AutoCloser &) = delete;
+		AutoCloser& operator=(const AutoCloser&) = delete;
+
 		AutoCloser(HANDLE h = INVALID_HANDLE_VALUE)
 		{
 			setHandle(h);
@@ -55,7 +58,7 @@ public:
 
 	void setHandle(HANDLE h)
 	{
-		ptr = std::shared_ptr<AutoCloser>(new AutoCloser(h));
+		ptr = std::make_shared<AutoCloser>(h);
 	}
 
 	HANDLE handle() const

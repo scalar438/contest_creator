@@ -5,7 +5,6 @@
 
 #include <boost/thread.hpp>
 #include <boost/lambda/lambda.hpp>
-#include <boost/scoped_array.hpp>
 #include <boost/filesystem.hpp>
 
 #include <deque>
@@ -155,7 +154,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		auto tmp = programPath.native();
 		cmdLine = std::string(tmp.begin(), tmp.end());
 	}
-	for(int i = 0; i < mParams.size(); i++)
+	for(size_t i = 0; i < mParams.size(); i++)
 	{
 		cmdLine += " ";
 		if(std::find(mParams[i].begin(), mParams[i].end(), ' ') != mParams[i].end())
@@ -166,28 +165,28 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else cmdLine += mParams[i];
 	}
-	boost::scoped_array<char> cmdLineVector(new char[cmdLine.length() + 1]);
-	std::copy(cmdLine.begin(), cmdLine.end(), cmdLineVector.get());
+	std::vector<char> cmdLineVector(cmdLine.length() + 1);
+	std::copy(cmdLine.begin(), cmdLine.end(), cmdLineVector.data());
 	cmdLineVector[cmdLine.length()] = 0;
 
-	boost::scoped_array<char> curDir;
+	std::vector<char> curDir;
 
 	if(!mCurrentDirectory.empty())
 	{
-		curDir.swap(boost::scoped_array<char>(new char[mCurrentDirectory.size() + 1]));
-		strcpy_s(curDir.get(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
+		curDir.resize(mCurrentDirectory.size() + 1);
+		strcpy_s(curDir.data(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
 	}
 	else
 	{
 		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой программе
 		auto tmpCurrentDir = programPath.branch_path().native();
 		std::string currentDir(tmpCurrentDir.begin(), tmpCurrentDir.end());
-		curDir.swap(boost::scoped_array<char>(new char[currentDir.size() + 1]));
-		strcpy_s(curDir.get(), currentDir.size() + 1, currentDir.c_str());
+		curDir.resize(currentDir.size() + 1);
+		strcpy_s(curDir.data(), currentDir.size() + 1, currentDir.c_str());
 	}
 
 	if(!CreateProcessA(NULL, &cmdLineVector[0], &sa, NULL, TRUE,
-					   CREATE_SUSPENDED, NULL, curDir.get(), &si, &pi)) throw CannotStartProcess(mProgram);
+	                   CREATE_SUSPENDED, NULL, curDir.data(), &si, &pi)) throw CannotStartProcess(mProgram);
 
 	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
 	if(mStandardInput == ss::Interactive) mInputHandle = pop();
