@@ -7,8 +7,8 @@
 #include <string>
 
 #include <boost/asio.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#include <thread>
+#include <mutex>
 #include <atomic>
 #include <boost/signals2.hpp>
 #include <boost/filesystem.hpp>
@@ -145,10 +145,10 @@ private:
 
 	PROCESS_INFORMATION mCurrentInformation;
 
-	typedef boost::lock_guard<boost::mutex> mutex_locker;
+	typedef std::lock_guard<std::mutex> mutex_locker;
 
-	boost::mutex mTimerMutex;
-	boost::mutex mHandlesMutex;
+	std::mutex mTimerMutex;
+	std::mutex mHandlesMutex;
 	boost::asio::deadline_timer mTimer;
 
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
