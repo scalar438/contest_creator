@@ -1,2 +1,2 @@
 add_subdirectory(examples)
-#add_subdirectory(testRP)
+add_subdirectory(testRP)

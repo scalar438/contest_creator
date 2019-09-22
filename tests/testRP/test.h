@@ -5,13 +5,13 @@
 #endif
 
 // Класс, тестирующий работу библиотеки
-class TestRun: public QObject
+class TestRun : public QObject
 {
 	Q_OBJECT
 public:
 	TestRun();
 
-Q_SLOTS
+public Q_SLOTS:
 
 	void initTestCase();
 
@@ -44,5 +44,5 @@ private:
 	const std::string stderr_out_error;
 	const std::string args_output;
 
-	std::vector<std::string> toStringList(const QStringList &list);
+	std::vector<std::string> toStringList(const QStringList& list);
 };
