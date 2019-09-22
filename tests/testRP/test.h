@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <QtTest/QtTest>
+#include <QTest>
 #ifndef Q_MOC_RUN
 #include "checklib/rp.h"
 #endif
@@ -11,7 +11,7 @@ class TestRun: public QObject
 public:
 	TestRun();
 
-private slots:
+Q_SLOTS
 
 	void initTestCase();
 

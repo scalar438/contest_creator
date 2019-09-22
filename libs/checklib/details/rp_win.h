@@ -52,7 +52,7 @@ private:
 
 public:
 	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE)
-		: ptr(new AutoCloser(h))
+		: ptr(std::make_shared<AutoCloser>(h))
 	{
 	}
 
