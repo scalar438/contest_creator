@@ -9,9 +9,8 @@ add_executable(tester
 target_link_libraries(tester PRIVATE checklib)
 set(Boost_USE_STATIC_LIBS ON)
 
-find_package(Boost COMPONENTS filesystem date_time regex thread REQUIRED)
+find_package(Boost COMPONENTS filesystem date_time regex thread REQUIRED MODULE)
+target_include_directories(tester PRIVATE ${BOOST_INCLUDEDIR})
 target_link_libraries(tester PRIVATE ${Boost_LIBRARIES})
-target_link_libraries(tester PRIVATE "Psapi.lib")
 
 add_definitions("-DOS_WIN32")
-add_definitions("-DBOOST_ALL_NO_LIB")
