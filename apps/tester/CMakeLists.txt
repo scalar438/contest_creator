@@ -11,6 +11,5 @@ set(Boost_USE_STATIC_LIBS ON)
 
 find_package(Boost COMPONENTS filesystem date_time regex thread REQUIRED MODULE)
 target_include_directories(tester PRIVATE ${BOOST_INCLUDEDIR})
-target_link_libraries(tester PRIVATE ${Boost_LIBRARIES})
 
 add_definitions("-DOS_WIN32")
