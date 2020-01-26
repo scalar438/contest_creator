@@ -61,13 +61,13 @@ public:
 	~RestrictedProcessImpl();
 
 	std::string getProgram() const;
-	void setProgram(const std::string &program);
+	void setProgram(std::string program);
 
 	std::vector<std::string> getParams() const;
-	void setParams(const std::vector<std::string> &params);
+	void setParams(std::vector<std::string> params);
 
 	std::string currentDirectory() const;
-	void setCurrentDirectory(const std::string &directory);
+	void setCurrentDirectory(std::string directory);
 
 
 	bool isRunning() const;

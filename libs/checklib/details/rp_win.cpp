@@ -35,9 +35,9 @@ std::string checklib::details::RestrictedProcessImpl::getProgram() const
 	return mProgram;
 }
 
-void checklib::details::RestrictedProcessImpl::setProgram(const std::string &program)
+void checklib::details::RestrictedProcessImpl::setProgram(std::string program)
 {
-	mProgram = program;
+	mProgram = std::move(program);
 }
 
 std::vector<std::string> checklib::details::RestrictedProcessImpl::getParams() const
@@ -45,9 +45,9 @@ std::vector<std::string> checklib::details::RestrictedProcessImpl::getParams() c
 	return mParams;
 }
 
-void checklib::details::RestrictedProcessImpl::setParams(const std::vector<std::string> &params)
+void checklib::details::RestrictedProcessImpl::setParams(std::vector<std::string> params)
 {
-	mParams = params;
+	mParams = std::move(params);
 }
 
 std::string checklib::details::RestrictedProcessImpl::currentDirectory() const
@@ -55,9 +55,9 @@ std::string checklib::details::RestrictedProcessImpl::currentDirectory() const
 	return mCurrentDirectory;
 }
 
-void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const std::string &directory)
+void checklib::details::RestrictedProcessImpl::setCurrentDirectory(std::string directory)
 {
-	mCurrentDirectory = directory;
+	mCurrentDirectory = std::move(directory);
 }
 
 bool checklib::details::RestrictedProcessImpl::isRunning() const
