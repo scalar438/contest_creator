@@ -1,32 +1,33 @@
 ﻿#include "rp_win.h"
-#include "../timer_service.h"
-#include "../rp_consts.h"
 #include "../checklib_exception.h"
+#include "../rp_consts.h"
+#include "../timer_service.h"
 
-#include <boost/thread.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/thread.hpp>
 
 #include <deque>
 
 #include <Windows.h>
-#include <strsafe.h>
 #include <iostream>
 #include <string>
+#include <strsafe.h>
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
-	: mTimer(TimerService::instance()->io_service())
+    : mTimer(TimerService::instance()->io_service())
 {
-	mStandardInput = ss::Stdin;
+	mStandardInput  = ss::Stdin;
 	mStandardOutput = ss::Stdout;
-	mStandardError = ss::Stderr;
+	mStandardError  = ss::Stderr;
 	reset();
 }
 
 checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 {
 	doFinalize();
-	while(mIsRunning.load()) Sleep(0);
+	while (mIsRunning.load())
+		Sleep(0);
 }
 
 std::string checklib::details::RestrictedProcessImpl::getProgram() const
@@ -66,26 +67,29 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 
 void checklib::details::RestrictedProcessImpl::start()
 {
-	if(isRunning()) return;
+	if (isRunning()) return;
 
 	STARTUPINFOA si;
 	memset(&si, 0, sizeof si);
-	si.cb = sizeof si;
+	si.cb      = sizeof si;
 	si.dwFlags = STARTF_USESTDHANDLES;
 
 	SECURITY_ATTRIBUTES sa;
-	sa.bInheritHandle = TRUE;
+	sa.bInheritHandle       = TRUE;
 	sa.lpSecurityDescriptor = NULL;
-	sa.nLength = sizeof sa;
-	std::vector<HandleCloser> handlesForAutoClose; // Хендлы, требующие закрытия на выходе из функции
-	std::deque<HandleCloser> tmpHandles;           // Хендлы, требующие закрытия после окончания работы программы
+	sa.nLength              = sizeof sa;
+	std::vector<HandleCloser>
+	    handlesForAutoClose; // Хендлы, требующие закрытия на выходе из функции
+	std::deque<HandleCloser>
+	    tmpHandles; // Хендлы, требующие закрытия после окончания работы программы
 
-	if(mStandardInput == ss::Stdin) si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+	if (mStandardInput == ss::Stdin)
+		si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 	else
 	{
 		HANDLE f;
 
-		if(mStandardInput == ss::Interactive)
+		if (mStandardInput == ss::Interactive)
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
@@ -95,20 +99,21 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			f = CreateFileA(mStandardInput.c_str(), GENERIC_READ, FILE_SHARE_READ,
-			               &sa, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardInput);
+			f = CreateFileA(mStandardInput.c_str(), GENERIC_READ, FILE_SHARE_READ, &sa,
+			                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardInput);
 		}
 		si.hStdInput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
 	}
 
-	if(mStandardOutput == ss::Stdout) si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (mStandardOutput == ss::Stdout)
+		si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 	else
 	{
 		HANDLE f;
 
-		if(mStandardOutput == ss::Interactive)
+		if (mStandardOutput == ss::Interactive)
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
@@ -118,19 +123,21 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			f = CreateFileA(mStandardOutput.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardOutput);
+			f = CreateFileA(mStandardOutput.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS,
+			                FILE_ATTRIBUTE_NORMAL, NULL);
+			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardOutput);
 		}
 		si.hStdOutput = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
 	}
 
-	if(mStandardError == ss::Stderr) si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+	if (mStandardError == ss::Stderr)
+		si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 	else
 	{
 		HANDLE f;
 
-		if(mStandardError == ss::Interactive)
+		if (mStandardError == ss::Interactive)
 		{
 			HANDLE readPipe, writePipe;
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
@@ -140,8 +147,9 @@ void checklib::details::RestrictedProcessImpl::start()
 		}
 		else
 		{
-			f = CreateFileA(mStandardError.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-			if(f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardError);
+			f = CreateFileA(mStandardError.c_str(), GENERIC_WRITE, 0, &sa, CREATE_ALWAYS,
+			                FILE_ATTRIBUTE_NORMAL, NULL);
+			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardError);
 		}
 		si.hStdError = f;
 		handlesForAutoClose.push_back(HandleCloser(f));
@@ -152,18 +160,19 @@ void checklib::details::RestrictedProcessImpl::start()
 	std::string cmdLine;
 	{
 		auto tmp = programPath.native();
-		cmdLine = std::string(tmp.begin(), tmp.end());
+		cmdLine  = std::string(tmp.begin(), tmp.end());
 	}
-	for(size_t i = 0; i < mParams.size(); i++)
+	for (size_t i = 0; i < mParams.size(); i++)
 	{
 		cmdLine += " ";
-		if(std::find(mParams[i].begin(), mParams[i].end(), ' ') != mParams[i].end())
+		if (std::find(mParams[i].begin(), mParams[i].end(), ' ') != mParams[i].end())
 		{
 			cmdLine += '\"';
 			cmdLine += mParams[i];
 			cmdLine += '\"';
 		}
-		else cmdLine += mParams[i];
+		else
+			cmdLine += mParams[i];
 	}
 	std::vector<char> cmdLineVector(cmdLine.length() + 1);
 	std::copy(cmdLine.begin(), cmdLine.end(), cmdLineVector.data());
@@ -171,42 +180,48 @@ void checklib::details::RestrictedProcessImpl::start()
 
 	std::vector<char> curDir;
 
-	if(!mCurrentDirectory.empty())
+	if (!mCurrentDirectory.empty())
 	{
 		curDir.resize(mCurrentDirectory.size() + 1);
 		strcpy_s(curDir.data(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
 	}
 	else
 	{
-		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой программе
+		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой
+		// программе
 		auto tmpCurrentDir = programPath.branch_path().native();
 		std::string currentDir(tmpCurrentDir.begin(), tmpCurrentDir.end());
 		curDir.resize(currentDir.size() + 1);
 		strcpy_s(curDir.data(), currentDir.size() + 1, currentDir.c_str());
 	}
 
-	if(!CreateProcessA(NULL, &cmdLineVector[0], &sa, NULL, TRUE,
-	                   CREATE_SUSPENDED, NULL, curDir.data(), &si, &pi)) throw CannotStartProcess(mProgram);
+	if (!CreateProcessA(NULL, &cmdLineVector[0], &sa, NULL, TRUE, CREATE_SUSPENDED, NULL,
+	                    curDir.data(), &si, &pi))
+		throw CannotStartProcess(mProgram);
 
-	auto pop = [&tmpHandles]() -> HandleCloser { auto res = tmpHandles[0]; tmpHandles.pop_front(); return res;};
-	if(mStandardInput == ss::Interactive) mInputHandle = pop();
-	if(mStandardOutput == ss::Interactive) mOutputHandle = pop();
-	if(mStandardError == ss::Interactive) mErrorHandle = pop();
+	auto pop = [&tmpHandles]() -> HandleCloser {
+		auto res = tmpHandles[0];
+		tmpHandles.pop_front();
+		return res;
+	};
+	if (mStandardInput == ss::Interactive) mInputHandle = pop();
+	if (mStandardOutput == ss::Interactive) mOutputHandle = pop();
+	if (mStandardError == ss::Interactive) mErrorHandle = pop();
 
 	ResumeThread(pi.hThread);
 	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
 	mutex_locker guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
-	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-	                              boost::lambda::_1));
+	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+	                              boost::ref(*this), boost::lambda::_1));
 	mNotChangedTimeCount = 0;
 	mIsRunning.store(true);
 }
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	if(isRunning())
+	if (isRunning())
 	{
 		mProcessStatus.store(psTerminated);
 		TerminateProcess(mCurrentInformation.hProcess, -1);
@@ -220,15 +235,15 @@ void checklib::details::RestrictedProcessImpl::wait()
 
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
-	if(!isRunning()) return false;
+	if (!isRunning()) return false;
 	auto res = WaitForSingleObject(mCurrentInformation.hProcess, milliseconds);
-	if(res == WAIT_TIMEOUT)
+	if (res == WAIT_TIMEOUT)
 	{
 		return false;
 	}
-	if(res == WAIT_OBJECT_0)
+	if (res == WAIT_OBJECT_0)
 	{
-		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
+		if (mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
 		mIsRunning.store(false);
 		return true;
@@ -252,14 +267,14 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 // Пиковое значение потребляемой памяти
 int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
 {
-	if(isRunning()) return peakMemoryUsageS();
+	if (isRunning()) return peakMemoryUsageS();
 	return mPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::CPUTime()
 {
-	if(isRunning()) return CPUTimeS();
+	if (isRunning()) return CPUTimeS();
 	return mCPUTime.load();
 }
 
@@ -304,7 +319,7 @@ checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
 
 void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 {
-	if(isRunning()) return;
+	if (isRunning()) return;
 	mLimits = limits;
 }
 
@@ -323,19 +338,20 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const std::
 	mStandardError = fileName;
 }
 
-bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std::string &data, bool newLine)
+bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std::string &data,
+                                                                       bool newLine)
 {
 	mutex_locker lock(mHandlesMutex);
-	if(!isRunning()) return false;
+	if (!isRunning()) return false;
 	DWORD count;
-	if(!WriteFile(mInputHandle.handle(), data.c_str(), data.length(), &count, NULL))
+	if (!WriteFile(mInputHandle.handle(), data.c_str(), data.length(), &count, NULL))
 	{
 		return false;
 	}
-	if(newLine)
+	if (newLine)
 	{
 		char c = '\n';
-		if(!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
+		if (!WriteFile(mInputHandle.handle(), &c, 1, &count, NULL))
 		{
 			return false;
 		}
@@ -345,22 +361,22 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std
 
 bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::string &data)
 {
-	if(!isRunning()) return false;
-	if(mStandardOutput != ss::Interactive) return false;
+	if (!isRunning()) return false;
+	if (mStandardOutput != ss::Interactive) return false;
 
 	const int MAX = 100;
 	char buf[MAX];
 	data = "";
-	while(true)
+	while (true)
 	{
 		DWORD count = 0;
-		if(!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
+		if (!ReadFile(mOutputHandle.handle(), buf, MAX - 1, &count, NULL))
 		{
 			return false;
 		}
 		buf[count] = 0;
 		data += buf;
-		if(data.size() >= 2 && data.substr(data.size() - 2, 2) == "\r\n")
+		if (data.size() >= 2 && data.substr(data.size() - 2, 2) == "\r\n")
 		{
 			data.resize(data.size() - 2);
 			break;
@@ -372,7 +388,7 @@ bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::st
 
 bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 {
-	if(mStandardInput == ss::Interactive && mInputHandle.handle() != INVALID_HANDLE_VALUE)
+	if (mStandardInput == ss::Interactive && mInputHandle.handle() != INVALID_HANDLE_VALUE)
 	{
 		bool res = CloseHandle(mInputHandle.handle());
 		mInputHandle.reset();
@@ -384,19 +400,19 @@ bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 void checklib::details::RestrictedProcessImpl::doCheck()
 {
 	int oldCPUTime = mCPUTime.load();
-	int time = CPUTime();
-	if(mLimits.useTimeLimit)
+	int time       = CPUTime();
+	if (mLimits.useTimeLimit)
 	{
-		if(time > mLimits.timeLimit)
+		if (time > mLimits.timeLimit)
 		{
 			mProcessStatus.store(psTimeLimitExceeded);
 			doFinalize();
 			return;
 		}
 	}
-	if(time == oldCPUTime)
+	if (time == oldCPUTime)
 	{
-		if(mNotChangedTimeCount++ > 20)
+		if (mNotChangedTimeCount++ > 20)
 		{
 			mProcessStatus.store(psIdlenessLimitExceeded);
 			doFinalize();
@@ -407,9 +423,9 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	{
 		mNotChangedTimeCount = 1;
 	}
-	if(mLimits.useMemoryLimit)
+	if (mLimits.useMemoryLimit)
 	{
-		if(peakMemoryUsage() > mLimits.memoryLimit)
+		if (peakMemoryUsage() > mLimits.memoryLimit)
 		{
 			mProcessStatus.store(psMemoryLimitExceeded);
 			doFinalize();
@@ -420,28 +436,28 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
 	mutex_locker lock1(mHandlesMutex);
-	if(!isRunning()) return;
+	if (!isRunning()) return;
 	// Сохранить параметры перед закрытием
 	CPUTimeS();
 	peakMemoryUsageS();
 
-	if(mLimits.useTimeLimit && mCPUTime.load() > mLimits.timeLimit)
+	if (mLimits.useTimeLimit && mCPUTime.load() > mLimits.timeLimit)
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
 	}
-	if(mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
+	if (mLimits.useMemoryLimit && mPeakMemoryUsage.load() > mLimits.memoryLimit)
 	{
 		mProcessStatus.store(psMemoryLimitExceeded);
 	}
 
-	if(WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_TIMEOUT)
+	if (WaitForSingleObject(mCurrentInformation.hProcess, 0) == WAIT_TIMEOUT)
 	{
-		if(mProcessStatus.load() == psRunning)
+		if (mProcessStatus.load() == psRunning)
 		{
 			throw std::logic_error("Process status is invalid");
 		}
 
-		if(!TerminateProcess(mCurrentInformation.hProcess, -1))
+		if (!TerminateProcess(mCurrentInformation.hProcess, -1))
 		{
 			throw Exception("Cannot terminate process");
 		}
@@ -452,12 +468,12 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	}
 
 	DWORD tmpExitCode;
-	if(!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
+	if (!GetExitCodeProcess(mCurrentInformation.hProcess, &tmpExitCode))
 	{
 		throw std::logic_error("Cannot get exit code");
 	}
 	// TODO: Сделать через JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS - надежнее
-	switch(tmpExitCode)
+	switch (tmpExitCode)
 	{
 	case EXCEPTION_ACCESS_VIOLATION:
 	case EXCEPTION_DATATYPE_MISALIGNMENT:
@@ -480,8 +496,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	case EXCEPTION_STACK_OVERFLOW:
 	case EXCEPTION_INVALID_DISPOSITION:
 	case EXCEPTION_GUARD_PAGE:
-	case EXCEPTION_INVALID_HANDLE:
-		mProcessStatus.store(psRuntimeError);
+	case EXCEPTION_INVALID_HANDLE: mProcessStatus.store(psRuntimeError);
 	}
 
 	mExitCode.store(tmpExitCode);
@@ -493,39 +508,32 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
-	if(err) return;
+	if (err) return;
 	doCheck();
 
-	switch(WaitForSingleObject(mCurrentInformation.hProcess, 0))
+	switch (WaitForSingleObject(mCurrentInformation.hProcess, 0))
 	{
 	case WAIT_OBJECT_0:
-		if(mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
+		if (mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
 		doFinalize();
 		destroyHandles();
 		break;
-	case WAIT_TIMEOUT:
-		{
-			mutex_locker lock(mTimerMutex);
-			mTimer.expires_from_now(boost::posix_time::milliseconds(100));
-			mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler, boost::ref(*this),
-			                              boost::lambda::_1));
-		}
-		break;
-	case WAIT_FAILED:
-		{
-			void* cstr;
-			FormatMessageA(
-				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-				NULL,
-				GetLastError(),
-				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-				(LPSTR) &cstr,
-				0,
-				NULL
-			);
-			LocalFree(cstr);
-		}
-		break;
+	case WAIT_TIMEOUT: {
+		mutex_locker lock(mTimerMutex);
+		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
+		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
+		                              boost::ref(*this), boost::lambda::_1));
+	}
+	break;
+	case WAIT_FAILED: {
+		void *cstr;
+		FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+		               GetLastError(),
+		               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+		               (LPSTR)&cstr, 0, NULL);
+		LocalFree(cstr);
+	}
+	break;
 	}
 }
 
@@ -533,7 +541,7 @@ void checklib::details::RestrictedProcessImpl::destroyHandles()
 {
 	{
 		mutex_locker lock(mHandlesMutex);
-		if(!isRunning()) return;
+		if (!isRunning()) return;
 		CloseHandle(mCurrentInformation.hProcess);
 		CloseHandle(mCurrentInformation.hThread);
 

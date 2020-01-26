@@ -3,18 +3,18 @@
 #include "../rp_types.h"
 
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
-#include <boost/asio.hpp>
-#include <thread>
-#include <mutex>
 #include <atomic>
-#include <boost/signals2.hpp>
+#include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/signals2.hpp>
+#include <mutex>
+#include <thread>
 
-#include <Windows.h>
 #include <Psapi.h>
+#include <Windows.h>
 
 namespace checklib
 {
@@ -25,52 +25,39 @@ class HandleCloser
 {
 private:
 	struct AutoCloser
-	{		
+	{
 		AutoCloser(const AutoCloser &) = delete;
-		AutoCloser& operator=(const AutoCloser&) = delete;
+		AutoCloser &operator=(const AutoCloser &) = delete;
 
-		AutoCloser(HANDLE h = INVALID_HANDLE_VALUE)
-		{
-			setHandle(h);
-		}
+		AutoCloser(HANDLE h = INVALID_HANDLE_VALUE) { setHandle(h); }
 
 		~AutoCloser()
 		{
-			if(handle != INVALID_HANDLE_VALUE)
+			if (handle != INVALID_HANDLE_VALUE)
 			{
 				CloseHandle(handle);
 			}
 		}
 
-		void setHandle(HANDLE h)
-		{
-			handle = h;
-		}
+		void setHandle(HANDLE h) { handle = h; }
 
 		HANDLE handle;
 	};
 
 public:
-	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE)
-		: ptr(std::make_shared<AutoCloser>(h))
-	{
-	}
+	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE) : ptr(std::make_shared<AutoCloser>(h)) {}
 
-	void setHandle(HANDLE h)
-	{
-		ptr = std::make_shared<AutoCloser>(h);
-	}
+	void setHandle(HANDLE h) { ptr = std::make_shared<AutoCloser>(h); }
 
 	HANDLE handle() const
 	{
-		if(ptr) return ptr->handle;
-		else return INVALID_HANDLE_VALUE;
+		if (ptr)
+			return ptr->handle;
+		else
+			return INVALID_HANDLE_VALUE;
 	}
 
-	void reset()
-	{
-		setHandle(INVALID_HANDLE_VALUE);
-	}
+	void reset() { setHandle(INVALID_HANDLE_VALUE); }
 
 private:
 	std::shared_ptr<AutoCloser> ptr;
@@ -135,7 +122,8 @@ private:
 	std::string mStandardInput, mStandardOutput, mStandardError;
 
 	// Сколько раз подряд при измерении процессорного времени оно не менялось.
-	// Если больше определенного лимита - программа не выполняется, проставляем IDLENESS_LIMIT_EXCEEDED
+	// Если больше определенного лимита - программа не выполняется, проставляем
+	// IDLENESS_LIMIT_EXCEEDED
 	int mNotChangedTimeCount;
 
 	std::atomic<ProcessStatus> mProcessStatus;
@@ -169,5 +157,5 @@ private:
 	int CPUTimeS() const;
 };
 
-}
-}
+} // namespace details
+} // namespace checklib
