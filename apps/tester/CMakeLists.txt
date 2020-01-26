@@ -6,10 +6,15 @@ add_executable(tester
 	run_controller_simple.cpp
 	settings.cpp)
 
+install(TARGETS tester)
+
 target_link_libraries(tester PRIVATE checklib)
 set(Boost_USE_STATIC_LIBS ON)
 
-find_package(Boost COMPONENTS filesystem date_time regex thread REQUIRED MODULE)
-target_include_directories(tester PRIVATE ${BOOST_INCLUDEDIR})
+find_package(Boost)
+
+target_include_directories(tester PRIVATE ${Boost_INCLUDE_DIR})
+target_link_directories(tester PRIVATE ${Boost_LIBRARY_DIRS})
+
 
 add_definitions("-DOS_WIN32")
