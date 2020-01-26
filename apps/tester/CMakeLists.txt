@@ -8,6 +8,8 @@ add_executable(tester
 
 install(TARGETS tester)
 
+cmake_policy(SET CMP0074 NEW)
+
 target_link_libraries(tester PRIVATE checklib)
 set(Boost_USE_STATIC_LIBS ON)
 
