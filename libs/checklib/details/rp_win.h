@@ -16,9 +16,7 @@
 #include <Psapi.h>
 #include <Windows.h>
 
-namespace checklib
-{
-namespace details
+namespace checklib::details
 {
 
 // RAII handle wrapper with reference counter
@@ -149,5 +147,5 @@ private:
 
 	int CPUTimeS() const;
 };
-} // namespace details
-} // namespace checklib
+
+} // namespace checklib::details
