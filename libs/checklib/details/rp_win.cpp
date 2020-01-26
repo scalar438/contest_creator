@@ -78,10 +78,8 @@ void checklib::details::RestrictedProcessImpl::start()
 	sa.bInheritHandle       = TRUE;
 	sa.lpSecurityDescriptor = NULL;
 	sa.nLength              = sizeof sa;
-	std::vector<HandleCloser>
-	    handlesForAutoClose; // Хендлы, требующие закрытия на выходе из функции
-	std::deque<HandleCloser>
-	    tmpHandles; // Хендлы, требующие закрытия после окончания работы программы
+	std::vector<Handle> handlesForAutoClose; // Хендлы, требующие закрытия на выходе из функции
+	std::deque<Handle> tmpHandles; // Хендлы, требующие закрытия после окончания работы программы
 
 	if (mStandardInput == ss::Stdin)
 		si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
@@ -95,7 +93,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
 			SetHandleInformation(writePipe, HANDLE_FLAG_INHERIT, 0);
 			f = readPipe;
-			tmpHandles.push_back(HandleCloser(writePipe));
+			tmpHandles.push_back(Handle(writePipe));
 		}
 		else
 		{
@@ -104,7 +102,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardInput);
 		}
 		si.hStdInput = f;
-		handlesForAutoClose.push_back(HandleCloser(f));
+		handlesForAutoClose.push_back(Handle(f));
 	}
 
 	if (mStandardOutput == ss::Stdout)
@@ -119,7 +117,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
 			SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 			f = writePipe;
-			tmpHandles.push_back(HandleCloser(readPipe));
+			tmpHandles.push_back(Handle(readPipe));
 		}
 		else
 		{
@@ -128,7 +126,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardOutput);
 		}
 		si.hStdOutput = f;
-		handlesForAutoClose.push_back(HandleCloser(f));
+		handlesForAutoClose.push_back(Handle(f));
 	}
 
 	if (mStandardError == ss::Stderr)
@@ -143,7 +141,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			CreatePipe(&readPipe, &writePipe, &sa, 0);
 			SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 			f = writePipe;
-			tmpHandles.push_back(HandleCloser(readPipe));
+			tmpHandles.push_back(Handle(readPipe));
 		}
 		else
 		{
@@ -152,7 +150,7 @@ void checklib::details::RestrictedProcessImpl::start()
 			if (f == INVALID_HANDLE_VALUE) throw CannotOpenFile(mStandardError);
 		}
 		si.hStdError = f;
-		handlesForAutoClose.push_back(HandleCloser(f));
+		handlesForAutoClose.push_back(Handle(f));
 	}
 	PROCESS_INFORMATION pi;
 
@@ -199,7 +197,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	                    curDir.data(), &si, &pi))
 		throw CannotStartProcess(mProgram);
 
-	auto pop = [&tmpHandles]() -> HandleCloser {
+	auto pop = [&tmpHandles]() -> Handle {
 		auto res = tmpHandles[0];
 		tmpHandles.pop_front();
 		return res;

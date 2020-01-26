@@ -21,46 +21,39 @@ namespace checklib
 namespace details
 {
 
-class HandleCloser
+// RAII handle wrapper with reference counter
+class Handle
 {
-private:
-	struct AutoCloser
-	{
-		AutoCloser(const AutoCloser &) = delete;
-		AutoCloser &operator=(const AutoCloser &) = delete;
-
-		AutoCloser(HANDLE h = INVALID_HANDLE_VALUE) { setHandle(h); }
-
-		~AutoCloser()
-		{
-			if (handle != INVALID_HANDLE_VALUE)
-			{
-				CloseHandle(handle);
-			}
-		}
-
-		void setHandle(HANDLE h) { handle = h; }
-
-		HANDLE handle;
-	};
-
 public:
-	HandleCloser(HANDLE h = INVALID_HANDLE_VALUE) : ptr(std::make_shared<AutoCloser>(h)) {}
+	Handle(HANDLE h = INVALID_HANDLE_VALUE)
+	    : ptr(std::shared_ptr<HANDLE>(new HANDLE(h), HandleCloser()))
+	{}
 
-	void setHandle(HANDLE h) { ptr = std::make_shared<AutoCloser>(h); }
+	void set_handle(HANDLE h) { ptr = std::shared_ptr<HANDLE>(new HANDLE(h), HandleCloser()); }
 
 	HANDLE handle() const
 	{
 		if (ptr)
-			return ptr->handle;
+			return *ptr;
 		else
 			return INVALID_HANDLE_VALUE;
 	}
 
-	void reset() { setHandle(INVALID_HANDLE_VALUE); }
+	void reset() { set_handle(INVALID_HANDLE_VALUE); }
 
 private:
-	std::shared_ptr<AutoCloser> ptr;
+	struct HandleCloser
+	{
+		void operator()(HANDLE h)
+		{
+			if (h != INVALID_HANDLE_VALUE)
+			{
+				CloseHandle(h);
+			}
+		}
+	};
+
+	std::shared_ptr<HANDLE> ptr;
 };
 
 class RestrictedProcessImpl
@@ -142,7 +135,7 @@ private:
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
-	HandleCloser mInputHandle, mOutputHandle, mErrorHandle;
+	Handle mInputHandle, mOutputHandle, mErrorHandle;
 
 	void doCheck();
 
@@ -156,6 +149,5 @@ private:
 
 	int CPUTimeS() const;
 };
-
 } // namespace details
 } // namespace checklib
