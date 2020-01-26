@@ -1,0 +1,8 @@
+add_subdirectory(args_exitcode)
+add_subdirectory(args_out)
+add_subdirectory(IL)
+add_subdirectory(ML)
+add_subdirectory(RE)
+add_subdirectory(stderr_out)
+add_subdirectory(sum)
+add_subdirectory(TL)
