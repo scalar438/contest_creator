@@ -1,11 +1,3 @@
-﻿#include "test.h"
-#include <QtTest>
-#include <iostream>
-#include <QCoreApplication>
+﻿#include <checklib/checklib.h>
 
-int main()
-{
-	TestRun *a = new TestRun();
-	QTest::qExec(a);
-	delete a;
-}
+int main() {}
