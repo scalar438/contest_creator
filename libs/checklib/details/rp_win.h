@@ -42,9 +42,9 @@ public:
 private:
 	struct HandleCloser
 	{
-		void operator()(HANDLE h)
+		void operator()(HANDLE *h)
 		{
-			if (h != INVALID_HANDLE_VALUE)
+			if (*h != INVALID_HANDLE_VALUE)
 			{
 				CloseHandle(h);
 			}

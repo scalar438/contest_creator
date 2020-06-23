@@ -6,5 +6,6 @@ add_subdirectory(libs)
 
 option(TESTING "Enable testing")
 if(${TESTING})
+   enable_testing()
    add_subdirectory(tests)
 endif()

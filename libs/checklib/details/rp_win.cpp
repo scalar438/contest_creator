@@ -209,6 +209,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	ResumeThread(pi.hThread);
 	mProcessStatus.store(psRunning);
 	mCurrentInformation = pi;
+	auto err            = WaitForSingleObject(pi.hProcess, 0);
 	mutex_locker guard(mTimerMutex);
 	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
 	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
@@ -246,6 +247,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 		mIsRunning.store(false);
 		return true;
 	}
+
 	// Тут надо бросить исключение
 	return false;
 }

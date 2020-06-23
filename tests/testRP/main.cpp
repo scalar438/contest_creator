@@ -13,10 +13,12 @@ bool is_running_checking()
 	limits.timeLimit    = 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("./examples/pTL");
+	runner.setProgram("../examples/TL/pTL");
+
 	runner.start();
 	if (!(!runner.wait(500) && runner.isRunning() && runner.processStatus() == checklib::psRunning))
 		return false;
+
 	runner.wait();
 	return !runner.isRunning();
 }
@@ -143,7 +145,6 @@ bool test_re()
 
 	return runner.processStatus() == checklib::psRuntimeError && !runner.isRunning();
 }
-
 
 bool test_standard_streams_redirection()
 {
@@ -281,21 +282,28 @@ bool test_exception()
 
 int main(int argc, char *argv[])
 {
-	if (argc != 2) return -1;
-	std::map<std::string, bool (*)()> funcs = {
-	    {"is_running_checking", is_running_checking},
-	    {"test_terminate", test_terminate},
-	    {"test_exit_code", test_exit_code},
-	    {"testTL", testTL},
-	    {"test_args", test_args},
-	    {"test_ml", test_ml},
-	    {"test_re", test_re},
-	    {"test_standard_streams_redirection", test_standard_streams_redirection},
-	    {"test_il", test_il},
-	    {"test_interactive", test_interactive},
-	    {"test_exception", test_exception}};
-	auto it = funcs.find(argv[1]);
-	if (it == funcs.end()) return 2;
-	if (!it->second()) return -3;
-	return 0;
+	try
+	{
+		// if (argc != 2) return -1;
+		std::map<std::string, bool (*)()> funcs = {
+		    {"is_running_checking", is_running_checking},
+		    {"test_terminate", test_terminate},
+		    {"test_exit_code", test_exit_code},
+		    {"testTL", testTL},
+		    {"test_args", test_args},
+		    {"test_ml", test_ml},
+		    {"test_re", test_re},
+		    {"test_standard_streams_redirection", test_standard_streams_redirection},
+		    {"test_il", test_il},
+		    {"test_interactive", test_interactive},
+		    {"test_exception", test_exception}};
+		auto it = funcs.find("is_running_checking");
+		if (it == funcs.end()) return -2;
+		if (!it->second()) return -3;
+		return 0;
+	}
+	catch (...)
+	{
+		return -4;
+	}
 }
