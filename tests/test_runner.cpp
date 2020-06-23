@@ -13,7 +13,7 @@ bool is_running_checking()
 	limits.timeLimit    = 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("../examples/TL/pTL");
+	runner.setProgram("../examples/tl");
 
 	runner.start();
 	if (!(!runner.wait(500) && runner.isRunning() && runner.processStatus() == checklib::psRunning))
@@ -27,7 +27,7 @@ bool test_terminate()
 {
 	RestrictedProcess runner;
 
-	runner.setProgram("./examples/pTL");
+	runner.setProgram("./examples/tl");
 	runner.start();
 
 	if (runner.wait(500)) return false;
@@ -39,7 +39,7 @@ bool test_terminate()
 bool test_exit_code()
 {
 	RestrictedProcess runner;
-	runner.setProgram("./examples/pArgsExitCode");
+	runner.setProgram("./examples/args_exitcode");
 	runner.start();
 
 	runner.wait();
@@ -61,7 +61,7 @@ bool testTL()
 	limits.timeLimit    = 2000;
 	runner.setLimits(limits);
 
-	runner.setProgram("./examples/pTL");
+	runner.setProgram("./examples/tl");
 	runner.start();
 
 	runner.wait();
@@ -72,7 +72,7 @@ bool testTL()
 
 bool test_args()
 {
-	return true;
+	return false;
 	/*  RestrictedProcess runner;
 	  runner.setProgram("./examples/pArgsOut");
 	  QStringList params;
@@ -118,7 +118,7 @@ bool test_ml()
 	limits.memoryLimit    = 64 * 1000 * 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("./examples/pML");
+	runner.setProgram("./examples/ml");
 	runner.start();
 	runner.wait();
 
@@ -148,7 +148,7 @@ bool test_re()
 
 bool test_standard_streams_redirection()
 {
-	return true;
+	return false;
 	/*    RestrictedProcess runner;
 
 	Limits limits;
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		// if (argc != 2) return -1;
+		if (argc != 2) return -1;
 		std::map<std::string, bool (*)()> funcs = {
 		    {"is_running_checking", is_running_checking},
 		    {"test_terminate", test_terminate},
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 		    {"test_il", test_il},
 		    {"test_interactive", test_interactive},
 		    {"test_exception", test_exception}};
-		auto it = funcs.find("is_running_checking");
+		auto it = funcs.find(argv[1]);
 		if (it == funcs.end()) return -2;
 		if (!it->second()) return -3;
 		return 0;
