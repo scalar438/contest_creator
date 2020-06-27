@@ -547,5 +547,4 @@ void checklib::details::RestrictedProcessImpl::destroyHandles()
 
 		mIsRunning.store(false);
 	}
-	finished(mExitCode);
 }

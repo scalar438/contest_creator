@@ -9,7 +9,6 @@
 checklib::RestrictedProcess::RestrictedProcess()
 	: pimpl(new details::RestrictedProcessImpl())
 {
-	pimpl->finished.connect(this->finished);
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()

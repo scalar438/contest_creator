@@ -23,7 +23,7 @@ namespace checklib::details
 class Handle
 {
 public:
-	Handle(HANDLE h = INVALID_HANDLE_VALUE)
+	explicit Handle(HANDLE h = INVALID_HANDLE_VALUE)
 	    : ptr(std::shared_ptr<HANDLE>(new HANDLE(h), HandleCloser()))
 	{}
 
@@ -102,8 +102,6 @@ public:
 	bool getDataFromStandardOutput(std::string &data);
 
 	bool closeStandardInput();
-
-	boost::signals2::signal<void(int)> finished;
 
 private:
 	std::string mProgram;

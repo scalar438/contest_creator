@@ -4,7 +4,7 @@ project(contests-creator VERSION 1.0.3)
 add_subdirectory(apps)
 add_subdirectory(libs)
 
-option(TESTING "Enable testing")
+option(TESTING "Build and install tests")
 if(${TESTING})
    enable_testing()
    add_subdirectory(tests)

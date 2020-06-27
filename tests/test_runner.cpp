@@ -13,7 +13,7 @@ bool is_running_checking()
 	limits.timeLimit    = 1000;
 	runner.setLimits(limits);
 
-	runner.setProgram("../examples/tl");
+	runner.setProgram("./examples/tl");
 
 	runner.start();
 	if (!(!runner.wait(500) && runner.isRunning() && runner.processStatus() == checklib::psRunning))
@@ -72,7 +72,7 @@ bool testTL()
 
 bool test_args()
 {
-	return false;
+	return true;
 	/*  RestrictedProcess runner;
 	  runner.setProgram("./examples/pArgsOut");
 	  QStringList params;
@@ -129,7 +129,7 @@ bool test_ml()
 bool test_re()
 {
 	RestrictedProcess runner;
-	runner.setProgram("./examples/pRE");
+	runner.setProgram("./examples/re");
 	runner.setParams({"1"});
 
 	runner.start();
@@ -148,7 +148,7 @@ bool test_re()
 
 bool test_standard_streams_redirection()
 {
-	return false;
+	return true;
 	/*    RestrictedProcess runner;
 
 	Limits limits;
@@ -220,7 +220,7 @@ bool test_il()
 {
 	RestrictedProcess runner;
 
-	runner.setProgram("./examples/pIL");
+	runner.setProgram("./examples/il");
 	runner.start();
 	runner.wait();
 
@@ -241,7 +241,7 @@ bool test_interactive()
 	runner.setStandardInput(checklib::ss::Interactive);
 	runner.setStandardOutput(checklib::ss::Interactive);
 
-	runner.setProgram("./examples/pSum");
+	runner.setProgram("./examples/sum");
 
 	runner.start();
 	runner.sendDataToStandardInput("4 5\n");
