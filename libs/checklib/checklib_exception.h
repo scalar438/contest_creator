@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "noexcept.h"
-
 #include <exception>
 #include <string>
 
@@ -14,8 +12,8 @@ public:
 		: mStr(str)
 	{
 	}
-	virtual ~Exception() NOEXCEPT {}
-	virtual const char* what() const NOEXCEPT
+	virtual ~Exception() {}
+	virtual const char* what() const noexcept
 	{
 		return mStr.c_str();
 	}
@@ -38,7 +36,7 @@ public:
 	{
 	}
 
-	~CannotStartProcess() NOEXCEPT {}
+	~CannotStartProcess() {}
 
 	std::string programName() const
 	{
@@ -57,7 +55,7 @@ public:
 		  mFileName(fileName)
 	{
 	}
-	~CannotOpenFile() NOEXCEPT {}
+	~CannotOpenFile() {}
 	std::string fileName() const
 	{
 		return mFileName;
