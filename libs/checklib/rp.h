@@ -1,6 +1,6 @@
 #pragma once
 
-#pragma message("This is deprecated file, use process.hpp")
+#pragma message("rp.h - this is a deprecated file, use process.hpp")
 
 #include "process.hpp"
 
