@@ -11,23 +11,17 @@
 // Inheritance is temporal
 struct checklib::RestrictedProcess::Pimpl : public details::RestrictedProcessImpl
 {
-	Pimpl()
-    {
-		main_watcher = std::make_unique<::details::InternalWatcher>();
-	}
+	Pimpl() { main_watcher = std::make_unique<::details::InternalWatcher>(); }
 
-    std::unique_ptr<::details::InternalWatcher> main_watcher;
+	std::unique_ptr<::details::InternalWatcher> main_watcher;
 };
 
-checklib::RestrictedProcess::RestrictedProcess()
-	: pimpl(new Pimpl)
+checklib::RestrictedProcess::RestrictedProcess() : pimpl(new Pimpl)
 {
 	pimpl->main_watcher->set_signal(&finished);
 }
 
-checklib::RestrictedProcess::~RestrictedProcess()
-{
-}
+checklib::RestrictedProcess::~RestrictedProcess() {}
 
 std::string checklib::RestrictedProcess::program() const
 {
@@ -83,7 +77,8 @@ void checklib::RestrictedProcess::wait()
 }
 
 // Ждать завершения процесса не более чем @param миллисекунд.
-// return true если программа завершилась (сама или от превышения лимитов), false - если таймаут ожидания
+// return true если программа завершилась (сама или от превышения лимитов), false - если таймаут
+// ожидания
 bool checklib::RestrictedProcess::wait(int milliseconds)
 {
 	return pimpl->wait(milliseconds);
