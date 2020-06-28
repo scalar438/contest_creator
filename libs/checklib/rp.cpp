@@ -6,9 +6,23 @@
 #include "details/rp_linux.h"
 #endif
 
-checklib::RestrictedProcess::RestrictedProcess()
-	: pimpl(new details::RestrictedProcessImpl())
+#include "details/internal_watcher.hpp"
+
+// Inheritance is temporal
+struct checklib::RestrictedProcess::Pimpl : public details::RestrictedProcessImpl
 {
+	Pimpl()
+    {
+		main_watcher = std::make_unique<::details::InternalWatcher>();
+	}
+
+    std::unique_ptr<::details::InternalWatcher> main_watcher;
+};
+
+checklib::RestrictedProcess::RestrictedProcess()
+	: pimpl(new Pimpl)
+{
+	pimpl->main_watcher->set_signal(&finished);
 }
 
 checklib::RestrictedProcess::~RestrictedProcess()

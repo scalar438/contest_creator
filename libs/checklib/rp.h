@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "rp_types.h"
 #include "rp_consts.h"
+#include "rp_watcher.hpp"
 
 #include <memory>
 #include <vector>
@@ -107,11 +108,16 @@ public:
 	/// Если поток ввода закрыть не удалось, или поток ввода не интерактивный, возвращает true, иначе false
 	bool closeStandardInput();
 
+	void set_watcher(std::shared_ptr<Watcher> watcher);
+
+    [[deprecated]]
 	boost::signals2::signal<void(int)> finished;
 
 private:
 
-	std::unique_ptr<details::RestrictedProcessImpl> pimpl;
+    struct Pimpl;
+
+	std::unique_ptr<Pimpl> pimpl;
 };
 
 }
