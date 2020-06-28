@@ -19,11 +19,11 @@ class RestrictedProcessImpl;
 }
 
 /// Класс, запускающий процесс с ограничениями
-class RestrictedProcess
+class Process
 {
 public:
-	RestrictedProcess();
-	~RestrictedProcess();
+	Process();
+	~Process();
 
 	std::string program() const;
 	void setProgram(const std::string &program);

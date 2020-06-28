@@ -1,4 +1,4 @@
-add_library(checklib rp.cpp details/rp_win.cpp details/internal_watcher.cpp)
+add_library(checklib process.cpp details/rp_win.cpp details/internal_watcher.cpp)
 target_include_directories(checklib INTERFACE ..)
 
 cmake_policy(SET CMP0074 NEW)

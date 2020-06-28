@@ -16,7 +16,7 @@ struct checklib::RestrictedProcess::Pimpl : public details::RestrictedProcessImp
 	std::unique_ptr<::details::InternalWatcher> main_watcher;
 };
 
-checklib::RestrictedProcess::RestrictedProcess() : pimpl(new Pimpl)
+checklib::Process::Process() : pimpl(new Pimpl)
 {
 	pimpl->main_watcher->set_signal(&finished);
 }
