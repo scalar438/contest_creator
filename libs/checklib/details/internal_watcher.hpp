@@ -1,13 +1,13 @@
 #pragma once
 #include "../rp_types.h"
-#include "../rp_watcher.hpp"
+#include "../process_events.hpp"
 
 #include "boost/signals2.hpp"
 
 namespace details
 {
 
-class InternalWatcher : public checklib::Watcher
+class InternalWatcher : public checklib::IProcessEvents
 {
 public:
 	InternalWatcher();

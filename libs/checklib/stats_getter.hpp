@@ -10,10 +10,10 @@ public:
 	~IStatsGetter() {}
 
 	/// Peak memory usage of the process
-	virtual int peakMemoryUsage() const = 0;
+	virtual int peak_memory_usage() const = 0;
 
 	/// CPU time of the process
-	virtual int CPUTime() const = 0;
+	virtual int cpu_time() const = 0;
 };
 
 } // namespace checklib

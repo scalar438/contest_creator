@@ -5,13 +5,13 @@ namespace checklib
 {
 
 class IStatsGetter;
-class Watcher;
+class IProcessEvents;
 
 namespace details
 {
 
-// Checks process resources usage, send it into watcher, and terminate process if limits was exceded
-void async_checker(IStatsGetter *getter, Limits limits, Watcher *watcher);
+// Checks process resources usage, send it into watcher, and terminate process if limits was exceeded
+void async_checker(IStatsGetter *getter, Limits limits, IProcessEvents *watcher);
 
 }
 

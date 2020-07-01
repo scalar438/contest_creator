@@ -4,10 +4,11 @@
 namespace checklib
 {
 
-class Watcher
+// Send a notification about changing resource usage or finished
+class IProcessEvents
 {
 public:
-	virtual ~Watcher() {}
+	virtual ~IProcessEvents() {}
 
 	virtual void update_cpu_time(int cpu_time) = 0;
 

@@ -9,7 +9,7 @@
 #include "details/internal_watcher.hpp"
 
 // Inheritance is temporal
-struct checklib::RestrictedProcess::Pimpl : public details::RestrictedProcessImpl
+struct checklib::Process::Pimpl : public details::RestrictedProcessImpl
 {
 	Pimpl() { main_watcher = std::make_unique<::details::InternalWatcher>(); }
 

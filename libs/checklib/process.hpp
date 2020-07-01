@@ -1,14 +1,14 @@
 ﻿#pragma once
-#include "rp_types.h"
+#include "process_events.hpp"
 #include "rp_consts.h"
-#include "rp_watcher.hpp"
+#include "rp_types.h"
 
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
-#include <boost/signals2.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/signals2.hpp>
 
 namespace checklib
 {
@@ -97,7 +97,8 @@ public:
 	/// Отправить буфер в указанный стандартный поток.
 	/// @param data строка, отправляемая в стандартный поток ввода
 	/// @param newLine добавлять или нет к выводу символ перевода строки.
-	/// Если стандартный поток ввода не интерактивный или программа не запущена, то ничего не произойдет
+	/// Если стандартный поток ввода не интерактивный или программа не запущена, то ничего не
+	/// произойдет
 	bool sendDataToStandardInput(const std::string &data, bool newLine = false);
 
 	/// Получает строку из стандартного потока вывода процесса.
@@ -105,19 +106,18 @@ public:
 	bool getDataFromStandardOutput(std::string &data);
 
 	/// Закрывает стандартный поток ввода в интерактивный процесс.
-	/// Если поток ввода закрыть не удалось, или поток ввода не интерактивный, возвращает true, иначе false
+	/// Если поток ввода закрыть не удалось, или поток ввода не интерактивный, возвращает true,
+	/// иначе false
 	bool closeStandardInput();
 
-	void set_watcher(std::shared_ptr<Watcher> watcher);
+	void set_watcher(std::shared_ptr<IProcessEvents> watcher);
 
-    [[deprecated]]
-	boost::signals2::signal<void(int)> finished;
+	[[deprecated]] boost::signals2::signal<void(int)> finished;
 
 private:
-
-    struct Pimpl;
+	struct Pimpl;
 
 	std::unique_ptr<Pimpl> pimpl;
 };
 
-}
+} // namespace checklib
