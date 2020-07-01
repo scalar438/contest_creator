@@ -6,7 +6,11 @@ namespace checklib
 // Ограничения
 struct Limits
 {
+	// TODO: rewrite to optional
+
+	[[deprecated]]
 	bool useTimeLimit;
+	[[deprecated]]
 	bool useMemoryLimit;
 	// Лимит времени на выполнение программы, в миллисекундах
 	int timeLimit;

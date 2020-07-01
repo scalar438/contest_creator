@@ -7,6 +7,6 @@
 namespace checklib{
 
 
-typedef [[deprecated]] Process RestrictedProcess;
+[[deprecated]] typedef Process RestrictedProcess;
 
 }
