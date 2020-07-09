@@ -8,17 +8,15 @@ struct Limits
 {
 	// TODO: rewrite to optional
 
-	[[deprecated]]
-	bool useTimeLimit;
-	[[deprecated]]
-	bool useMemoryLimit;
+	[[deprecated]] bool useTimeLimit;
+	[[deprecated]] bool useMemoryLimit;
 	// Лимит времени на выполнение программы, в миллисекундах
 	int timeLimit;
 	// Лимит памяти, в байтах
 	int memoryLimit;
 	Limits()
 	{
-		useTimeLimit = false;
+		useTimeLimit   = false;
 		useMemoryLimit = false;
 		timeLimit = memoryLimit = 0;
 	}
@@ -27,7 +25,14 @@ struct Limits
 // Тип завершения программы.
 enum ProcessStatus
 {
-	psNotRunning, psRunning, psExited, psTimeLimitExceeded, psMemoryLimitExceeded, psIdlenessLimitExceeded, psRuntimeError, psTerminated
+	psNotRunning,
+	psRunning,
+	psExited,
+	psTimeLimitExceeded,
+	psMemoryLimitExceeded,
+	psIdlenessLimitExceeded,
+	psRuntimeError,
+	psTerminated
 };
 
-}
+} // namespace checklib

@@ -1,30 +1,47 @@
 #include "check_stats.hpp"
 
 #include "../process_events.hpp"
-#include "../stats_getter.hpp"
+#include "i_process.hpp"
 
-void checklib::details::async_checker(IStatsGetter *getter, Limits limits, IProcessEvents *ev)
+void checklib::details::async_checker(IProcess *process, Limits limits, IProcessEvents *ev)
 {
-	// TODO: write right condition
-	bool is_running = true;
+	constexpr int ms_delay         = 100;
+	constexpr int idle_count_limit = 20;
+
+	bool is_running       = true;
+	int prev_cpu_time     = -1;
+	int non_changed_count = 0;
 	while (is_running)
 	{
-		auto current_cpu_time = getter->cpu_time();
+		process->wait(ms_delay);
+
+		auto current_cpu_time = process->cpu_time();
 		ev->update_cpu_time(current_cpu_time);
 
-		auto current_memory_usage = getter->peak_memory_usage();
+		auto current_memory_usage = process->peak_memory_usage();
 		ev->update_memory_usage(current_memory_usage);
+
+		if (limits.useTimeLimit && limits.timeLimit < current_cpu_time)
+		{
+			process->end_process(ProcessStatus::psTimeLimitExceeded);
+            return;
+		}
+		if (prev_cpu_time == current_cpu_time)
+		{
+			++non_changed_count;
+			if (non_changed_count == idle_count_limit)
+			{
+				process->end_process(ProcessStatus::psIdlenessLimitExceeded);
+				return;
+			}
+		}
 
 		if (limits.useMemoryLimit && limits.memoryLimit < current_memory_usage)
 		{
-			// Terminate, memory limit exceeded
+			process->end_process(ProcessStatus::psMemoryLimitExceeded);
+			return;
 		}
-		if (limits.useTimeLimit && limits.timeLimit < current_cpu_time)
-		{
-			// Terminate, cpu time limit exceeded
-		}
-	}
 
-	// TODO: add exit code getting
-	ev->finished(checklib::ProcessStatus::psExited, -42);
+		is_running = process->is_running();
+	}
 }
