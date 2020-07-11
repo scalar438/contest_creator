@@ -60,14 +60,14 @@ void checklib::details::RestrictedProcessImpl::setCurrentDirectory(std::string d
 	mCurrentDirectory = std::move(directory);
 }
 
-bool checklib::details::RestrictedProcessImpl::isRunning() const
+bool checklib::details::RestrictedProcessImpl::is_running() const
 {
 	return mIsRunning.load();
 }
 
 void checklib::details::RestrictedProcessImpl::start()
 {
-	if (isRunning()) return;
+	if (is_running()) return;
 
 	STARTUPINFOA si;
 	memset(&si, 0, sizeof si);
@@ -220,7 +220,7 @@ void checklib::details::RestrictedProcessImpl::start()
 
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	if (isRunning())
+	if (is_running())
 	{
 		mProcessStatus.store(psTerminated);
 		TerminateProcess(mCurrentInformation.hProcess, -1);
@@ -234,7 +234,7 @@ void checklib::details::RestrictedProcessImpl::wait()
 
 bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 {
-	if (!isRunning()) return false;
+	if (!is_running()) return false;
 	auto res = WaitForSingleObject(mCurrentInformation.hProcess, milliseconds);
 	if (res == WAIT_TIMEOUT)
 	{
@@ -252,8 +252,16 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	return false;
 }
 
+bool checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
+{
+	// TODO: this is a fast naive implementation, it may be wrong
+	terminate();
+	mProcessStatus.store(status);
+	return true;
+}
+
 // Код возврата.
-int checklib::details::RestrictedProcessImpl::exitCode() const
+int checklib::details::RestrictedProcessImpl::exit_code() const
 {
 	return mExitCode.load();
 }
@@ -265,16 +273,16 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 }
 
 // Пиковое значение потребляемой памяти
-int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
+int checklib::details::RestrictedProcessImpl::peak_memory_usage()
 {
-	if (isRunning()) return peakMemoryUsageS();
+	if (is_running()) return peakMemoryUsageS();
 	return mPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
-int checklib::details::RestrictedProcessImpl::CPUTime()
+int checklib::details::RestrictedProcessImpl::cpu_time()
 {
-	if (isRunning()) return CPUTimeS();
+	if (is_running()) return CPUTimeS();
 	return mCPUTime.load();
 }
 
@@ -319,7 +327,7 @@ checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
 
 void checklib::details::RestrictedProcessImpl::setLimits(const Limits &limits)
 {
-	if (isRunning()) return;
+	if (is_running()) return;
 	mLimits = limits;
 }
 
@@ -342,7 +350,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std
                                                                        bool newLine)
 {
 	mutex_locker lock(mHandlesMutex);
-	if (!isRunning()) return false;
+	if (!is_running()) return false;
 	DWORD count;
 	if (!WriteFile(mInputHandle.handle(), data.c_str(), data.length(), &count, NULL))
 	{
@@ -361,7 +369,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std
 
 bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::string &data)
 {
-	if (!isRunning()) return false;
+	if (!is_running()) return false;
 	if (mStandardOutput != ss::Interactive) return false;
 
 	const int MAX = 100;
@@ -400,7 +408,7 @@ bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 void checklib::details::RestrictedProcessImpl::doCheck()
 {
 	int oldCPUTime = mCPUTime.load();
-	int time       = CPUTime();
+	int time       = cpu_time();
 	if (mLimits.useTimeLimit)
 	{
 		if (time > mLimits.timeLimit)
@@ -425,7 +433,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 	}
 	if (mLimits.useMemoryLimit)
 	{
-		if (peakMemoryUsage() > mLimits.memoryLimit)
+		if (peak_memory_usage() > mLimits.memoryLimit)
 		{
 			mProcessStatus.store(psMemoryLimitExceeded);
 			doFinalize();
@@ -436,7 +444,7 @@ void checklib::details::RestrictedProcessImpl::doCheck()
 void checklib::details::RestrictedProcessImpl::doFinalize()
 {
 	mutex_locker lock1(mHandlesMutex);
-	if (!isRunning()) return;
+	if (!is_running()) return;
 	// Сохранить параметры перед закрытием
 	CPUTimeS();
 	peakMemoryUsageS();
@@ -541,7 +549,7 @@ void checklib::details::RestrictedProcessImpl::destroyHandles()
 {
 	{
 		mutex_locker lock(mHandlesMutex);
-		if (!isRunning()) return;
+		if (!is_running()) return;
 		CloseHandle(mCurrentInformation.hProcess);
 		CloseHandle(mCurrentInformation.hThread);
 

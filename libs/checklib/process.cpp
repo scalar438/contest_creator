@@ -7,6 +7,7 @@
 #endif
 
 #include "details/internal_watcher.hpp"
+#include "details/check_stats.hpp"
 
 // Inheritance is temporal
 struct checklib::Process::Pimpl : public details::RestrictedProcessImpl
@@ -55,7 +56,7 @@ void checklib::RestrictedProcess::setCurrentDirectory(const std::string &directo
 
 bool checklib::RestrictedProcess::isRunning() const
 {
-	return pimpl->isRunning();
+	return pimpl->is_running();
 }
 
 // Запуск процесса
@@ -87,7 +88,7 @@ bool checklib::RestrictedProcess::wait(int milliseconds)
 // Код возврата.
 int checklib::RestrictedProcess::exitCode() const
 {
-	return pimpl->exitCode();
+	return pimpl->exit_code();
 }
 
 // Тип завершения программы
@@ -99,13 +100,13 @@ checklib::ProcessStatus checklib::RestrictedProcess::processStatus() const
 // Пиковое значение потребляемой памяти
 int checklib::RestrictedProcess::peakMemoryUsage() const
 {
-	return pimpl->peakMemoryUsage();
+	return pimpl->peak_memory_usage();
 }
 
 // Сколько процессорного времени израсходовал процесс
 int checklib::RestrictedProcess::CPUTime() const
 {
-	return pimpl->CPUTime();
+	return pimpl->cpu_time();
 }
 
 checklib::Limits checklib::RestrictedProcess::limits() const

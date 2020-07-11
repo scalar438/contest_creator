@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "../rp_types.h"
+#include "i_process.hpp"
 
 #include <memory>
 #include <string>
@@ -54,7 +55,7 @@ private:
 	std::shared_ptr<HANDLE> ptr;
 };
 
-class RestrictedProcessImpl
+class RestrictedProcessImpl : public checklib::details::IProcess
 {
 public:
 	RestrictedProcessImpl();
@@ -70,24 +71,27 @@ public:
 	void setCurrentDirectory(std::string directory);
 
 
-	bool isRunning() const;
+	bool is_running() const override;
 
 	void start();
 	void terminate();
 	void wait();
-	bool wait(int milliseconds);
+
+	// From IProcess
+	bool wait(int milliseconds) override;
+	bool end_process(ProcessStatus status) override;
 
 	// Код возврата.
-	int exitCode() const;
+	int exit_code() const;
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	int peakMemoryUsage();
+	int peak_memory_usage() override;
 
 	// Сколько процессорного времени израсходовал процесс
-	int CPUTime();
+	int cpu_time() override;
 
 	void reset();
 

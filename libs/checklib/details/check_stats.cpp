@@ -24,7 +24,7 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 		if (limits.useTimeLimit && limits.timeLimit < current_cpu_time)
 		{
 			process->end_process(ProcessStatus::psTimeLimitExceeded);
-            return;
+			return;
 		}
 		if (prev_cpu_time == current_cpu_time)
 		{
