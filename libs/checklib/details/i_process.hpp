@@ -9,6 +9,7 @@ enum ProcessStatus;
 namespace details
 {
 
+// Some methods from checklib::Process
 class IProcess
 {
 public:
@@ -26,8 +27,12 @@ public:
 
 	[[nodiscard]] virtual bool is_running() const = 0;
 
+	// Peak memory usage, in bytes for current or last running process
+	// If the process didn't run, return zero
 	[[nodiscard]] virtual int peak_memory_usage() const = 0;
 
+	// CPU time of current or last running process
+	// If the process didn't run, return zero
 	[[nodiscard]] virtual int cpu_time() const = 0;
 };
 
