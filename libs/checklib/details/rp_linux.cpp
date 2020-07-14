@@ -74,6 +74,13 @@ bool checklib::details::RestrictedProcessImpl::is_running() const
 	return mIsRunning.load();
 }
 
+bool checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
+{
+	// This is a blank implementation, will be changed soon
+	terminate();
+	return true;
+}
+
 // Запуск процесса
 void checklib::details::RestrictedProcessImpl::start()
 {
@@ -305,7 +312,8 @@ int checklib::details::RestrictedProcessImpl::peak_memory_usage()
 // Сколько процессорного времени израсходовал процесс
 int checklib::details::RestrictedProcessImpl::cpu_time()
 {
-	return mCPUTime.load();
+	if (is_running()) return cpu_time_impl();
+	return m_cpu_time;
 }
 
 checklib::Limits checklib::details::RestrictedProcessImpl::getLimits() const
@@ -387,7 +395,7 @@ void checklib::details::RestrictedProcessImpl::reset()
 	mErrorPipe.reset();
 
 	mPeakMemoryUsage.store(0);
-	mCPUTime.store(0);
+	m_cpu_time.store(0);
 	mIsRunning.store(false);
 	mProcessStatus.store(psNotRunning);
 }
@@ -428,7 +436,7 @@ void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system:
 	    cminflt >> majflt >> cmajflt >> utime >> stime;
 
 	int currentCPUTime = (utime + stime) / mTicks * 1000;
-	mCPUTime.store(currentCPUTime);
+	m_cpu_time.store(currentCPUTime);
 	if (mLimits.useTimeLimit && mLimits.timeLimit < currentCPUTime)
 	{
 		mProcessStatus.store(psTimeLimitExceeded);
@@ -532,4 +540,20 @@ bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 		return close(mInputPipe.pipe()) == 0;
 	}
 	return false;
+}
+
+int checklib::details::RestrictedProcessImpl::cpu_time_impl() const
+{
+	std::ostringstream name;
+	name << mChildPid;
+	std::ifstream is("/proc/" + name.str() + "/stat");
+
+	// Получение времени работы процесса. Интересуют нас только последние два числа
+	std::string pid, comm, state, ppid, pgrp, session, tty_nr;
+	std::string tpgid, flags, minflt, cminflt, majflt, cmajflt;
+	long long int utime, stime;
+	is >> pid >> comm >> state >> ppid >> pgrp >> session >> tty_nr >> tpgid >> flags >> minflt >>
+	    cminflt >> majflt >> cmajflt >> utime >> stime;
+
+	return (utime + stime) / mTicks * 1000;
 }

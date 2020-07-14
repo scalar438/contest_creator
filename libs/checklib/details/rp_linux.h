@@ -2,6 +2,7 @@
 
 #include "../rp_types.h"
 
+#include "i_process.hpp"
 #include <atomic>
 #include <boost/asio.hpp>
 #include <boost/signals2.hpp>
@@ -9,9 +10,7 @@
 #include <boost/thread/thread.hpp>
 #include <memory>
 
-namespace checklib
-{
-namespace details
+namespace checklib::details
 {
 
 class Pipe
@@ -38,7 +37,7 @@ public:
 	void reset() { p.reset(); }
 };
 
-class RestrictedProcessImpl
+class RestrictedProcessImpl : public checklib::details::IProcess
 {
 public:
 	RestrictedProcessImpl();
@@ -53,12 +52,14 @@ public:
 	std::string currentDirectory() const;
 	void setCurrentDirectory(const std::string &directory);
 
-	bool is_running() const;
+	bool is_running() const override;
+
+	bool end_process(ProcessStatus status) override;
 
 	void start();
 	void terminate();
 	void wait();
-	bool wait(int milliseconds);
+	bool wait(int milliseconds) override;
 
 	// Код возврата.
 	int exit_code() const;
@@ -67,10 +68,10 @@ public:
 	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	int peak_memory_usage();
+	int peak_memory_usage() override;
 
 	// Сколько процессорного времени израсходовал процесс
-	int cpu_time();
+	int cpu_time() override;
 
 	void reset();
 
@@ -118,7 +119,7 @@ private:
 	int mUnchangedTicks;
 	int mOldCPUTime;
 
-	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
+	mutable std::atomic<int> m_cpu_time, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
 	Pipe mInputPipe, mOutputPipe, mErrorPipe;
@@ -137,8 +138,7 @@ private:
 
 	int peakMemoryUsageS() const;
 
-	int CPUTimeS() const;
+	int cpu_time_impl() const;
 };
 
-} // namespace details
-} // namespace checklib
+} // namespace checklib::details
