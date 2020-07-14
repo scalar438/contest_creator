@@ -2,12 +2,12 @@
 
 #include "../rp_types.h"
 
-#include <memory>
 #include <atomic>
 #include <boost/asio.hpp>
+#include <boost/signals2.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/signals2.hpp>
+#include <memory>
 
 namespace checklib
 {
@@ -19,35 +19,23 @@ class Pipe
 private:
 	struct PipeCloser
 	{
-		PipeCloser(int pp)
-			: p(pp)
-		{
-
-		}
-		~PipeCloser()
-		{
-			close(p);
-		}
+		PipeCloser(int pp) : p(pp) {}
+		~PipeCloser() { close(p); }
 		int p;
 	};
 
 	std::shared_ptr<PipeCloser> p;
+
 public:
-	explicit Pipe(int pp = -1)
-		: p(new PipeCloser(pp))
-	{
-	}
+	explicit Pipe(int pp = -1) : p(new PipeCloser(pp)) {}
 
 	int pipe() const
 	{
-		if(p) return p->p;
+		if (p) return p->p;
 		return -1;
 	}
 
-	void reset()
-	{
-		p.reset();
-	}
+	void reset() { p.reset(); }
 };
 
 class RestrictedProcessImpl
@@ -107,7 +95,7 @@ public:
 private:
 	std::string mProgram;
 	std::vector<std::string> mParams;
-	//QDateTime mStartTime, mEndTime;
+	// QDateTime mStartTime, mEndTime;
 
 	std::string mStandardInput, mStandardOutput, mStandardError;
 
@@ -152,5 +140,5 @@ private:
 	int CPUTimeS() const;
 };
 
-}
-}
+} // namespace details
+} // namespace checklib
