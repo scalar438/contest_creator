@@ -20,6 +20,8 @@
 
 #include <errno.h>
 
+const int checklib::details::RestrictedProcessImpl::sTimerDuration = 100;
+
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
 	: mTimer(TimerService::instance()->io_service())
 {

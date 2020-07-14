@@ -139,7 +139,7 @@ private:
 	float mTicks;
 
 	// Интервал таймера проверки в миллисекундах
-	const static int sTimerDuration = 100;
+	const static int sTimerDuration;
 
 	void doCheck();
 
