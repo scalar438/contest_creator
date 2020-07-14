@@ -65,7 +65,7 @@ public:
 	std::string currentDirectory() const;
 	void setCurrentDirectory(const std::string &directory);
 
-	bool isRunning() const;
+	bool is_running() const;
 
 	void start();
 	void terminate();
@@ -73,16 +73,16 @@ public:
 	bool wait(int milliseconds);
 
 	// Код возврата.
-	int exitCode() const;
+	int exit_code() const;
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	int peakMemoryUsage();
+	int peak_memory_usage();
 
 	// Сколько процессорного времени израсходовал процесс
-	int CPUTime();
+	int cpu_time();
 
 	void reset();
 

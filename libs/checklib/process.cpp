@@ -22,14 +22,14 @@ checklib::Process::Process() : pimpl(new Pimpl)
 	pimpl->main_watcher->set_signal(&finished);
 }
 
-checklib::RestrictedProcess::~RestrictedProcess() {}
+checklib::Process::~Process() {}
 
 std::string checklib::RestrictedProcess::program() const
 {
 	return pimpl->getProgram();
 }
 
-void checklib::RestrictedProcess::setProgram(const std::string &program)
+void checklib::Process::setProgram(const std::string &program)
 {
 	pimpl->setProgram(program);
 }

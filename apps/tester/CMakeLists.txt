@@ -6,7 +6,7 @@ add_executable(tester
 	run_controller_simple.cpp
 	settings.cpp)
 
-install(TARGETS tester)
+install(TARGETS tester RUNTIME DESTINATION bin)
 
 cmake_policy(SET CMP0074 NEW)
 
@@ -17,6 +17,11 @@ find_package(Boost)
 
 target_include_directories(tester PRIVATE ${Boost_INCLUDE_DIR})
 target_link_directories(tester PRIVATE ${Boost_LIBRARY_DIRS})
+target_link_libraries(tester PRIVATE ${Boost_LIBRARIES} pthread)
 
-
-add_definitions("-DOS_WIN32")
+if (WIN32)
+	add_definitions("-DOS_WIN32")
+elseif(UNIX)
+	# TODO: check this option after removing boost dependency
+	# target_link_options(tester PRIVATE "-pthread")
+endif()

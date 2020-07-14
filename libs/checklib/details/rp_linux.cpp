@@ -1,7 +1,7 @@
 ﻿#include "rp_linux.h"
-#include "rp_consts.h"
-#include "checklib_exception.h"
-#include "timer_service.h"
+#include "../rp_consts.h"
+#include "../checklib_exception.h"
+#include "../timer_service.h"
 
 #include <exception>
 #include <sstream>
@@ -67,7 +67,7 @@ void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const std::st
 	mCurrentDirectory = directory;
 }
 
-bool checklib::details::RestrictedProcessImpl::isRunning() const
+bool checklib::details::RestrictedProcessImpl::is_running() const
 {
 	return mIsRunning.load();
 }
@@ -75,7 +75,7 @@ bool checklib::details::RestrictedProcessImpl::isRunning() const
 // Запуск процесса
 void checklib::details::RestrictedProcessImpl::start()
 {
-	if(isRunning()) return;
+	if(is_running()) return;
 
 	auto createPipe = [](Pipe *p)
 	{
@@ -252,7 +252,7 @@ void checklib::details::RestrictedProcessImpl::start()
 // Завершает процесс вручную. Тип завершения становится etTerminated
 void checklib::details::RestrictedProcessImpl::terminate()
 {
-	if(isRunning())
+	if(is_running())
 	{
 		kill(mChildPid, SIGKILL);
 		mProcessStatus.store(psTerminated);
@@ -274,7 +274,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	const int resolution = 10;
 	while(1)
 	{
-		if(!isRunning()) return true;
+		if(!is_running()) return true;
 		boost::chrono::duration<double> msec = (boost::chrono::system_clock::now() - start) * 1000;
 		if(msec.count() > milliseconds) break;
 		boost::this_thread::sleep(boost::posix_time::milliseconds(resolution));
@@ -284,7 +284,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 }
 
 // Код возврата.
-int checklib::details::RestrictedProcessImpl::exitCode() const
+int checklib::details::RestrictedProcessImpl::exit_code() const
 {
 	return mExitCode;
 }
@@ -296,13 +296,13 @@ checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus(
 }
 
 // Пиковое значение потребляемой памяти
-int checklib::details::RestrictedProcessImpl::peakMemoryUsage()
+int checklib::details::RestrictedProcessImpl::peak_memory_usage()
 {
 	return mPeakMemoryUsage.load();
 }
 
 // Сколько процессорного времени израсходовал процесс
-int checklib::details::RestrictedProcessImpl::CPUTime()
+int checklib::details::RestrictedProcessImpl::cpu_time()
 {
 	return mCPUTime.load();
 }
@@ -340,7 +340,7 @@ void checklib::details::RestrictedProcessImpl::redirectStandardError(const std::
 
 bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std::string &data, bool newLine)
 {
-	if(!isRunning() || mStandardInput != ss::Interactive) return false;
+	if(!is_running() || mStandardInput != ss::Interactive) return false;
 
 	auto count = write(mInputPipe.pipe(), data.c_str(), data.length());
 	if(count == -1) return false;
@@ -354,7 +354,7 @@ bool checklib::details::RestrictedProcessImpl::sendDataToStandardInput(const std
 
 bool checklib::details::RestrictedProcessImpl::getDataFromStandardOutput(std::string &data)
 {
-	if(!isRunning() || mStandardOutput != ss::Interactive) return false;
+	if(!is_running() || mStandardOutput != ss::Interactive) return false;
 
 	data = "";
 	while(true)
@@ -410,7 +410,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
 {
 	if(err) return;
-	if(!isRunning()) return;
+	if(!is_running()) return;
 
 	using namespace std;
 
