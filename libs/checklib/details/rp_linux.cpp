@@ -542,6 +542,48 @@ bool checklib::details::RestrictedProcessImpl::closeStandardInput()
 	return false;
 }
 
+int checklib::details::RestrictedProcessImpl::peak_memory_usage_impl() const
+{
+	using namespace std;
+
+	ostringstream name;
+	name << mChildPid;
+
+	ifstream is;
+	is.open("/proc/" + name.str() + "/status");
+	string str;
+
+	bool found = false;
+	while (getline(is, str))
+	{
+		if (str.substr(0, 7) == std::string("VmPeak:"))
+		{
+			istringstream iis(str);
+			string tmp;
+			iis >> tmp;
+			long long int rr;
+			iis >> rr;
+			mPeakMemoryUsage.store(static_cast<int>(rr * 1024));
+			found = true;
+			break;
+		}
+	}
+
+	if (!found)
+	{
+		is.close();
+		is.open("/proc/" + name.str() + "/statm");
+		long long int cur;
+		if (is >> cur)
+		{
+			int tmp = mPeakMemoryUsage.load();
+			mPeakMemoryUsage.store(max(static_cast<int>(cur), tmp));
+		}
+	}
+
+	return mPeakMemoryUsage;
+}
+
 int checklib::details::RestrictedProcessImpl::cpu_time_impl() const
 {
 	std::ostringstream name;

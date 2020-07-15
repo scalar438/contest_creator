@@ -136,7 +136,7 @@ private:
 
 	void timerHandler(const boost::system::error_code &err);
 
-	int peakMemoryUsageS() const;
+	int peak_memory_usage_impl() const;
 
 	int cpu_time_impl() const;
 };
