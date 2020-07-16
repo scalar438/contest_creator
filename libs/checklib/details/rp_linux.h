@@ -2,16 +2,15 @@
 
 #include "../rp_types.h"
 
-#include <memory>
+#include "i_process.hpp"
 #include <atomic>
 #include <boost/asio.hpp>
+#include <boost/signals2.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/signals2.hpp>
+#include <memory>
 
-namespace checklib
-{
-namespace details
+namespace checklib::details
 {
 
 class Pipe
@@ -19,38 +18,26 @@ class Pipe
 private:
 	struct PipeCloser
 	{
-		PipeCloser(int pp)
-			: p(pp)
-		{
-
-		}
-		~PipeCloser()
-		{
-			close(p);
-		}
+		PipeCloser(int pp) : p(pp) {}
+		~PipeCloser() { close(p); }
 		int p;
 	};
 
 	std::shared_ptr<PipeCloser> p;
+
 public:
-	explicit Pipe(int pp = -1)
-		: p(new PipeCloser(pp))
-	{
-	}
+	explicit Pipe(int pp = -1) : p(new PipeCloser(pp)) {}
 
 	int pipe() const
 	{
-		if(p) return p->p;
+		if (p) return p->p;
 		return -1;
 	}
 
-	void reset()
-	{
-		p.reset();
-	}
+	void reset() { p.reset(); }
 };
 
-class RestrictedProcessImpl
+class RestrictedProcessImpl : public checklib::details::IProcess
 {
 public:
 	RestrictedProcessImpl();
@@ -65,24 +52,26 @@ public:
 	std::string currentDirectory() const;
 	void setCurrentDirectory(const std::string &directory);
 
-	bool isRunning() const;
+	bool is_running() const override;
+
+	bool end_process(ProcessStatus status) override;
 
 	void start();
 	void terminate();
 	void wait();
-	bool wait(int milliseconds);
+	bool wait(int milliseconds) override;
 
 	// Код возврата.
-	int exitCode() const;
+	int exit_code() const;
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;
 
 	// Пиковое значение потребляемой памяти
-	int peakMemoryUsage();
+	int peak_memory_usage() override;
 
 	// Сколько процессорного времени израсходовал процесс
-	int CPUTime();
+	int cpu_time() override;
 
 	void reset();
 
@@ -107,7 +96,7 @@ public:
 private:
 	std::string mProgram;
 	std::vector<std::string> mParams;
-	//QDateTime mStartTime, mEndTime;
+	// QDateTime mStartTime, mEndTime;
 
 	std::string mStandardInput, mStandardOutput, mStandardError;
 
@@ -130,7 +119,7 @@ private:
 	int mUnchangedTicks;
 	int mOldCPUTime;
 
-	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
+	mutable std::atomic<int> m_cpu_time, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
 
 	Pipe mInputPipe, mOutputPipe, mErrorPipe;
@@ -139,7 +128,7 @@ private:
 	float mTicks;
 
 	// Интервал таймера проверки в миллисекундах
-	const static int sTimerDuration = 100;
+	const static int sTimerDuration;
 
 	void doCheck();
 
@@ -147,10 +136,9 @@ private:
 
 	void timerHandler(const boost::system::error_code &err);
 
-	int peakMemoryUsageS() const;
+	int peak_memory_usage_impl() const;
 
-	int CPUTimeS() const;
+	int cpu_time_impl() const;
 };
 
-}
-}
+} // namespace checklib::details
