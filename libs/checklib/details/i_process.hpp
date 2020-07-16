@@ -16,14 +16,12 @@ public:
 	virtual ~IProcess() = default;
 
 	// Wait process for finished.
-	// If process was finished return true and update internal ProcessStatus value
-	// If process was not finished, return false
+	// If process finished, return true and update internal ProcessStatus value
+	// If process not finished, return false
 	virtual bool wait(int milliseconds) = 0;
 
-	// Kill the process with the given status
+	// Kill the process (if it's running) with the given status
 	virtual bool end_process(ProcessStatus status) = 0;
-
-	//[[nodiscard]] virtual ProcessStatus exit_code() const = 0;
 
 	[[nodiscard]] virtual bool is_running() const = 0;
 
