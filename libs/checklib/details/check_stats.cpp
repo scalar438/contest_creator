@@ -44,4 +44,5 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 
 		is_running = process->is_running();
 	}
+	process->determine_status();
 }

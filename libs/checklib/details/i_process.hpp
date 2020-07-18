@@ -20,8 +20,11 @@ public:
 	// If process not finished, return false
 	virtual bool wait(int milliseconds) = 0;
 
-	// Kill the process (if it's running) with the given status
-	virtual bool end_process(ProcessStatus status) = 0;
+	// Calls when result process status already determined
+	virtual void end_process(ProcessStatus status) = 0;
+
+	// Try to determine the final status
+	virtual void determine_status() = 0;
 
 	[[nodiscard]] virtual bool is_running() const = 0;
 

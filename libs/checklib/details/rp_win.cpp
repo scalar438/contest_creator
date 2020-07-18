@@ -252,12 +252,17 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	return false;
 }
 
-bool checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
+void checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
 {
 	// TODO: this is a fast naive implementation, it may be wrong
 	terminate();
 	mProcessStatus.store(status);
-	return true;
+}
+
+void checklib::details::RestrictedProcessImpl::determine_status()
+{
+	// TODO: this is a stub function
+	mProcessStatus.store(ProcessStatus::psExited);
 }
 
 // Код возврата.
