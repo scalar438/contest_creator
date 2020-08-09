@@ -25,14 +25,21 @@ public:
 	Process();
 	~Process();
 
-	std::string program() const;
-	void setProgram(const std::string &program);
+	const std::string &program() const;
+	void set_program(std::string program);
+	[[deprecated]] void setProgram(const std::string &program);
 
-	std::vector<std::string> params() const;
-	void setParams(const std::vector<std::string> &params);
+    [[deprecated]] std::vector<std::string> params() const;
+    [[deprecated]] void setParams(const std::vector<std::string> &params);
 
-	std::string currentDirectory() const;
-	void setCurrentDirectory(const std::string &directory);
+	const std::vector<std::string> &cmdline() const;
+	void set_cmdline(std::vector<std::string> cmdline);
+
+	const std::string& current_directory() const;
+	void set_current_directory(std::string directory);
+
+	[[deprecated]] std::string currentDirectory() const;
+	[[deprecated]] void setCurrentDirectory(const std::string &directory);
 
 	bool isRunning() const;
 
@@ -68,7 +75,8 @@ public:
 	int CPUTime() const;
 
 	Limits limits() const;
-	void setLimits(const Limits &restrictions);
+	[[deprecated]] void setLimits(const Limits &restrictions);
+	void set_limits(Limits limits);
 
 	/// Возвращает объект в стартовое состояние
 	/// Если процесс запущен, то завершает его

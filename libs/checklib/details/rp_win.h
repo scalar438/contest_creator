@@ -85,7 +85,7 @@ public:
 	void determine_status() override;
 
 	// Код возврата.
-	int exit_code() const;
+	int exit_code() const override;
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;

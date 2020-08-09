@@ -1,6 +1,6 @@
 ﻿#pragma once
+#include <memory>
 #include <optional>
-#include <string>
 
 namespace checklib
 {
@@ -16,6 +16,9 @@ class ProcessExecuteParameters;
 class IProcess
 {
 public:
+	// FIXME: this is temporal
+	static std::unique_ptr<IProcess> create() {return nullptr;}
+
 	virtual ~IProcess() = default;
 
 	// Wait process for finished.
@@ -23,9 +26,13 @@ public:
 	// If process not finished, return false
 	virtual bool wait(int milliseconds) = 0;
 
+	virtual int exit_code() const = 0;
+
+	// TODO: remove this method
 	// Calls when result process status already determined
 	virtual void end_process(ProcessStatus status) = 0;
 
+	// TODO: remove this method
 	// Try to determine the final status
 	virtual void determine_status() = 0;
 
