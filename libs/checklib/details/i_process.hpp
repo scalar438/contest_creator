@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <optional>
+#include <string>
 
 namespace checklib
 {
@@ -9,7 +10,9 @@ enum ProcessStatus;
 namespace details
 {
 
-// Some methods from checklib::Process
+class ProcessExecuteParameters;
+
+// Some methods (platform-dependent) from checklib::Process
 class IProcess
 {
 public:
@@ -25,6 +28,9 @@ public:
 
 	// Try to determine the final status
 	virtual void determine_status() = 0;
+
+	// Start the process
+	virtual void start(const ProcessExecuteParameters &) = 0;
 
 	[[nodiscard]] virtual bool is_running() const = 0;
 

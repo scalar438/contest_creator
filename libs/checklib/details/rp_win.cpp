@@ -252,6 +252,11 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 	return false;
 }
 
+void checklib::details::RestrictedProcessImpl::start(const ProcessExecuteParameters &)
+{
+	// TODO: will be implemented
+}
+
 void checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
 {
 	// TODO: this is a fast naive implementation, it may be wrong

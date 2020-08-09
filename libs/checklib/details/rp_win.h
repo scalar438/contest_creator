@@ -77,6 +77,8 @@ public:
 	void terminate();
 	void wait();
 
+	void start(const ProcessExecuteParameters &) override;
+
 	// From IProcess
 	bool wait(int milliseconds) override;
 	void end_process(ProcessStatus status) override;

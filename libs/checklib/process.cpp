@@ -8,6 +8,7 @@
 
 #include "details/internal_watcher.hpp"
 #include "details/check_stats.hpp"
+#include "details/process_execute_parameters.hpp"
 
 // Inheritance is temporal
 struct checklib::Process::Pimpl : public details::RestrictedProcessImpl
@@ -19,7 +20,6 @@ struct checklib::Process::Pimpl : public details::RestrictedProcessImpl
 
 checklib::Process::Process() : pimpl(new Pimpl)
 {
-	pimpl->main_watcher->set_signal(&finished);
 }
 
 checklib::Process::~Process() {}
