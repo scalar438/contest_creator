@@ -1,9 +1,10 @@
 #include "check_stats.hpp"
 
 #include "../process_events.hpp"
+#include "i_status_sender.hpp"
 #include "i_process.hpp"
 
-void checklib::details::async_checker(IProcess *process, Limits limits, IProcessEvents *ev)
+void checklib::details::async_checker(IProcess *process, Limits limits, IProcessEvents *ev, IStatusSender *status_sender)
 {
 	constexpr int ms_delay         = 100;
 	constexpr int idle_count_limit = 20;
@@ -23,7 +24,8 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 
 		if (limits.useTimeLimit && limits.timeLimit < current_cpu_time)
 		{
-			process->end_process(ProcessStatus::psTimeLimitExceeded);
+			status_sender->set_status(ProcessStatus::psTimeLimitExceeded);
+			process->kill();
 			return;
 		}
 		if (prev_cpu_time == current_cpu_time)
@@ -31,18 +33,21 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 			++non_changed_count;
 			if (non_changed_count == idle_count_limit)
 			{
-				process->end_process(ProcessStatus::psIdlenessLimitExceeded);
+				status_sender->set_status(ProcessStatus::psIdlenessLimitExceeded);
+				process->kill();
 				return;
 			}
 		}
 
 		if (limits.useMemoryLimit && limits.memoryLimit < current_memory_usage)
 		{
-			process->end_process(ProcessStatus::psMemoryLimitExceeded);
+			status_sender->set_status(ProcessStatus::psMemoryLimitExceeded);
+			process->kill();
 			return;
 		}
 
 		is_running = process->is_running();
 	}
-	process->determine_status();
+	if(process->is_abnormal_exit()) status_sender->set_status(ProcessStatus::psRuntimeError);
+	else status_sender->set_status(ProcessStatus::psExited);
 }

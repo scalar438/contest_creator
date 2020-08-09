@@ -257,13 +257,6 @@ void checklib::details::RestrictedProcessImpl::start(const ProcessExecuteParamet
 	// TODO: will be implemented
 }
 
-void checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
-{
-	// TODO: this is a fast naive implementation, it may be wrong
-	terminate();
-	mProcessStatus.store(status);
-}
-
 void checklib::details::RestrictedProcessImpl::determine_status()
 {
 	// TODO: this is a stub function
@@ -274,6 +267,11 @@ void checklib::details::RestrictedProcessImpl::determine_status()
 int checklib::details::RestrictedProcessImpl::exit_code() const
 {
 	return mExitCode.load();
+}
+
+void checklib::details::RestrictedProcessImpl::kill()
+{
+	terminate();
 }
 
 // Тип завершения программы

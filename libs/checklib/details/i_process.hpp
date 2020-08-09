@@ -28,9 +28,9 @@ public:
 
 	virtual int exit_code() const = 0;
 
-	// TODO: remove this method
-	// Calls when result process status already determined
-	virtual void end_process(ProcessStatus status) = 0;
+	virtual void kill() = 0;
+
+	virtual bool is_abnormal_exit() const = 0;
 
 	// TODO: remove this method
 	// Try to determine the final status

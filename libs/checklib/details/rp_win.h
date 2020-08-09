@@ -81,11 +81,12 @@ public:
 
 	// From IProcess
 	bool wait(int milliseconds) override;
-	void end_process(ProcessStatus status) override;
 	void determine_status() override;
 
 	// Код возврата.
 	int exit_code() const override;
+
+	void kill() override;
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;

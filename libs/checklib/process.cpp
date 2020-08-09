@@ -99,7 +99,7 @@ void checklib::Process::start()
 // Завершает процесс вручную. Тип завершения становится etTerminated
 void checklib::RestrictedProcess::terminate()
 {
-	pimpl->process->end_process(ProcessStatus::psTerminated);
+	pimpl->process->kill();
 }
 
 // Ждать завершения процесса
