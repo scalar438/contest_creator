@@ -6,10 +6,10 @@
 #include "details/rp_linux.h"
 #endif
 
-#include "details/internal_watcher.hpp"
 #include "details/check_stats.hpp"
-#include "details/process_execute_parameters.hpp"
 #include "details/i_process.hpp"
+#include "details/internal_watcher.hpp"
+#include "process_execute_parameters.hpp"
 
 struct checklib::Process::Pimpl
 {
@@ -20,7 +20,7 @@ struct checklib::Process::Pimpl
 	// Platform-dependent process wrapper
 	std::unique_ptr<details::IProcess> process;
 
-    details::ProcessExecuteParameters parameters;
+	ProcessExecuteParameters parameters;
 };
 
 checklib::Process::Process() : pimpl(new Pimpl)
@@ -72,7 +72,7 @@ std::string checklib::RestrictedProcess::currentDirectory() const
 
 const std::string &checklib::Process::current_directory() const
 {
-    return pimpl->parameters.current_directory;
+	return pimpl->parameters.current_directory;
 }
 
 void checklib::RestrictedProcess::setCurrentDirectory(const std::string &directory)
@@ -85,9 +85,9 @@ void checklib::Process::set_current_directory(std::string directory)
 	pimpl->parameters.current_directory = std::move(directory);
 }
 
-bool checklib::RestrictedProcess::isRunning() const
+bool checklib::Process::isRunning() const
 {
-	return pimpl->process->is_running();
+	return !pimpl->process->exit_code().has_value();
 }
 
 // Запуск процесса
@@ -120,7 +120,7 @@ bool checklib::RestrictedProcess::wait(int milliseconds)
 // Код возврата.
 int checklib::RestrictedProcess::exitCode() const
 {
-	return pimpl->process->exit_code();
+	return pimpl->process->exit_code().value_or(-1);
 }
 
 // Тип завершения программы

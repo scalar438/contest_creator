@@ -46,7 +46,7 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 			return;
 		}
 
-		is_running = process->is_running();
+		is_running = !process->exit_code().has_value();
 	}
 	if(process->is_abnormal_exit()) status_sender->set_status(ProcessStatus::psRuntimeError);
 	else status_sender->set_status(ProcessStatus::psExited);

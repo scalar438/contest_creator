@@ -70,9 +70,6 @@ public:
 	std::string currentDirectory() const;
 	void setCurrentDirectory(std::string directory);
 
-
-	bool is_running() const override;
-
 	void start();
 	void terminate();
 	void wait();
@@ -84,7 +81,7 @@ public:
 	void determine_status() override;
 
 	// Код возврата.
-	int exit_code() const override;
+	std::optional<int> exit_code() const override;
 
 	void kill() override;
 

@@ -1,9 +1,9 @@
 #pragma once
+#include "rp_types.h"
 #include <string>
 #include <vector>
-#include "../rp_types.h"
 
-namespace checklib::details
+namespace checklib
 {
 
 struct ProcessExecuteParameters
@@ -17,6 +17,5 @@ struct ProcessExecuteParameters
 
 	Limits limits;
 };
-
 
 } // namespace checklib::details

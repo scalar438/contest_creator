@@ -60,11 +60,6 @@ void checklib::details::RestrictedProcessImpl::setCurrentDirectory(std::string d
 	mCurrentDirectory = std::move(directory);
 }
 
-bool checklib::details::RestrictedProcessImpl::is_running() const
-{
-	return mIsRunning.load();
-}
-
 void checklib::details::RestrictedProcessImpl::start()
 {
 	if (is_running()) return;
@@ -264,9 +259,10 @@ void checklib::details::RestrictedProcessImpl::determine_status()
 }
 
 // Код возврата.
-int checklib::details::RestrictedProcessImpl::exit_code() const
+std::optional<int> checklib::details::RestrictedProcessImpl::exit_code() const
 {
-	return mExitCode.load();
+	if (mIsRunning) return std::nullopt;
+	return mExitCode;
 }
 
 void checklib::details::RestrictedProcessImpl::kill()
