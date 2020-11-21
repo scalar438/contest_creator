@@ -1,10 +1,11 @@
 #include "check_stats.hpp"
 
 #include "../process_events.hpp"
-#include "i_status_sender.hpp"
 #include "i_process.hpp"
+#include "i_status_updater.hpp"
 
-void checklib::details::async_checker(IProcess *process, Limits limits, IProcessEvents *ev, IStatusSender *status_sender)
+void checklib::details::async_checker(IProcess *process, Limits limits,
+                                      IStatusUpdater *status_sender)
 {
 	constexpr int ms_delay         = 100;
 	constexpr int idle_count_limit = 20;
@@ -17,10 +18,10 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 		process->wait(ms_delay);
 
 		auto current_cpu_time = process->cpu_time();
-		ev->update_cpu_time(current_cpu_time);
+		status_sender->set_cpu_time(current_cpu_time);
 
 		auto current_memory_usage = process->peak_memory_usage();
-		ev->update_memory_usage(current_memory_usage);
+		status_sender->set_peak_memory(current_memory_usage);
 
 		if (limits.useTimeLimit && limits.timeLimit < current_cpu_time)
 		{
@@ -48,6 +49,8 @@ void checklib::details::async_checker(IProcess *process, Limits limits, IProcess
 
 		is_running = !process->exit_code().has_value();
 	}
-	if(process->is_abnormal_exit()) status_sender->set_status(ProcessStatus::psRuntimeError);
-	else status_sender->set_status(ProcessStatus::psExited);
+	if (process->is_abnormal_exit())
+		status_sender->set_status(ProcessStatus::psRuntimeError);
+	else
+		status_sender->set_status(ProcessStatus::psExited);
 }

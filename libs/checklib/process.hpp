@@ -2,6 +2,7 @@
 #include "process_events.hpp"
 #include "rp_consts.h"
 #include "rp_types.h"
+#include "process_execute_parameters.hpp"
 
 #include <memory>
 #include <string>
@@ -22,6 +23,8 @@ class RestrictedProcessImpl;
 class Process
 {
 public:
+	/// Create and start the process
+	Process(ProcessExecuteParameters parameters);
 	Process();
 	~Process();
 

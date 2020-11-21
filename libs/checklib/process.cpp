@@ -23,14 +23,21 @@ struct checklib::Process::Pimpl
 	ProcessExecuteParameters parameters;
 };
 
-checklib::Process::Process() : pimpl(new Pimpl)
+checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
 {
-	pimpl-> process = details::IProcess::create();
+	pimpl->parameters = std::move(params);
+	pimpl->process    = details::IProcess::create();
+	pimpl->process->start(pimpl->parameters);
 }
 
-checklib::Process::~Process() {}
+checklib::Process::Process() : pimpl(new Pimpl)
+{
+	pimpl->process = details::IProcess::create();
+}
 
-const std::string& checklib::RestrictedProcess::program() const
+checklib::Process::~Process() = default;
+
+const std::string &checklib::RestrictedProcess::program() const
 {
 	return pimpl->parameters.program;
 }
