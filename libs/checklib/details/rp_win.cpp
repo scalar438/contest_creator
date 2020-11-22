@@ -14,7 +14,7 @@
 #include <string>
 #include <strsafe.h>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &)
     : mTimer(TimerService::instance()->io_service())
 {
 	mStandardInput  = ss::Stdin;
@@ -245,11 +245,6 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 
 	// Тут надо бросить исключение
 	return false;
-}
-
-void checklib::details::RestrictedProcessImpl::start(const ProcessExecuteParameters &)
-{
-	// TODO: will be implemented
 }
 
 // Код возврата.

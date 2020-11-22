@@ -20,9 +20,9 @@ public:
 
 	virtual ~IProcess() = default;
 
-	// Wait process for finished.
-	// If process finished, return true and update internal ProcessStatus value
-	// If process not finished, return false
+	/// Wait process for finished.
+	/// If process finished, return true immediately
+	/// If process not finished, return false
 	virtual bool wait(int milliseconds) = 0;
 
 	[[nodiscard]] virtual std::optional<int> exit_code() const = 0;
@@ -34,12 +34,10 @@ public:
 	// Start the process
 	virtual void start(const ProcessExecuteParameters &) = 0;
 
-	// Peak memory usage, in bytes for current or last running process
-	// If the process didn't run, return zero
+	/// Peak memory usage, in bytes for the process
 	[[nodiscard]] virtual int peak_memory_usage() = 0;
 
-	// CPU time of current or last running process
-	// If the process didn't run, return zero
+	/// CPU time of the process
 	[[nodiscard]] virtual int cpu_time() = 0;
 
 	[[nodiscard]] bool is_running() const { return !exit_code().has_value(); }

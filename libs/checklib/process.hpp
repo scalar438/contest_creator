@@ -14,11 +14,6 @@
 namespace checklib
 {
 
-namespace details
-{
-class RestrictedProcessImpl;
-}
-
 /// Класс, запускающий процесс с ограничениями
 class Process
 {

@@ -58,7 +58,7 @@ private:
 class RestrictedProcessImpl : public checklib::details::IProcess
 {
 public:
-	RestrictedProcessImpl();
+	RestrictedProcessImpl(const ProcessExecuteParameters &);
 	~RestrictedProcessImpl();
 
 	std::string getProgram() const;
@@ -73,8 +73,6 @@ public:
 	void start();
 	void terminate();
 	void wait();
-
-	void start(const ProcessExecuteParameters &) override;
 
 	// From IProcess
 	bool wait(int milliseconds) override;
