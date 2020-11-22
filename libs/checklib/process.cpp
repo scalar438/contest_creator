@@ -20,14 +20,19 @@ struct checklib::Process::Pimpl
 	// Platform-dependent process wrapper
 	std::unique_ptr<details::IProcess> process;
 
+	std::future<void> async_checker_fut;
+
 	ProcessExecuteParameters parameters;
 };
 
 checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
 {
 	pimpl->parameters = std::move(params);
-	pimpl->process    = details::IProcess::create();
-	pimpl->process->start(pimpl->parameters);
+	auto process      = std::make_unique<details::RestrictedProcessImpl>(pimpl->parameters);
+	process->start();
+	pimpl->process = std::move(process);
+	pimpl->async_checker_fut =
+	    std::async(details::async_checker, pimpl->process.get(), pimpl->parameters.limits, nullptr);
 }
 
 checklib::Process::Process() : pimpl(new Pimpl)
@@ -100,7 +105,7 @@ bool checklib::Process::isRunning() const
 // Запуск процесса
 void checklib::Process::start()
 {
-	pimpl->process->start(pimpl->parameters);
+	// TODO: remove this method
 }
 
 // Завершает процесс вручную. Тип завершения становится etTerminated

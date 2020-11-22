@@ -91,6 +91,12 @@ public:
 	// Сколько процессорного времени израсходовал процесс
 	int cpu_time() override;
 
+	bool is_abnormal_exit() const override
+	{
+		// FIXME: not implemented yet
+		return true;
+	}
+
 	void reset();
 
 	Limits getLimits() const;

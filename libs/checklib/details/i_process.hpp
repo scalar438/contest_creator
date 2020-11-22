@@ -6,7 +6,7 @@ namespace checklib
 {
 
 enum ProcessStatus;
-class ProcessExecuteParameters;
+struct ProcessExecuteParameters;
 
 namespace details
 {
@@ -30,9 +30,6 @@ public:
 	virtual void kill() = 0;
 
 	[[nodiscard]] virtual bool is_abnormal_exit() const = 0;
-
-	// Start the process
-	virtual void start(const ProcessExecuteParameters &) = 0;
 
 	/// Peak memory usage, in bytes for the process
 	[[nodiscard]] virtual int peak_memory_usage() = 0;
