@@ -31,10 +31,6 @@ public:
 
 	[[nodiscard]] virtual bool is_abnormal_exit() const = 0;
 
-	// TODO: remove this method
-	// Try to determine the final status
-	virtual void determine_status() = 0;
-
 	// Start the process
 	virtual void start(const ProcessExecuteParameters &) = 0;
 

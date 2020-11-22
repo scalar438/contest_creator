@@ -252,12 +252,6 @@ void checklib::details::RestrictedProcessImpl::start(const ProcessExecuteParamet
 	// TODO: will be implemented
 }
 
-void checklib::details::RestrictedProcessImpl::determine_status()
-{
-	// TODO: this is a stub function
-	mProcessStatus.store(ProcessStatus::psExited);
-}
-
 // Код возврата.
 std::optional<int> checklib::details::RestrictedProcessImpl::exit_code() const
 {

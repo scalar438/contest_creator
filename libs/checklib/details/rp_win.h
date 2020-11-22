@@ -78,7 +78,6 @@ public:
 
 	// From IProcess
 	bool wait(int milliseconds) override;
-	void determine_status() override;
 
 	// Код возврата.
 	std::optional<int> exit_code() const override;
