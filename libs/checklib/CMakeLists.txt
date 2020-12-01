@@ -6,6 +6,9 @@ if (WIN32)
 elseif (UNIX)
     add_definitions("-DCHECKLIB_UNIX")
     set(SOURCES ${SOURCES} details/rp_linux.cpp)
+
+    target_include_directories(checklib PUBLIC ${Boost_INCLUDE_DIR})
+    target_link_directories(checklib INTERFACE ${Boost_LIBRARY_DIRS})
 endif()
 
 add_library(checklib ${SOURCES})
@@ -15,7 +18,5 @@ cmake_policy(SET CMP0074 NEW)
 
 find_package(Boost REQUIRED)
 
-target_include_directories(checklib PUBLIC ${Boost_INCLUDE_DIR})
-target_link_directories(checklib INTERFACE ${Boost_LIBRARY_DIRS})
 
 set_property(TARGET checklib PROPERTY CXX_STANDARD 17)

@@ -1,21 +1,17 @@
 ﻿#include "rp_win.h"
 #include "../checklib_exception.h"
 #include "../rp_consts.h"
-#include "../timer_service.h"
-
-#include <boost/filesystem.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/thread.hpp>
 
 #include <deque>
+#include <filesystem>
 
 #include <Windows.h>
+#include <Psapi.h>
 #include <iostream>
 #include <string>
 #include <strsafe.h>
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &)
-    : mTimer(TimerService::instance()->io_service())
 {
 	mStandardInput  = ss::Stdin;
 	mStandardOutput = ss::Stdout;
@@ -149,7 +145,8 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 	PROCESS_INFORMATION pi;
 
-	boost::filesystem::path programPath(mProgram);
+	std::filesystem::path programPath(mProgram);
+	// TODO: use CommandLineToArgV
 	std::string cmdLine;
 	{
 		auto tmp = programPath.native();
@@ -182,8 +179,7 @@ void checklib::details::RestrictedProcessImpl::start()
 	{
 		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой
 		// программе
-		auto tmpCurrentDir = programPath.branch_path().native();
-		std::string currentDir(tmpCurrentDir.begin(), tmpCurrentDir.end());
+		std::string currentDir = programPath.u8string();
 		curDir.resize(currentDir.size() + 1);
 		strcpy_s(curDir.data(), currentDir.size() + 1, currentDir.c_str());
 	}
@@ -206,9 +202,6 @@ void checklib::details::RestrictedProcessImpl::start()
 	mCurrentInformation = pi;
 	auto err            = WaitForSingleObject(pi.hProcess, 0);
 	mutex_locker guard(mTimerMutex);
-	mTimer.expires_from_now(boost::posix_time::milliseconds(100));
-	mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-	                              boost::ref(*this), boost::lambda::_1));
 	mNotChangedTimeCount = 0;
 	mIsRunning.store(true);
 }
@@ -505,37 +498,6 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 	mInputHandle.reset();
 	mOutputHandle.reset();
 	mErrorHandle.reset();
-}
-
-void checklib::details::RestrictedProcessImpl::timerHandler(const boost::system::error_code &err)
-{
-	if (err) return;
-	doCheck();
-
-	switch (WaitForSingleObject(mCurrentInformation.hProcess, 0))
-	{
-	case WAIT_OBJECT_0:
-		if (mProcessStatus.load() == psRunning) mProcessStatus.store(psExited);
-		doFinalize();
-		destroyHandles();
-		break;
-	case WAIT_TIMEOUT: {
-		mutex_locker lock(mTimerMutex);
-		mTimer.expires_from_now(boost::posix_time::milliseconds(100));
-		mTimer.async_wait(boost::bind(&checklib::details::RestrictedProcessImpl::timerHandler,
-		                              boost::ref(*this), boost::lambda::_1));
-	}
-	break;
-	case WAIT_FAILED: {
-		void *cstr;
-		FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-		               GetLastError(),
-		               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-		               (LPSTR)&cstr, 0, NULL);
-		LocalFree(cstr);
-	}
-	break;
-	}
 }
 
 void checklib::details::RestrictedProcessImpl::destroyHandles()

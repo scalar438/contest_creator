@@ -8,9 +8,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/filesystem.hpp>
-#include <boost/signals2.hpp>
-
 namespace checklib
 {
 
@@ -117,8 +114,6 @@ public:
 	bool closeStandardInput();
 
 	void set_watcher(std::shared_ptr<IProcessEvents> watcher);
-
-	[[deprecated]] boost::signals2::signal<void(int)> finished;
 
 private:
 	struct Pimpl;

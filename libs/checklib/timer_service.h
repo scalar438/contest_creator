@@ -5,6 +5,8 @@
 
 namespace checklib {
 
+#ifndef CHECKLIB_WINDOWS
+
 class TimerService : private boost::noncopyable
 {
 public:
@@ -37,5 +39,7 @@ private:
 		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
 	}
 };
+
+#endif
 
 }

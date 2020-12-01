@@ -11,6 +11,8 @@
 #include "details/internal_watcher.hpp"
 #include "process_execute_parameters.hpp"
 
+#include <future>
+
 struct checklib::Process::Pimpl
 {
 	Pimpl() { main_watcher = std::make_unique<::details::InternalWatcher>(); }

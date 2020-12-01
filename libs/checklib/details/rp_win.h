@@ -8,14 +8,12 @@
 #include <vector>
 
 #include <atomic>
-#include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/signals2.hpp>
 #include <mutex>
 #include <thread>
 
-#include <Psapi.h>
 #include <Windows.h>
+
+#include <Psapi.h>
 
 namespace checklib::details
 {
@@ -134,7 +132,6 @@ private:
 
 	std::mutex mTimerMutex;
 	std::mutex mHandlesMutex;
-	boost::asio::deadline_timer mTimer;
 
 	mutable std::atomic<int> mCPUTime, mPeakMemoryUsage;
 	std::atomic<bool> mIsRunning;
@@ -146,8 +143,6 @@ private:
 	void doFinalize();
 
 	void destroyHandles();
-
-	void timerHandler(const boost::system::error_code &err);
 
 	int peakMemoryUsageS() const;
 

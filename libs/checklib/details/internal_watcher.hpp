@@ -2,8 +2,6 @@
 #include "../rp_types.h"
 #include "../process_events.hpp"
 
-#include "boost/signals2.hpp"
-
 namespace details
 {
 
@@ -18,10 +16,8 @@ public:
 
 	void finished(checklib::ProcessStatus status, int exit_code) override;
 
-	void set_signal(boost::signals2::signal<void(int)> *signal);
 
 private:
-	[[deprecated]] boost::signals2::signal<void(int)> *m_signal;
 };
 
 } // namespace details
