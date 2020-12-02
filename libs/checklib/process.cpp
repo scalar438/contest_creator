@@ -24,17 +24,20 @@ struct checklib::Process::Pimpl
 
 	std::future<void> async_checker_fut;
 
+	std::shared_ptr<std::atomic_bool> force_exit;
+
 	ProcessExecuteParameters parameters;
 };
 
 checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
 {
 	pimpl->parameters = std::move(params);
+	pimpl->force_exit = std::make_shared<std::atomic_bool>(false);
 	auto process      = std::make_unique<details::RestrictedProcessImpl>(pimpl->parameters);
 	process->start();
 	pimpl->process = std::move(process);
-	pimpl->async_checker_fut =
-	    std::async(details::async_checker, pimpl->process.get(), pimpl->parameters.limits, nullptr);
+	pimpl->async_checker_fut = std::async(details::async_checker, pimpl->process.get(),
+	                                      pimpl->parameters.limits, nullptr, pimpl->force_exit);
 }
 
 checklib::Process::Process() : pimpl(new Pimpl)
@@ -42,7 +45,11 @@ checklib::Process::Process() : pimpl(new Pimpl)
 	pimpl->process = details::IProcess::create();
 }
 
-checklib::Process::~Process() = default;
+checklib::Process::~Process()
+{
+	*pimpl->force_exit = false;
+	pimpl->async_checker_fut.get();
+}
 
 const std::string &checklib::RestrictedProcess::program() const
 {

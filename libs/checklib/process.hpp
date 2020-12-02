@@ -17,7 +17,7 @@ class Process
 public:
 	/// Create and start the process
 	Process(ProcessExecuteParameters parameters);
-	Process();
+	[[deprecated]] Process();
 	~Process();
 
 	const std::string &program() const;

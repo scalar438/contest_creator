@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <filesystem>
 #include <thread>
 
 #include <Windows.h>
@@ -59,9 +60,6 @@ public:
 	RestrictedProcessImpl(const ProcessExecuteParameters &);
 	~RestrictedProcessImpl();
 
-	std::string getProgram() const;
-	void setProgram(std::string program);
-
 	std::vector<std::string> getParams() const;
 	void setParams(std::vector<std::string> params);
 
@@ -110,7 +108,7 @@ public:
 	bool closeStandardInput();
 
 private:
-	std::string mProgram;
+	std::filesystem::path m_program;
 	std::vector<std::string> mParams;
 	std::string mCurrentDirectory;
 

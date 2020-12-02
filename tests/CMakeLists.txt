@@ -5,3 +5,5 @@ target_link_libraries(test_runner PRIVATE checklib)
 
 install(TARGETS test_runner DESTINATION "./test_script")
 install(FILES run.py DESTINATION "./test_script")
+
+set_property(TARGET test_runner PROPERTY CXX_STANDARD 17)

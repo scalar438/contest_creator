@@ -1,5 +1,6 @@
 ﻿#include "rp_win.h"
 #include "../checklib_exception.h"
+#include "../process_execute_parameters.hpp"
 #include "../rp_consts.h"
 
 #include <deque>
@@ -11,11 +12,12 @@
 #include <string>
 #include <strsafe.h>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &)
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &params)
 {
 	mStandardInput  = ss::Stdin;
 	mStandardOutput = ss::Stdout;
 	mStandardError  = ss::Stderr;
+	m_program        = params.program_path;
 	reset();
 }
 
@@ -24,16 +26,6 @@ checklib::details::RestrictedProcessImpl::~RestrictedProcessImpl()
 	doFinalize();
 	while (mIsRunning.load())
 		Sleep(0);
-}
-
-std::string checklib::details::RestrictedProcessImpl::getProgram() const
-{
-	return mProgram;
-}
-
-void checklib::details::RestrictedProcessImpl::setProgram(std::string program)
-{
-	mProgram = std::move(program);
 }
 
 std::vector<std::string> checklib::details::RestrictedProcessImpl::getParams() const
@@ -60,7 +52,7 @@ void checklib::details::RestrictedProcessImpl::start()
 {
 	if (is_running()) return;
 
-	STARTUPINFOA si;
+	STARTUPINFOW si;
 	memset(&si, 0, sizeof si);
 	si.cb      = sizeof si;
 	si.dwFlags = STARTF_USESTDHANDLES;
@@ -145,48 +137,41 @@ void checklib::details::RestrictedProcessImpl::start()
 	}
 	PROCESS_INFORMATION pi;
 
-	std::filesystem::path programPath(mProgram);
+	std::filesystem::path programPath(m_program);
+	auto program_name = m_program.native();
+
 	// TODO: use CommandLineToArgV
-	std::string cmdLine;
-	{
-		auto tmp = programPath.native();
-		cmdLine  = std::string(tmp.begin(), tmp.end());
-	}
+	std::wstring full_cmdline = program_name;
+
 	for (size_t i = 0; i < mParams.size(); i++)
 	{
-		cmdLine += " ";
+		full_cmdline += L" ";
 		if (std::find(mParams[i].begin(), mParams[i].end(), ' ') != mParams[i].end())
 		{
-			cmdLine += '\"';
-			cmdLine += mParams[i];
-			cmdLine += '\"';
+			full_cmdline += L'\"';
+			full_cmdline += std::wstring(mParams[i].begin(), mParams[i].end());
+			full_cmdline += L'\"';
 		}
 		else
-			cmdLine += mParams[i];
+			full_cmdline += std::wstring(mParams[i].begin(), mParams[i].end());
 	}
-	std::vector<char> cmdLineVector(cmdLine.length() + 1);
-	std::copy(cmdLine.begin(), cmdLine.end(), cmdLineVector.data());
-	cmdLineVector[cmdLine.length()] = 0;
 
-	std::vector<char> curDir;
-
+	std::wstring cur_dir;
 	if (!mCurrentDirectory.empty())
 	{
-		curDir.resize(mCurrentDirectory.size() + 1);
-		strcpy_s(curDir.data(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
+		cur_dir = std::wstring(mCurrentDirectory.begin(), mCurrentDirectory.end());
+		//strcpy_s(curDir.data(), mCurrentDirectory.size() + 1, mCurrentDirectory.c_str());
 	}
 	else
 	{
 		// TODO: возможно, имеет смысл брать текущую рабочую директорию вместо пути к запускаемой
 		// программе
-		std::string currentDir = programPath.u8string();
-		curDir.resize(currentDir.size() + 1);
-		strcpy_s(curDir.data(), currentDir.size() + 1, currentDir.c_str());
+		cur_dir = m_program.parent_path().native();
 	}
-
-	if (!CreateProcessA(NULL, &cmdLineVector[0], &sa, NULL, TRUE, CREATE_SUSPENDED, NULL,
-	                    curDir.data(), &si, &pi))
-		throw CannotStartProcess(mProgram);
+	
+	if (!CreateProcessW(&program_name[0], &full_cmdline[0], &sa, NULL, TRUE, CREATE_SUSPENDED, NULL,
+	                    cur_dir.c_str(), &si, &pi))
+		throw CannotStartProcess(m_program.u8string());
 
 	auto pop = [&tmpHandles]() -> Handle {
 		auto res = tmpHandles[0];

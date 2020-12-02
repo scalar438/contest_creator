@@ -4,8 +4,10 @@
 #include "i_process.hpp"
 #include "i_status_updater.hpp"
 
+#include <atomic>
+
 void checklib::details::async_checker(IProcess *process, Limits limits,
-                                      IStatusUpdater *status_sender)
+                                      IStatusUpdater *status_sender, std::shared_ptr<std::atomic_bool> force_exit)
 {
 	constexpr int ms_delay         = 100;
 	constexpr int idle_count_limit = 20;
@@ -13,7 +15,7 @@ void checklib::details::async_checker(IProcess *process, Limits limits,
 	bool is_running       = true;
 	int prev_cpu_time     = -1;
 	int non_changed_count = 0;
-	while (is_running)
+	while (is_running && !*force_exit)
 	{
 		process->wait(ms_delay);
 
