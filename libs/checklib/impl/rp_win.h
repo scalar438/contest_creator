@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../rp_types.h"
+#include "rp_types.h"
 #include "i_process.hpp"
 
 #include <memory>

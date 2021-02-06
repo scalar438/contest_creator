@@ -1,7 +1,7 @@
 ﻿#include "rp_win.h"
-#include "../checklib_exception.h"
-#include "../process_execute_parameters.hpp"
-#include "../rp_consts.h"
+#include "checklib_exception.h"
+#include "process_execute_parameters.hpp"
+#include "rp_consts.h"
 
 #include <deque>
 #include <filesystem>

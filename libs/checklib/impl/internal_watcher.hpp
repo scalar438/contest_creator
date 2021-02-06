@@ -1,6 +1,6 @@
 #pragma once
-#include "../rp_types.h"
-#include "../process_events.hpp"
+#include "rp_types.h"
+#include "process_events.hpp"
 
 namespace details
 {

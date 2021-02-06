@@ -1,6 +1,6 @@
 #include "check_stats.hpp"
 
-#include "../process_events.hpp"
+#include "process_events.hpp"
 #include "i_process.hpp"
 #include "i_status_updater.hpp"
 

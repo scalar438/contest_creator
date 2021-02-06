@@ -1,8 +1,8 @@
-set(SOURCES process.cpp details/internal_watcher.cpp details/check_stats.cpp)
+set(SOURCES impl/process.cpp impl/internal_watcher.cpp impl/check_stats.cpp)
 
 if (WIN32)
     add_definitions("-DCHECKLIB_WINDOWS")
-    set(SOURCES ${SOURCES} details/rp_win.cpp)
+    set(SOURCES ${SOURCES} impl/rp_win.cpp)
   #  add_compile_definitions(
 elseif (UNIX)
     add_definitions("-DCHECKLIB_UNIX")
@@ -15,7 +15,8 @@ elseif (UNIX)
 endif()
 
 add_library(checklib ${SOURCES})
-target_include_directories(checklib INTERFACE ..)
+target_include_directories(checklib INTERFACE "include")
+target_include_directories(checklib PRIVATE "include/checklib")
 
 cmake_policy(SET CMP0074 NEW)
 

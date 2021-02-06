@@ -1,14 +1,14 @@
 ﻿#include "rp.h"
 #ifdef CHECKLIB_WINDOWS
-#include "details/rp_win.h"
+#include "rp_win.h"
 #endif
 #ifdef CHECKLIB_UNIX
 #include "details/rp_linux.h"
 #endif
 
-#include "details/check_stats.hpp"
-#include "details/i_process.hpp"
-#include "details/internal_watcher.hpp"
+#include "check_stats.hpp"
+#include "i_process.hpp"
+#include "internal_watcher.hpp"
 #include "process_execute_parameters.hpp"
 
 #include <future>
