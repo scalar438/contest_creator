@@ -10,8 +10,26 @@
 #include "i_process.hpp"
 #include "internal_watcher.hpp"
 #include "process_execute_parameters.hpp"
-
+#include "i_status_updater.hpp"
 #include <future>
+
+namespace
+{
+struct Status final : public checklib::details::IStatusUpdater
+{
+	Status() { m_status = checklib::ProcessStatus::psNotRunning; }
+
+	void set_status(checklib::ProcessStatus status) override { m_status = status; }
+
+	void set_cpu_time(int cpu_time) override { m_cpu_time = cpu_time; }
+
+	void set_peak_memory(int memory) override { m_peak_memory = memory; }
+
+	std::atomic<int> m_cpu_time;
+	std::atomic<int> m_peak_memory;
+	std::atomic<checklib::ProcessStatus> m_status;
+};
+} // namespace
 
 struct checklib::Process::Pimpl
 {
@@ -27,6 +45,8 @@ struct checklib::Process::Pimpl
 	std::shared_ptr<std::atomic_bool> force_exit;
 
 	ProcessExecuteParameters parameters;
+
+	Status m_status;
 };
 
 checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
@@ -37,7 +57,7 @@ checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
 	process->start();
 	pimpl->process = std::move(process);
 	pimpl->async_checker_fut = std::async(details::async_checker, pimpl->process.get(),
-	                                      pimpl->parameters.limits, nullptr, pimpl->force_exit);
+                                          pimpl->parameters.limits, &pimpl->m_status, pimpl->force_exit);
 }
 
 checklib::Process::Process() : pimpl(new Pimpl)
@@ -147,8 +167,7 @@ int checklib::RestrictedProcess::exitCode() const
 // Тип завершения программы
 checklib::ProcessStatus checklib::RestrictedProcess::processStatus() const
 {
-	// FIXME: this is temporal
-	return ProcessStatus::psTerminated;//pimpl->process->processStatus();
+	return pimpl->m_status.m_status;
 }
 
 // Пиковое значение потребляемой памяти

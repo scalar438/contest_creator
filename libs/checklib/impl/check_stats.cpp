@@ -1,13 +1,11 @@
 #include "check_stats.hpp"
-
-#include "process_events.hpp"
 #include "i_process.hpp"
 #include "i_status_updater.hpp"
-
-#include <atomic>
+#include "process_events.hpp"
 
 void checklib::details::async_checker(IProcess *process, Limits limits,
-                                      IStatusUpdater *status_sender, std::shared_ptr<std::atomic_bool> force_exit)
+                                      IStatusUpdater *status_sender,
+                                      std::shared_ptr<std::atomic_bool> force_exit)
 {
 	constexpr int ms_delay         = 100;
 	constexpr int idle_count_limit = 20;

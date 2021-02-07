@@ -11,7 +11,7 @@ namespace details
 class IStatusUpdater
 {
 public:
-	virtual ~IStatusUpdater() = 0;
+	virtual ~IStatusUpdater() {}
 
 	virtual void set_status(ProcessStatus status) = 0;
 
