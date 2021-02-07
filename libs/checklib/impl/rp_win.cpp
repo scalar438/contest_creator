@@ -12,12 +12,13 @@
 #include <string>
 #include <strsafe.h>
 
-checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &params)
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(
+    const ProcessExecuteParameters &params)
 {
 	mStandardInput  = ss::Stdin;
 	mStandardOutput = ss::Stdout;
 	mStandardError  = ss::Stderr;
-	m_program        = params.program_path;
+	m_program       = params.program;
 	reset();
 }
 

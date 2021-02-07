@@ -9,9 +9,7 @@ namespace checklib
 
 struct ProcessExecuteParameters
 {
-	// TODO: remove program, replace program_path to program
-	std::string program;
-	std::filesystem::path program_path;
+	std::filesystem::path program;
 	std::vector<std::string> cmdline;
 	std::string current_directory;
 	std::string standard_input;

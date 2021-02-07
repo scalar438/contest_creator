@@ -1,17 +1,19 @@
-﻿#include "rp.h"
+﻿#include "process.hpp"
+#include "check_stats.hpp"
+#include "i_process.hpp"
+#include "i_status_updater.hpp"
+#include "internal_watcher.hpp"
+#include "process_execute_parameters.hpp"
+#include <future>
+
+#include "rp.h"
+
 #ifdef CHECKLIB_WINDOWS
 #include "rp_win.h"
 #endif
 #ifdef CHECKLIB_UNIX
 #include "details/rp_linux.h"
 #endif
-
-#include "check_stats.hpp"
-#include "i_process.hpp"
-#include "internal_watcher.hpp"
-#include "process_execute_parameters.hpp"
-#include "i_status_updater.hpp"
-#include <future>
 
 namespace
 {
@@ -71,11 +73,6 @@ checklib::Process::~Process()
 	pimpl->async_checker_fut.get();
 }
 
-const std::string &checklib::RestrictedProcess::program() const
-{
-	return pimpl->parameters.program;
-}
-
 void checklib::Process::setProgram(const std::string &program)
 {
 	set_program(program);
@@ -83,7 +80,7 @@ void checklib::Process::setProgram(const std::string &program)
 
 void checklib::Process::set_program(std::string program)
 {
-    pimpl->parameters.program = std::move(program);
+	pimpl->parameters.program = std::move(program);
 }
 
 std::vector<std::string> checklib::RestrictedProcess::params() const
@@ -93,10 +90,10 @@ std::vector<std::string> checklib::RestrictedProcess::params() const
 
 const std::vector<std::string> &checklib::Process::cmdline() const
 {
-    return pimpl->parameters.cmdline;
+	return pimpl->parameters.cmdline;
 }
 
-void checklib::RestrictedProcess::setParams(const std::vector<std::string> &params)
+void checklib::Process::setParams(const std::vector<std::string> &params)
 {
 	set_cmdline(params);
 }
@@ -106,7 +103,7 @@ void checklib::Process::set_cmdline(std::vector<std::string> params)
     pimpl->parameters.cmdline = std::move(params);
 }
 
-std::string checklib::RestrictedProcess::currentDirectory() const
+std::string checklib::Process::currentDirectory() const
 {
 	return pimpl->parameters.current_directory;
 }
@@ -116,7 +113,7 @@ const std::string &checklib::Process::current_directory() const
 	return pimpl->parameters.current_directory;
 }
 
-void checklib::RestrictedProcess::setCurrentDirectory(const std::string &directory)
+void checklib::Process::setCurrentDirectory(const std::string &directory)
 {
 	set_current_directory(directory);
 }
@@ -138,7 +135,7 @@ void checklib::Process::start()
 }
 
 // Завершает процесс вручную. Тип завершения становится etTerminated
-void checklib::RestrictedProcess::terminate()
+void checklib::Process::terminate()
 {
 	pimpl->process->kill();
 }
