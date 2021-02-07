@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		if (argc != 2) return -1;
+		//if (argc != 2) return -1;
 		std::map<std::string, bool (*)()> funcs = {
 		    {"is_running_checking", is_running_checking},
 		    {"test_terminate", test_terminate},
@@ -297,7 +297,8 @@ int main(int argc, char *argv[])
 		    {"test_il", test_il},
 		    {"test_interactive", test_interactive},
 		    {"test_exception", test_exception}};
-		auto it = funcs.find(argv[1]);
+		//auto it = funcs.find(argv[1]);
+		auto it = funcs.find("testTL");
 		if (it == funcs.end()) return -2;
 		if (!it->second()) return -3;
 		return 0;

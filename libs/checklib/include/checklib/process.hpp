@@ -39,7 +39,7 @@ public:
 	bool isRunning() const;
 
 	/// Запуск процесса
-	void start();
+	[[deprecated]] void start();
 
 	/// Завершает процесс вручную.
 	/// Если процесс запущен, тип завершения становится etTerminated

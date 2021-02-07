@@ -241,7 +241,7 @@ void checklib::details::RestrictedProcessImpl::kill()
 // Тип завершения программы
 checklib::ProcessStatus checklib::details::RestrictedProcessImpl::processStatus() const
 {
-	return mProcessStatus.load();
+	return mProcessStatus;
 }
 
 // Пиковое значение потребляемой памяти

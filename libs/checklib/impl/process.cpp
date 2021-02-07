@@ -49,6 +49,17 @@ struct checklib::Process::Pimpl
 	ProcessExecuteParameters parameters;
 
 	Status m_status;
+
+	void start_internal()
+	{
+		// copy-paster from a Process constructor. Will be deleted after moving on new api
+		force_exit   = std::make_shared<std::atomic_bool>(false);
+		auto process = std::make_unique<details::RestrictedProcessImpl>(parameters);
+		process->start();
+		process           = std::move(process);
+		async_checker_fut = std::async(details::async_checker, process.get(), parameters.limits,
+		                               &m_status, force_exit);
+	}
 };
 
 checklib::Process::Process(ProcessExecuteParameters params) : pimpl(new Pimpl)
@@ -69,8 +80,11 @@ checklib::Process::Process() : pimpl(new Pimpl)
 
 checklib::Process::~Process()
 {
-	*pimpl->force_exit = false;
-	pimpl->async_checker_fut.get();
+	// TODO: remove checking after moving new api
+	if(*pimpl->force_exit)
+		*pimpl->force_exit = false;
+	if(pimpl->async_checker_fut.valid())
+		pimpl->async_checker_fut.get();
 }
 
 void checklib::Process::setProgram(const std::string &program)
@@ -131,7 +145,7 @@ bool checklib::Process::isRunning() const
 // Запуск процесса
 void checklib::Process::start()
 {
-	// TODO: remove this method
+	pimpl->start_internal();
 }
 
 // Завершает процесс вручную. Тип завершения становится etTerminated
