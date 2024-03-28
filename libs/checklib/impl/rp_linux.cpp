@@ -1,7 +1,7 @@
 ﻿#include "rp_linux.h"
-#include "../checklib_exception.h"
-#include "../rp_consts.h"
-#include "../timer_service.h"
+#include "checklib_exception.h"
+#include "rp_consts.h"
+#include "timer_service.h"
 
 #include <exception>
 #include <fstream>
@@ -21,6 +21,12 @@
 #include <errno.h>
 
 const int checklib::details::RestrictedProcessImpl::sTimerDuration = 100;
+
+checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &)
+ : mTimer(TimerService::instance()->io_service())
+{
+	// NOT_IMPLEMENTED_YET
+}
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl()
     : mTimer(TimerService::instance()->io_service())
@@ -67,11 +73,6 @@ std::string checklib::details::RestrictedProcessImpl::currentDirectory() const
 void checklib::details::RestrictedProcessImpl::setCurrentDirectory(const std::string &directory)
 {
 	mCurrentDirectory = directory;
-}
-
-bool checklib::details::RestrictedProcessImpl::is_running() const
-{
-	return mIsRunning.load();
 }
 
 bool checklib::details::RestrictedProcessImpl::end_process(ProcessStatus status)
@@ -240,7 +241,7 @@ void checklib::details::RestrictedProcessImpl::start()
 		{
 			// WARNING: Без kill почему-то не работает ожидание завершения, несмотря на вызов exit в
 			// потомке
-			kill(mChildPid, SIGKILL);
+			::kill(mChildPid, SIGKILL);
 			waitpid(mChildPid, nullptr, 0);
 			if (msg[0] == '0') throw CannotStartProcess(mProgram);
 			if (msg[0] == '1') throw CannotOpenFile(msg.substr(msg.length() - 1));
@@ -262,7 +263,7 @@ void checklib::details::RestrictedProcessImpl::terminate()
 {
 	if (is_running())
 	{
-		kill(mChildPid, SIGKILL);
+		::kill(mChildPid, SIGKILL);
 		mProcessStatus.store(psTerminated);
 	}
 }
@@ -292,7 +293,7 @@ bool checklib::details::RestrictedProcessImpl::wait(int milliseconds)
 }
 
 // Код возврата.
-int checklib::details::RestrictedProcessImpl::exit_code() const
+std::optional<int> checklib::details::RestrictedProcessImpl::exit_code() const
 {
 	return mExitCode;
 }
@@ -406,7 +407,7 @@ void checklib::details::RestrictedProcessImpl::doFinalize()
 
 	if (!mIsRunning.load()) return;
 
-	kill(mChildPid, SIGUSR1);
+	::kill(mChildPid, SIGUSR1);
 	int status = 0;
 	waitpid(mChildPid, &status, WCONTINUED);
 

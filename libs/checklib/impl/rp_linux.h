@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../rp_types.h"
+#include "rp_types.h"
 
 #include "i_process.hpp"
 #include <atomic>
@@ -40,6 +40,7 @@ public:
 class RestrictedProcessImpl : public checklib::details::IProcess
 {
 public:
+	RestrictedProcessImpl(const ProcessExecuteParameters &);
 	RestrictedProcessImpl();
 	~RestrictedProcessImpl();
 
@@ -52,17 +53,26 @@ public:
 	std::string currentDirectory() const;
 	void setCurrentDirectory(const std::string &directory);
 
-	bool is_running() const override;
-
-	bool end_process(ProcessStatus status) override;
+	bool end_process(ProcessStatus status);
 
 	void start();
 	void terminate();
 	void wait();
 	bool wait(int milliseconds) override;
 
+	void kill() override
+	{
+		// TODO: NOT IMPLEMENTED YET
+	}
+
 	// Код возврата.
-	int exit_code() const;
+	std::optional<int> exit_code() const;
+
+	bool is_abnormal_exit() const override 
+	{
+		// TODO: NOT IMPLEMENTED
+		return false; 
+	}
 
 	// Тип завершения программы
 	ProcessStatus processStatus() const;

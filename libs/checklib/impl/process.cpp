@@ -12,7 +12,7 @@
 #include "rp_win.h"
 #endif
 #ifdef CHECKLIB_UNIX
-#include "details/rp_linux.h"
+#include "rp_linux.h"
 #endif
 
 namespace

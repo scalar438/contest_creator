@@ -6,12 +6,12 @@ if (WIN32)
   #  add_compile_definitions(
 elseif (UNIX)
     add_definitions("-DCHECKLIB_UNIX")
-    set(SOURCES ${SOURCES} details/rp_linux.cpp)
+    set(SOURCES ${SOURCES} impl/rp_linux.cpp)
     
     find_package(Boost REQUIRED)
 
-    target_include_directories(checklib PUBLIC ${Boost_INCLUDE_DIR})
-    target_link_directories(checklib INTERFACE ${Boost_LIBRARY_DIRS})
+    #target_include_directories(checklib PUBLIC ${Boost_INCLUDE_DIR})
+    #target_link_directories(checklib INTERFACE ${Boost_LIBRARY_DIRS})
 endif()
 
 add_library(checklib ${SOURCES})
