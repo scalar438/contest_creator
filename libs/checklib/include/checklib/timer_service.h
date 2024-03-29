@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
+#include <thread>
 #include <boost/noncopyable.hpp>
 
 namespace checklib {
@@ -14,7 +14,7 @@ public:
 	~TimerService()
 	{
 		mService.stop();
-		mThread.join();
+		m_thread.join();
 	}
 
 	boost::asio::io_service &io_service()
@@ -31,12 +31,12 @@ public:
 private:
 	boost::asio::io_service mService;
 	boost::asio::io_service::work mWork;
-	boost::thread mThread;
+	std::thread m_thread;
 
 	TimerService()
 		: mWork(mService)
 	{
-		mThread = boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(mService)));
+		m_thread = std::thread([this]() { this->mService.run(); });
 	}
 };
 
