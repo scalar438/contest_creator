@@ -2,7 +2,21 @@
 #include <iostream>
 #include <map>
 #include <vector>
+
 using namespace checklib;
+
+class CheckError : std::exception
+{
+public:
+	CheckError(std::string msg) : m_msg(std::move(msg)) {}
+
+	const char *what() const noexcept override
+	{
+		return m_msg.c_str();
+	}
+
+	std::string m_msg;
+};
 
 bool is_running_checking()
 {
@@ -247,12 +261,12 @@ bool test_interactive()
 	runner.sendDataToStandardInput("4 5\n");
 	std::string ans;
 	if (!runner.getDataFromStandardOutput(ans))
-		throw std::exception("getDataFromStandardOutput returned false");
+		throw CheckError("getDataFromStandardOutput returned false");
 	if (ans != "9") return false;
 
 	runner.sendDataToStandardInput("2 3", true);
 	if (!runner.getDataFromStandardOutput(ans))
-		throw std::exception("getDataFromStandardOutput returned false");
+		throw CheckError("getDataFromStandardOutput returned false");
 
 	if (ans != "5") return false;
 
@@ -284,7 +298,7 @@ int main(int argc, char *argv[])
 {
 	try
 	{
-		//if (argc != 2) return -1;
+		// if (argc != 2) return -1;
 		std::map<std::string, bool (*)()> funcs = {
 		    {"is_running_checking", is_running_checking},
 		    {"test_terminate", test_terminate},
@@ -297,7 +311,7 @@ int main(int argc, char *argv[])
 		    {"test_il", test_il},
 		    {"test_interactive", test_interactive},
 		    {"test_exception", test_exception}};
-		//auto it = funcs.find(argv[1]);
+		// auto it = funcs.find(argv[1]);
 		auto it = funcs.find("testTL");
 		if (it == funcs.end()) return -2;
 		if (!it->second()) return -3;
