@@ -10,4 +10,3 @@ add_executable(pSum sum.cpp)
 install(TARGETS 
    pArgsOut pArgsExitCode pIL pML pRE pStderr_out pSum pTL
    DESTINATION "test_script/examples/")
-    

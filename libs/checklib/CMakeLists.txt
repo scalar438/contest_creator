@@ -9,12 +9,11 @@ elseif (UNIX)
     set(SOURCES ${SOURCES} impl/rp_linux.cpp)
     
     find_package(Boost REQUIRED)
-
-    #target_include_directories(checklib PUBLIC ${Boost_INCLUDE_DIR})
-    #target_link_directories(checklib INTERFACE ${Boost_LIBRARY_DIRS})
 endif()
 
 add_library(checklib ${SOURCES})
+target_link_options(checklib INTERFACE -lboost_chrono -lboost_thread)
+
 target_include_directories(checklib INTERFACE "include")
 target_include_directories(checklib PRIVATE "include/checklib")
 

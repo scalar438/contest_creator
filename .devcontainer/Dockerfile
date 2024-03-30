@@ -1,6 +1,6 @@
 FROM teeks99/clang-ubuntu:18
 
-RUN apt-get update && apt install cmake libboost-dev -y
+RUN apt-get update && apt install cmake libboost-all-dev -y
 
 #ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="3.27"
 
