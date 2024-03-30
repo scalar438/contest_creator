@@ -3,5 +3,5 @@
 
 int main()
 {
-	std::this_thread::sleep_for(std::chrono::seconds(100500));
+	std::this_thread::sleep_for(std::chrono::seconds(10));
 }

@@ -19,5 +19,3 @@ target_include_directories(checklib INTERFACE "include")
 target_include_directories(checklib PRIVATE "include/checklib")
 
 cmake_policy(SET CMP0074 NEW)
-
-set_property(TARGET checklib PROPERTY CXX_STANDARD 17)

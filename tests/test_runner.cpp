@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
 		    {"test_il", test_il},
 		    {"test_interactive", test_interactive},
 		    {"test_exception", test_exception}};
-		// auto it = funcs.find(argv[1]);
+		// auto it = funcs.find(argv[1]);s
 		auto it = funcs.find("testTL");
 		if (it == funcs.end()) return -2;
 		if (!it->second()) return -3;

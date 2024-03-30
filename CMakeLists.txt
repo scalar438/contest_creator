@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(contests-creator VERSION 1.0.3)
 
+set(CMAKE_CXX_STANDARD 17)
+
 #add_subdirectory(apps)
 add_subdirectory(libs)
 
