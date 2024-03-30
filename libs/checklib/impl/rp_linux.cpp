@@ -23,7 +23,7 @@
 const int checklib::details::RestrictedProcessImpl::sTimerDuration = 100;
 
 checklib::details::RestrictedProcessImpl::RestrictedProcessImpl(const ProcessExecuteParameters &)
- : mTimer(TimerService::instance()->io_service())
+    : mTimer(TimerService::instance()->io_service())
 {
 	// NOT_IMPLEMENTED_YET
 }
